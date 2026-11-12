@@ -1,0 +1,70 @@
+[
+  {
+    "id": 101,
+    "label": "PlayStation 5 · Consola 1",
+    "price": 8,
+    "priceNote": "Tarifa referencial propuesta · Bs 8 por hora",
+    "controllersIncluded": 1,
+    "extraControllerFee": 6,
+    "seat": "Sofá gamer cómodo · espacio para jugar acompañado",
+    "features": [
+      "1 mando DualSense incluido",
+      "Segundo mando opcional: Bs 6 por sesión"
+    ],
+    "available": true,
+    "elapsed": "",
+    "image": "./imagenes/playstation.webp",
+    "imageAlt": "Consola PlayStation 5 número 1"
+  },
+  {
+    "id": 102,
+    "label": "PlayStation 5 · Consola 2",
+    "price": 8,
+    "priceNote": "Tarifa referencial propuesta · Bs 8 por hora",
+    "controllersIncluded": 1,
+    "extraControllerFee": 6,
+    "seat": "Sofá gamer cómodo · espacio para jugar acompañado",
+    "features": [
+      "1 mando DualSense incluido",
+      "Segundo mando opcional: Bs 6 por sesión"
+    ],
+    "available": true,
+    "elapsed": "",
+    "image": "./imagenes/playstation.webp",
+    "imageAlt": "Consola PlayStation 5 número 2"
+  },
+  {
+    "id": 103,
+    "label": "PlayStation 5 · Consola 3",
+    "price": 8,
+    "priceNote": "Tarifa referencial propuesta · Bs 8 por hora",
+    "controllersIncluded": 1,
+    "extraControllerFee": 6,
+    "seat": "Sofá gamer cómodo · espacio para jugar acompañado",
+    "features": [
+      "1 mando DualSense incluido",
+      "Segundo mando opcional: Bs 6 por sesión"
+    ],
+    "available": true,
+    "elapsed": "",
+    "image": "./imagenes/playstation.webp",
+    "imageAlt": "Consola PlayStation 5 número 3"
+  },
+  {
+    "id": 104,
+    "label": "PlayStation 5 · Consola 4",
+    "price": 8,
+    "priceNote": "Tarifa referencial propuesta · Bs 8 por hora",
+    "controllersIncluded": 1,
+    "extraControllerFee": 6,
+    "seat": "Sofá gamer cómodo · espacio para jugar acompañado",
+    "features": [
+      "1 mando DualSense incluido",
+      "Segundo mando opcional: Bs 6 por sesión"
+    ],
+    "available": true,
+    "elapsed": "",
+    "image": "./imagenes/playstation.webp",
+    "imageAlt": "Consola PlayStation 5 número 4"
+  }
+]
