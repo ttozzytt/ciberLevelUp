@@ -1,4 +1,4 @@
-const CACHE_NAME = 'levelup-cibercafe-v3';
+const CACHE_NAME = 'levelup-cibercafe-v5';
 const APP_SHELL = [
   './',
   './index.html',

@@ -4,8 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#090b18">
+  <meta name="application-name" content="LevelUp">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="LevelUp">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>LevelUp Cibercafé | Catálogo de equipos</title>
   <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -393,6 +399,19 @@
       .pc-card{flex-basis:82vw;max-width:310px}.pc-visual.pc-product-visual{height:145px!important;min-height:145px}
     }
     @media(prefers-reduced-motion:reduce){.pc-carousel{scroll-behavior:auto}.pc-card,.pc-visual img{transition:none}}
+  
+    /* Estado PWA de conectividad e instalación. */
+    .brand-copy{display:grid;gap:3px;min-width:0}
+    .network-status{display:inline-flex;align-items:center;gap:6px;width:max-content;max-width:100%;padding:3px 7px;border:1px solid rgba(170,165,197,.25);border-radius:999px;background:rgba(255,255,255,.045);color:#c9c5dd;font-size:8px;font-weight:800;letter-spacing:.35px;line-height:1.2}
+    .network-status i{width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#f5c451;box-shadow:0 0 8px rgba(245,196,81,.45)}
+    .network-status[data-state="online"]{color:#8ff4c8;border-color:rgba(49,230,160,.38);background:rgba(49,230,160,.08)}
+    .network-status[data-state="online"] i{background:#31e6a0;box-shadow:0 0 9px rgba(49,230,160,.65)}
+    .network-status[data-state="offline"]{color:#ff9aac;border-color:rgba(255,85,118,.4);background:rgba(255,85,118,.09)}
+    .network-status[data-state="offline"] i{background:#ff5576;box-shadow:0 0 9px rgba(255,85,118,.55)}
+    .network-status[data-state="checking"]{color:#ffe19a}
+    .pwa-install-btn{white-space:nowrap}
+    @media(max-width:760px){.brand-copy{gap:2px}.network-status{font-size:7px;padding:3px 6px}.pwa-install-btn{width:100%;min-height:40px}.hero-buttons{align-items:stretch}}
+
   </style>
 </head>
 <body>
@@ -400,7 +419,7 @@
     <div class="shell topbar-inner">
       <a class="brand" href="#inicio" aria-label="LevelUp Cibercafé, inicio">
         <span class="brand-icon" aria-hidden="true">🎮</span>
-        <span><span class="brand-name">Level<span>Up</span></span><span class="brand-caption">CIBERCAFÉ · LA PAZ</span></span>
+        <span class="brand-copy"><span class="brand-name">Level<span>Up</span></span><span class="brand-caption">CIBERCAFÉ · LA PAZ</span><span class="network-status" id="networkStatus" data-state="checking" role="status" aria-live="polite"><i aria-hidden="true"></i><span>Comprobando internet…</span></span></span>
       </a>
       <nav class="nav" aria-label="Navegación principal">
         <a class="active" href="#inicio">Inicio</a>
@@ -421,7 +440,7 @@
         <div class="eyebrow">Juega · Conecta · Disfruta</div>
         <h1 id="hero-title">Tu partida. <span>Tu próximo nivel.</span></h1>
         <p>Encuentra una PC libre, elige tu tiempo y prepárate para jugar.</p>
-        <div class="hero-buttons"><a class="primary-btn" href="#catalogo">⚡ Elegir computadora</a><a class="secondary-btn" href="#informacion">Conocer el servicio</a></div>
+        <div class="hero-buttons"><a class="primary-btn" href="#catalogo">⚡ Elegir computadora</a><a class="secondary-btn" href="#informacion">Conocer el servicio</a><button class="secondary-btn pwa-install-btn" id="installAppButton" type="button">＋ Instalar LevelUp</button></div>
       </div>
       <div class="hero-visual hardware-showcase" aria-label="Fotografías de equipos gamer">
         <figure class="hardware-feature hardware-feature-pc">
@@ -1300,5 +1319,111 @@
       }, { once: true });
     }
   </script>
+
+  <script>
+    // PWA LevelUp: conectividad real, indicación visual e instalación.
+    (() => {
+      const status = document.getElementById('networkStatus');
+      const installButton = document.getElementById('installAppButton');
+      let installPrompt = null;
+      let checkSequence = 0;
+      const alreadyInstalled = Boolean(
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+        (window.navigator && window.navigator.standalone === true)
+      );
+      if (alreadyInstalled && installButton) {
+        installButton.textContent = '✓ LevelUp instalada';
+        installButton.disabled = true;
+      }
+
+      function paintNetwork(state, label) {
+        if (!status) return;
+        status.dataset.state = state;
+        const text = status.querySelector('span');
+        if (text) text.textContent = label;
+      }
+
+      async function hasInternetAccess() {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4500);
+        const probes = [
+          'https://www.gstatic.com/generate_204?levelup=' + Date.now(),
+          'https://connectivitycheck.gstatic.com/generate_204?levelup=' + Date.now(),
+          'https://www.msftconnecttest.com/connecttest.txt?levelup=' + Date.now()
+        ];
+        try {
+          // La petición sale a dominios externos: el Service Worker de LevelUp
+          // no puede responderla desde la caché local.
+          await Promise.any(probes.map(url => fetch(url, {
+            method: 'GET',
+            mode: 'no-cors',
+            cache: 'no-store',
+            credentials: 'omit',
+            signal: controller.signal
+          }).then(response => {
+            if (response.type === 'opaque' || response.ok) return true;
+            throw new Error('El servicio de conectividad no respondió correctamente.');
+          })));
+          return true;
+        } catch (_) {
+          return false;
+        } finally {
+          clearTimeout(timeout);
+          controller.abort();
+        }
+      }
+
+      async function refreshNetworkStatus(initial = false) {
+        const sequence = ++checkSequence;
+        if (initial) paintNetwork('checking', 'Comprobando internet…');
+        const connected = await hasInternetAccess();
+        if (sequence !== checkSequence) return;
+        paintNetwork(connected ? 'online' : 'offline', connected ? 'Online' : 'Offline');
+      }
+
+      // No se toma navigator.onLine como veredicto: solo se comprueba
+      // si algún endpoint externo responde, tanto con Wi-Fi como con datos.
+      refreshNetworkStatus(true);
+      window.addEventListener('online', () => refreshNetworkStatus());
+      window.addEventListener('offline', () => refreshNetworkStatus());
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') refreshNetworkStatus();
+      });
+      window.setInterval(() => refreshNetworkStatus(), 25000);
+
+      window.addEventListener('beforeinstallprompt', event => {
+        event.preventDefault();
+        installPrompt = event;
+        if (installButton) {
+          installButton.hidden = false;
+          installButton.textContent = '＋ Instalar LevelUp';
+        }
+      });
+
+      if (installButton) {
+        installButton.addEventListener('click', async () => {
+          if (!installPrompt) {
+            window.alert('Para instalar LevelUp, abre el menú del navegador y selecciona «Instalar aplicación» o «Añadir a pantalla de inicio». En iPhone, usa Compartir → Añadir a pantalla de inicio.');
+            return;
+          }
+          installPrompt.prompt();
+          const choice = await installPrompt.userChoice;
+          installPrompt = null;
+          if (choice && choice.outcome === 'accepted') {
+            installButton.textContent = '✓ LevelUp instalada';
+            installButton.disabled = true;
+          }
+        });
+      }
+
+      window.addEventListener('appinstalled', () => {
+        if (installButton) {
+          installButton.textContent = '✓ LevelUp instalada';
+          installButton.disabled = true;
+        }
+      });
+    })();
+  </script>
+
 </body>
 </html>
