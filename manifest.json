@@ -1,0 +1,25 @@
+{
+  "id": "./",
+  "name": "LevelUp Cibercafé | La Paz",
+  "short_name": "LevelUp",
+  "description": "Catálogo de computadoras, sesiones y servicios LevelUp Cibercafé.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#090b18",
+  "theme_color": "#090b18",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
