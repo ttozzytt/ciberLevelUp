@@ -1,17 +1,18 @@
 'use strict';
 
 /* LevelUp: SPA ligera, hidratación controlada y delegación de eventos. */
-const LEVELUP_VIEWS = ['inicio', 'computadoras', 'cuenta', 'servicios', 'contacto'];
-const VIEW_LABELS = { inicio: 'Inicio', computadoras: 'Computadoras', cuenta: 'Mi cuenta', servicios: 'Servicios', contacto: 'Contacto' };
+const LEVELUP_VIEWS = ['inicio', 'computadoras', 'consolas', 'cuenta', 'servicios', 'contacto'];
+const VIEW_LABELS = { inicio: 'Inicio', computadoras: 'Computadoras', consolas: 'PlayStation', cuenta: 'Mi cuenta', servicios: 'Servicios', contacto: 'Contacto' };
 const STORAGE = {
   accounts: 'levelup_accounts_v1',
   activePhone: 'levelup_active_phone_v1',
-  machines: 'levelup_machine_states_v2',
+  machines: 'levelup_machine_states_v3',
+  consoles: 'levelup_console_states_v1',
   pending: 'levelup_pending_actions_v1'
 };
 const state = {
-  machines: [], accounts: [], activeUser: null, currentFilter: 'all',
-  selectedMachine: null, booking: null, pendingMachineId: null,
+  machines: [], consoles: [], accounts: [], activeUser: null, currentFilter: 'all',
+  selectedMachine: null, selectedResourceType: null, booking: null, pendingMachineId: null, pendingConsoleId: null,
   rechargeAmount: 20, rechargeMethod: 'QR',
   hydrationComplete: false, networkState: 'checking',
   networkCheckId: 0, networkTimer: null, sessionTimer: null,
@@ -45,6 +46,7 @@ function parseElapsed(value) {
   return Number.isFinite(parts[0]) ? parts[0] : 0;
 }
 function getMachine(id) { return state.machines.find(machine => machine.id === Number(id)) || null; }
+function getConsole(id) { return state.consoles.find(consoleUnit => consoleUnit.id === Number(id)) || null; }
 function isReserved(machine) { return Boolean(machine.reservationExpiresAt && machine.reservationExpiresAt > Date.now()); }
 function isAvailable(machine) { return Boolean(machine.available && !isReserved(machine)); }
 
@@ -111,7 +113,7 @@ async function loadMachineCatalog() {
   state.machines = catalog.map(item => {
     const id = Number(item.id);
     if (!Number.isInteger(id) || id < 1 || usedIds.has(id)) throw new Error('Hay identificadores de estación inválidos o repetidos.');
-    if (!['standard', 'pro', 'vip'].includes(item.type)) throw new Error(`La categoría de la estación ${id} no es válida.`);
+    if (!['basic', 'standard', 'premium'].includes(item.type)) throw new Error(`La categoría de la estación ${id} no es válida.`);
     if (!Number.isFinite(Number(item.price)) || Number(item.price) <= 0) throw new Error(`El precio de la estación ${id} no es válido.`);
     if (!item.cpu || !item.gpu || !item.ram || !item.storage || !item.monitor) throw new Error(`Faltan especificaciones en la estación ${id}.`);
     usedIds.add(id);
@@ -123,6 +125,8 @@ async function loadMachineCatalog() {
       elapsed: String(item.elapsed || ''),
       image: String(item.image || './imagenes/pc-gamer.webp'),
       imageAlt: String(item.imageAlt || `Gabinete gamer representativo de la estación ${id}`),
+      seat: String(item.seat || 'Asiento estándar'),
+      features: Array.isArray(item.features) ? item.features.map(String) : [],
       sessionStartedAt: null,
       sessionEndsAt: null,
       reservationExpiresAt: null
@@ -166,6 +170,83 @@ function saveMachineStates() {
   } catch (error) { showToast('No se pudieron guardar los estados en este navegador.', 'error'); }
 }
 
+async function loadConsoleCatalog() {
+  const response = await fetch('./data/consolas.json', { cache: 'no-store' });
+  if (!response.ok) throw new Error(`La solicitud de consolas respondió HTTP ${response.status}.`);
+  const catalog = await response.json();
+  if (!Array.isArray(catalog) || catalog.length !== 4) throw new Error('El catálogo debe contener exactamente cuatro consolas.');
+  state.consoles = catalog.map(item => ({
+    ...item,
+    id: Number(item.id),
+    kind: 'console',
+    price: Number(item.price),
+    extraControllerFee: Number(item.extraControllerFee || 6),
+    available: Boolean(item.available),
+    elapsed: String(item.elapsed || ''),
+    image: String(item.image || './imagenes/playstation.webp'),
+    imageAlt: String(item.imageAlt || `PlayStation ${item.id}`),
+    sessionStartedAt: null,
+    sessionEndsAt: null,
+    reservationExpiresAt: null
+  }));
+  restoreConsoleStates();
+}
+function restoreConsoleStates() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE.consoles) || '[]');
+    if (Array.isArray(stored)) stored.forEach(saved => {
+      const consoleUnit = getConsole(saved.id);
+      if (!consoleUnit) return;
+      ['available', 'sessionStartedAt', 'sessionEndsAt', 'reservationExpiresAt'].forEach(key => {
+        if (saved[key] !== undefined) consoleUnit[key] = saved[key];
+      });
+    });
+  } catch (error) { console.warn('No se pudieron recuperar los estados de las consolas.', error); }
+  state.consoles.forEach(consoleUnit => {
+    if (consoleUnit.reservationExpiresAt && consoleUnit.reservationExpiresAt <= Date.now()) {
+      consoleUnit.available = true;
+      consoleUnit.reservationExpiresAt = null;
+      consoleUnit.sessionStartedAt = null;
+    }
+  });
+  saveConsoleStates();
+}
+function saveConsoleStates() {
+  try {
+    const snapshot = state.consoles.map(consoleUnit => ({
+      id: consoleUnit.id,
+      available: consoleUnit.available,
+      sessionStartedAt: consoleUnit.sessionStartedAt || null,
+      sessionEndsAt: consoleUnit.sessionEndsAt || null,
+      reservationExpiresAt: consoleUnit.reservationExpiresAt || null
+    }));
+    localStorage.setItem(STORAGE.consoles, JSON.stringify(snapshot));
+  } catch (error) { showToast('No se pudieron guardar los estados de las consolas.', 'error'); }
+}
+function renderConsoles() {
+  const grid = document.getElementById('consoleGrid');
+  if (!grid) return;
+  $('#consoleCount').text(state.consoles.length);
+  grid.innerHTML = state.consoles.map(consoleUnit => {
+    const status = cardStatus(consoleUnit);
+    const number = String(consoleUnit.id - 100).padStart(2, '0');
+    const usage = isReserved(consoleUnit)
+      ? `<div class="pc-usage">Apartada · <strong data-hold-timer="${consoleUnit.id}">${formatHold(consoleUnit.reservationExpiresAt - Date.now())}</strong></div>`
+      : consoleUnit.sessionEndsAt
+        ? `<div class="pc-usage">Tiempo restante · <strong data-session-timer="${consoleUnit.id}">${formatClock(consoleUnit.sessionEndsAt - Date.now())}</strong></div>`
+        : !consoleUnit.available
+          ? `<div class="pc-usage">En uso · <strong data-elapsed-timer="${consoleUnit.id}">${formatClock(Date.now() - (consoleUnit.sessionStartedAt || Date.now()))}</strong></div>`
+          : `<button class="select-pc-btn console-select-btn" type="button" data-select-console="${consoleUnit.id}" data-hidratado="true">Reservar consola →</button>`;
+    return `<article class="console-card ${status.className}" data-console-card="${consoleUnit.id}">
+      <div class="console-card-top"><span>PLAYSTATION 5 · #${number}</span><span class="pc-status ${status.className}">${status.label}</span></div>
+      <button class="console-photo" type="button" data-photo-open data-photo="${escapeHTML(consoleUnit.image)}" data-caption="PlayStation 5 · Consola #${number}" aria-label="Ampliar imagen de PlayStation 5 número ${number}" data-hidratado="true"><img src="${escapeHTML(consoleUnit.image)}" alt="${escapeHTML(consoleUnit.imageAlt)}" width="800" height="800" loading="lazy" decoding="async"></button>
+      <div class="console-card-body"><div class="console-card-title"><strong>${escapeHTML(consoleUnit.label)}</strong><span>${money(consoleUnit.price)} <small>/ hora</small></span></div><p class="console-rate-note">${escapeHTML(consoleUnit.priceNote || 'Tarifa por hora')}</p>
+        <div class="console-details"><span>🎮 1 mando incluido</span><span>＋ Segundo mando: ${money(consoleUnit.extraControllerFee)} por sesión</span><span>🛋 ${escapeHTML(consoleUnit.seat)}</span></div>
+        <div class="console-card-action">${usage}</div></div>
+    </article>`;
+  }).join('');
+}
+
 /* Filtros de tres capas: categoría -> procesador -> gráfica. */
 function fillSelect(select, placeholder, values, disabled = false) {
   const element = document.getElementById(select);
@@ -203,7 +284,7 @@ function getFilteredMachines() {
     const matchesCategory = !category || machine.type === category;
     const matchesCpu = !cpu || machine.cpu === cpu;
     const matchesGpu = !gpu || machine.gpu === gpu;
-    const searchText = `pc ${pad(machine.id)} ${machine.label} ${machine.cpu} ${machine.gpu} ${machine.ram} ${machine.storage} ${machine.monitor}`.toLocaleLowerCase('es');
+    const searchText = `pc ${pad(machine.id)} ${machine.label} ${machine.cpu} ${machine.gpu} ${machine.ram} ${machine.storage} ${machine.monitor} ${machine.seat} ${(machine.features || []).join(' ')}`.toLocaleLowerCase('es');
     return matchesQuick && matchesCategory && matchesCpu && matchesGpu && (!query || searchText.includes(query));
   });
 }
@@ -233,9 +314,9 @@ function renderMachines() {
       : usage;
     return `<article class="pc-card ${status.className}" data-machine-card="${machine.id}" data-type="${machine.type}">
       <div class="pc-card-top"><span class="pc-name">ESTACIÓN #${number}</span><span class="pc-status ${status.className}">${status.label}</span></div>
-      <button class="pc-photo" type="button" data-photo-open data-photo="${escapeHTML(machine.image)}" data-caption="Estación #${number} · ${escapeHTML(machine.label)} · Imagen representativa del gabinete gamer" aria-label="Ampliar imagen de la estación ${number}" data-hidratado="true"><img src="${escapeHTML(machine.image)}" alt="${escapeHTML(machine.imageAlt)}" width="225" height="225" loading="lazy" decoding="async"></button>
+      <button class="pc-photo" type="button" data-photo-open data-photo="${escapeHTML(machine.image)}" data-caption="Estación #${number} · ${escapeHTML(machine.label)} · ${escapeHTML(machine.cpu)} · ${escapeHTML(machine.gpu)} · Imagen representativa de la categoría" aria-label="Ampliar imagen de la estación ${number}" data-hidratado="true"><img src="${escapeHTML(machine.image)}" alt="${escapeHTML(machine.imageAlt)}" width="225" height="225" loading="lazy" decoding="async"></button>
       <div class="pc-card-body"><div class="pc-card-title"><strong>${escapeHTML(machine.label)}</strong><span class="pc-price">${money(machine.price)} <small>/h</small></span></div>
-        <div class="pc-specs"><span>${escapeHTML(machine.cpu)}</span><span>${escapeHTML(machine.gpu)}</span><span>${escapeHTML(machine.ram)}</span><span>${escapeHTML(machine.storage)}</span><span>${escapeHTML(machine.monitor)}</span></div>
+        <div class="pc-specs"><span>${escapeHTML(machine.cpu)}</span><span>${escapeHTML(machine.gpu)}</span><span>${escapeHTML(machine.ram)}</span><span>${escapeHTML(machine.storage)}</span><span>${escapeHTML(machine.monitor)}</span><span>🪑 ${escapeHTML(machine.seat)}</span>${(machine.features || []).map(feature => `<span class="pc-feature-pill">${escapeHTML(feature)}</span>`).join('')}</div>
         <div class="pc-card-foot">${action}</div>
       </div>
     </article>`;
@@ -259,9 +340,9 @@ function renderOccupancyChart() {
   const chart = document.getElementById('occupancyChart');
   if (!chart || !state.machines.length) return;
   const categories = [
+    { id: 'basic', label: 'Básica' },
     { id: 'standard', label: 'Estándar' },
-    { id: 'pro', label: 'Pro' },
-    { id: 'vip', label: 'VIP' }
+    { id: 'premium', label: 'Premium' }
   ];
   const rows = categories.map(category => {
     const machines = state.machines.filter(machine => machine.type === category.id);
@@ -301,19 +382,16 @@ async function initializeCatalog() {
   $('#catalogStatus').text('Cargando catálogo…');
   $('#pcGrid').html('<div class="catalog-state"><strong>Preparando las estaciones…</strong>Estamos leyendo el archivo de datos.</div>');
   try {
-    await loadMachineCatalog();
-    fillSelect('filterCategory', 'Todas las categorías', [
-      ['standard', 'Estándar'], ['pro', 'Pro'], ['vip', 'VIP']
-    ].map(item => item[0]), false);
-    const categorySelect = document.getElementById('filterCategory');
-    [...categorySelect.options].forEach(option => {
-      if (option.value === 'standard') option.textContent = 'Estándar';
-      if (option.value === 'pro') option.textContent = 'Pro';
-      if (option.value === 'vip') option.textContent = 'VIP';
+    await Promise.all([loadMachineCatalog(), loadConsoleCatalog()]);
+    fillSelect('filterCategory', 'Todas las categorías', ['basic', 'standard', 'premium'], false);
+    const categoryLabels = { basic: 'Básica', standard: 'Estándar', premium: 'Premium' };
+    [...document.getElementById('filterCategory').options].forEach(option => {
+      if (categoryLabels[option.value]) option.textContent = categoryLabels[option.value];
     });
     fillSelect('filterCPU', 'Primero elige categoría', [], true);
     fillSelect('filterGPU', 'Primero elige procesador', [], true);
     renderMachines();
+    renderConsoles();
     startSessionTicker();
   } catch (error) {
     console.error('Error al cargar el catálogo de LevelUp:', error);
@@ -496,66 +574,90 @@ function updateBookingCountdown() {
   $('#bookingCountdown').text(formatHold(remaining));
   $('#bookingHoldNotice').toggleClass('expiring', remaining <= 15000);
 }
+function saveSelectedResource() {
+  if (state.selectedResourceType === 'console') { saveConsoleStates(); renderConsoles(); }
+  else { saveMachineStates(); renderMachines(); }
+}
 function releaseReservation(showMessage = false) {
-  const machine = state.selectedMachine;
-  if (!machine?.reservationExpiresAt) return;
-  const id = machine.id;
-  machine.reservationExpiresAt = null;
-  machine.available = true;
-  machine.sessionStartedAt = null;
-  machine.sessionEndsAt = null;
+  const resource = state.selectedMachine;
+  if (!resource?.reservationExpiresAt) return;
+  const id = resource.id;
+  const isConsole = state.selectedResourceType === 'console';
+  resource.reservationExpiresAt = null;
+  resource.available = true;
+  resource.sessionStartedAt = null;
+  resource.sessionEndsAt = null;
   state.selectedMachine = null;
+  state.selectedResourceType = null;
   state.booking = null;
-  saveMachineStates();
-  renderMachines();
-  if (showMessage) showToast(`Reserva cancelada. La estación #${pad(id)} vuelve a estar disponible.`);
+  if (isConsole) { saveConsoleStates(); renderConsoles(); }
+  else { saveMachineStates(); renderMachines(); }
+  if (showMessage) showToast(isConsole ? `Reserva de la PlayStation #${id - 100} cancelada. La consola vuelve a estar disponible.` : `Reserva cancelada. La estación #${pad(id)} vuelve a estar disponible.`);
 }
 function expireReservation() {
   if (!state.selectedMachine?.reservationExpiresAt) return;
-  const id = state.selectedMachine.id;
+  const resource = state.selectedMachine;
+  const isConsole = state.selectedResourceType === 'console';
+  const id = resource.id;
   releaseReservation(false);
   closeModal('#bookingModal');
   closeModal('#rechargeModal');
-  showToast(`Se agotó el minuto de reserva. La estación #${pad(id)} quedó libre.`, 'error');
+  showToast(isConsole ? `Se agotó la reserva de la PlayStation #${id - 100}. Quedó libre.` : `Se agotó el minuto de reserva. La estación #${pad(id)} quedó libre.`, 'error');
 }
-function openBooking(machineId) {
-  const machine = getMachine(machineId);
-  if (!machine || !isAvailable(machine)) {
-    showToast('Esta estación ya no está disponible. Actualizamos el catálogo.', 'error');
-    renderMachines();
+function prepareResourceBooking(resource, resourceType) {
+  if (!resource || !isAvailable(resource)) {
+    showToast('Ese puesto ya no está disponible. Actualizamos el estado.', 'error');
+    if (resourceType === 'console') renderConsoles(); else renderMachines();
     return;
   }
   if (!state.activeUser) {
-    state.pendingMachineId = machine.id;
+    if (resourceType === 'console') state.pendingConsoleId = resource.id;
+    else state.pendingMachineId = resource.id;
     showView('cuenta');
     showToast('Registra tu cuenta o inicia sesión para continuar con la reserva.');
     return;
   }
-  state.selectedMachine = machine;
+  state.selectedMachine = resource;
+  state.selectedResourceType = resourceType;
   state.booking = null;
-  machine.available = false;
-  machine.reservationExpiresAt = Date.now() + 60000;
-  machine.sessionStartedAt = null;
-  machine.sessionEndsAt = null;
-  $('#selectedMachineName').text(`ESTACIÓN #${pad(machine.id)} · ${machine.label}`);
-  $('#selectedMachineSpecs').text(`${machine.cpu} · ${machine.gpu} · ${machine.ram}`);
-  $('#selectedMachineRate').text(`${money(machine.price)}/h`);
+  resource.available = false;
+  resource.reservationExpiresAt = Date.now() + 60000;
+  resource.sessionStartedAt = null;
+  resource.sessionEndsAt = null;
+  const isConsole = resourceType === 'console';
+  const title = isConsole ? `PLAYSTATION 5 · CONSOLA #${resource.id - 100}` : `ESTACIÓN #${pad(resource.id)} · ${resource.label}`;
+  const spec = isConsole
+    ? `${resource.controllersIncluded} mando incluido · ${resource.seat}`
+    : `${resource.cpu} · ${resource.gpu} · ${resource.ram} · ${resource.seat}`;
+  $('#selectedMachineName').text(title);
+  $('#selectedMachineSpecs').text(spec);
+  $('#selectedMachineRate').text(`${money(resource.price)}/h`);
   $('#customerName').val(state.activeUser.name);
   $('#customerPhone').val(state.activeUser.phone);
   $('#sessionHours').val('1');
+  $('#extraControllerField').prop('hidden', !isConsole);
+  $('#extraController').prop('checked', false);
+  $('#bookingCostBreakdown').prop('hidden', !isConsole);
+  $('#bookingDescription').text(isConsole ? 'Elige duración y, si lo necesitas, añade un segundo mando.' : 'Selecciona el tiempo y revisa el importe.');
+  $('#bookingHoldNotice span').text(isConsole ? 'Tu consola está apartada durante un minuto. Completa la reserva antes de que termine.' : 'Tu equipo está apartado durante un minuto. Completa la reserva antes de que termine.');
   setFieldError('customerName', 'customerNameError', '');
   setFieldError('customerPhone', 'customerPhoneError', '');
   updateBookingTotal();
   showBookingStep('booking');
   updateBookingCountdown();
-  saveMachineStates();
-  renderMachines();
-  showView('computadoras');
+  saveSelectedResource();
+  showView(isConsole ? 'consolas' : 'computadoras');
   openModal('#bookingModal');
 }
+function openBooking(machineId) { prepareResourceBooking(getMachine(machineId), 'pc'); }
+function openConsoleBooking(consoleId) { prepareResourceBooking(getConsole(consoleId), 'console'); }
 function updateBookingTotal() {
   const hours = Number($('#sessionHours').val() || 1);
-  const amount = state.selectedMachine ? state.selectedMachine.price * hours : 0;
+  const base = state.selectedMachine ? state.selectedMachine.price * hours : 0;
+  const controllerFee = state.selectedResourceType === 'console' && $('#extraController').is(':checked') ? Number(state.selectedMachine?.extraControllerFee || 6) : 0;
+  const amount = base + controllerFee;
+  $('#bookingBaseAmount').text(money(base));
+  $('#bookingControllerAmount').text(money(controllerFee));
   $('#bookingTotal').text(money(amount));
   return amount;
 }
@@ -580,9 +682,11 @@ function startPaymentStep() {
     return;
   }
   const hours = Number($('#sessionHours').val());
-  state.booking = { name: $('#customerName').val().trim(), phone: $('#customerPhone').val(), hours, total: updateBookingTotal() };
-  $('#paymentMachine').text(`Estación #${pad(state.selectedMachine.id)} · ${state.selectedMachine.label}`);
-  $('#paymentSummary').text(`${hours} ${hours === 1 ? 'hora' : 'horas'} · la sesión comienza al confirmar`);
+  const isConsole = state.selectedResourceType === 'console';
+  const hasExtraController = isConsole && $('#extraController').is(':checked');
+  state.booking = { kind: state.selectedResourceType, name: $('#customerName').val().trim(), phone: $('#customerPhone').val(), hours, hasExtraController, controllerFee: hasExtraController ? Number(state.selectedMachine.extraControllerFee || 6) : 0, total: updateBookingTotal() };
+  $('#paymentMachine').text(isConsole ? `PlayStation 5 · Consola #${state.selectedMachine.id - 100}` : `Estación #${pad(state.selectedMachine.id)} · ${state.selectedMachine.label}`);
+  $('#paymentSummary').text(`${hours} ${hours === 1 ? 'hora' : 'horas'}${hasExtraController ? ' · incluye segundo mando (+ Bs 6)' : ''} · la sesión comienza al confirmar`);
   $('#paymentTotal').text(money(state.booking.total));
   showBookingStep('payment');
   updatePaymentState();
@@ -597,17 +701,20 @@ function confirmSessionPayment() {
   if (Number(user.balance) < state.booking.total) { updatePaymentState(); return; }
   user.balance = Number(user.balance) - state.booking.total;
   user.history = Array.isArray(user.history) ? user.history : [];
-  const session = { type: 'Sesión', machine: machine.id, hours: state.booking.hours, amount: -state.booking.total, date: new Date().toISOString() };
+  const isConsole = state.selectedResourceType === 'console';
+  const resourceName = isConsole ? `PlayStation 5 · Consola #${machine.id - 100}` : `Estación #${pad(machine.id)} · ${machine.label}`;
+  const session = { type: isConsole ? 'Sesión PlayStation' : 'Sesión PC', resource: isConsole ? 'console' : 'pc', machine: machine.id, hours: state.booking.hours, extraController: Boolean(state.booking.hasExtraController), controllerFee: Number(state.booking.controllerFee || 0), amount: -state.booking.total, date: new Date().toISOString() };
   user.history.push(session);
   saveActiveUser();
   machine.available = false;
   machine.reservationExpiresAt = null;
   machine.sessionStartedAt = Date.now();
   machine.sessionEndsAt = Date.now() + state.booking.hours * 3600000;
-  if (state.networkState !== 'online') queueLocalAction('sesion-local', session);
-  saveMachineStates();
-  renderMachines();
-  const message = `${state.booking.name}, se asignó la estación #${pad(machine.id)} durante ${state.booking.hours} ${state.booking.hours === 1 ? 'hora' : 'horas'}. Se descontaron ${money(state.booking.total)}. Saldo restante: ${money(user.balance)}.`;
+  if (state.networkState !== 'online') queueLocalAction(isConsole ? 'sesion-playstation-local' : 'sesion-pc-local', session);
+  if (isConsole) { saveConsoleStates(); renderConsoles(); }
+  else { saveMachineStates(); renderMachines(); }
+  const extra = isConsole && state.booking.hasExtraController ? ' Se añadió un segundo mando por Bs 6.' : '';
+  const message = `${state.booking.name}, se asignó ${resourceName} durante ${state.booking.hours} ${state.booking.hours === 1 ? 'hora' : 'horas'}.${extra} Se descontaron ${money(state.booking.total)}. Saldo restante: ${money(user.balance)}.`;
   $('#successText').text(message);
   $('#syncNote').text(state.networkState === 'online'
     ? 'El pago es simulado y quedó guardado localmente en este navegador.'
@@ -619,6 +726,7 @@ function closeBooking(release = true) {
   if (release) releaseReservation(false);
   closeModal('#bookingModal');
   state.selectedMachine = null;
+  state.selectedResourceType = null;
   state.booking = null;
 }
 
@@ -652,14 +760,14 @@ function tickSessions() {
   let changed = false;
   const expiredReservations = [];
   const finishedSessions = [];
-  state.machines.forEach(machine => {
+  [...state.machines, ...state.consoles].forEach(machine => {
     if (machine.reservationExpiresAt) {
       const remaining = machine.reservationExpiresAt - now;
       if (remaining <= 0) {
         machine.reservationExpiresAt = null;
         machine.available = true;
         machine.sessionStartedAt = null;
-        expiredReservations.push(machine.id);
+        expiredReservations.push({ id: machine.id, kind: machine.kind || 'pc' });
         changed = true;
       } else {
         $(`[data-hold-timer="${machine.id}"]`).text(formatHold(remaining));
@@ -672,7 +780,7 @@ function tickSessions() {
         machine.available = true;
         machine.sessionEndsAt = null;
         machine.sessionStartedAt = null;
-        finishedSessions.push(machine.id);
+        finishedSessions.push({ id: machine.id, kind: machine.kind || 'pc' });
         changed = true;
       } else $(`[data-session-timer="${machine.id}"]`).text(formatClock(remaining));
     } else if (!machine.available && !machine.reservationExpiresAt && machine.sessionStartedAt) {
@@ -681,17 +789,20 @@ function tickSessions() {
     }
   });
   if (expiredReservations.length) {
-    expiredReservations.forEach(id => {
-      if (state.selectedMachine?.id === id) {
+    expiredReservations.forEach(item => {
+      const isSelected = state.selectedMachine?.id === item.id && state.selectedResourceType === item.kind;
+      if (isSelected) {
         state.selectedMachine = null;
+        state.selectedResourceType = null;
         state.booking = null;
         closeModal('#bookingModal');
-        showToast(`La reserva de la estación #${pad(id)} venció y fue liberada.`, 'error');
-      } else showToast(`La reserva temporal de la estación #${pad(id)} venció.`);
+      }
+      const label = item.kind === 'console' ? `PlayStation #${item.id - 100}` : `estación #${pad(item.id)}`;
+      showToast(`La reserva de ${label} venció y quedó libre.`, 'error');
     });
   }
-  if (changed) { saveMachineStates(); renderMachines(); }
-  finishedSessions.forEach(id => showToast(`Terminó la sesión de la estación #${pad(id)}. Ya está disponible.`));
+  if (changed) { saveMachineStates(); saveConsoleStates(); renderMachines(); renderConsoles(); }
+  finishedSessions.forEach(item => showToast(`Terminó la sesión de ${item.kind === 'console' ? `PlayStation #${item.id - 100}` : `estación #${pad(item.id)}`}. Ya está disponible.`));
 }
 function startSessionTicker() {
   if (state.sessionTimer !== null) window.clearInterval(state.sessionTimer);
@@ -741,40 +852,15 @@ async function refreshNetworkStatus(initial = false) {
   paintNetwork(connected ? 'online' : 'offline');
 }
 
-/* Instalación PWA. En navegadores sin beforeinstallprompt se explican los pasos. */
-let deferredInstallPrompt = null;
+/* PWA: manifest e instalación del Service Worker. La instalación se gestiona desde el navegador, sin botón propio. */
 function setupPWA() {
-  const installButton = document.getElementById('installAppButton');
-  if (installButton) installButton.hidden = false;
-  if ('serviceWorker' in navigator) {
-    const registerWorker = () => navigator.serviceWorker.register('./sw.js', { scope: './' }).then(registration => {
-      registration.update().catch(() => {});
-      console.info('Service Worker LevelUp registrado:', registration.scope);
-    }).catch(error => console.error('No se pudo registrar el Service Worker:', error));
-    if (document.readyState === 'complete') registerWorker();
-    else window.addEventListener('load', registerWorker, { once: true });
-  }
-  window.addEventListener('beforeinstallprompt', event => {
-    event.preventDefault();
-    deferredInstallPrompt = event;
-    if (installButton) installButton.textContent = '＋ Instalar app';
-  });
-  window.addEventListener('appinstalled', () => {
-    deferredInstallPrompt = null;
-    if (installButton) installButton.textContent = '✓ Instalada';
-    showToast('LevelUp quedó instalada en este dispositivo.');
-  });
-}
-async function requestInstall() {
-  if (deferredInstallPrompt) {
-    deferredInstallPrompt.prompt();
-    const choice = await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
-    if (choice?.outcome === 'accepted') showToast('Se aceptó la instalación de LevelUp.');
-    else showToast('La instalación no se completó. Puedes intentarlo desde el menú del navegador.');
-    return;
-  }
-  showToast('Para instalar: abre el menú del navegador y elige «Instalar aplicación» o «Añadir a pantalla de inicio». En iPhone: Compartir → Añadir a pantalla de inicio.');
+  if (!('serviceWorker' in navigator)) return;
+  const registerWorker = () => navigator.serviceWorker.register('./sw.js', { scope: './' }).then(registration => {
+    registration.update().catch(() => {});
+    console.info('Service Worker LevelUp registrado:', registration.scope);
+  }).catch(error => console.error('No se pudo registrar el Service Worker:', error));
+  if (document.readyState === 'complete') registerWorker();
+  else window.addEventListener('load', registerWorker, { once: true });
 }
 
 /* Contacto: valida y prepara un WhatsApp real; no simula envío a una API. */
@@ -813,7 +899,7 @@ function markHydrated() {
 }
 function bindLevelUpEvents() {
   /* Limpieza previa: evita duplicar escuchadores si se ejecuta una segunda hidratación. */
-  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupInstall .levelupAccordion .levelupValidation');
+  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupAccordion .levelupValidation');
   $(window).off('.levelupRuntime .levelupCarousel');
 
   $document.on('click.levelupNavigation', '[data-view-target]', function (event) {
@@ -835,12 +921,17 @@ function bindLevelUpEvents() {
     setQuickFilter(this.dataset.filter);
   });
   $document.on('input.levelupFilters', '#searchPC', () => applyMachineFilters(true));
-  $document.on('change.levelupFilters', '#filterCategory', updateCpuOptions);
+  $document.on('change.levelupFilters', '#filterCategory', function () {
+    state.currentFilter = 'all';
+    updateQuickFilterButtons('all');
+    updateCpuOptions();
+  });
   $document.on('change.levelupFilters', '#filterCPU', updateGpuOptions);
   $document.on('change.levelupFilters', '#filterGPU', () => applyMachineFilters(true));
   $document.on('click.levelupCatalog', '#pcScrollPrev', () => scrollCarousel(-1));
   $document.on('click.levelupCatalog', '#pcScrollNext', () => scrollCarousel(1));
   $document.on('click.levelupCatalog', '[data-select-machine]', function () { openBooking(Number(this.dataset.selectMachine)); });
+  $document.on('click.levelupConsoles', '[data-select-console]', function () { openConsoleBooking(Number(this.dataset.selectConsole)); });
   $document.on('click.levelupCatalog', '#retryCatalogButton', initializeCatalog);
   const carousel = document.getElementById('pcCarousel');
   if (carousel) $(carousel).off('scroll.levelupCarousel').on('scroll.levelupCarousel', updateCarouselPosition);
@@ -901,7 +992,6 @@ function bindLevelUpEvents() {
     showToast('Sesión cerrada.');
   });
   $document.on('click.levelupAccount', '#openRechargeButton', openRecharge);
-  $document.on('click.levelupInstall', '#installAppButton', requestInstall);
 
   /* Recarga simulada. */
   $document.on('click.levelupAccount', '[data-recharge-amount]', function () {
@@ -921,12 +1011,14 @@ function bindLevelUpEvents() {
   /* Reserva, pago y cancelación. */
   $document.on('submit.levelupBooking', '#bookingForm', function (event) { event.preventDefault(); startPaymentStep(); });
   $document.on('change.levelupBooking', '#sessionHours', updateBookingTotal);
+  $document.on('change.levelupBooking', '#extraController', updateBookingTotal);
   $document.on('click.levelupBooking', '#confirmPayment', confirmSessionPayment);
   $document.on('click.levelupBooking', '#rechargeFromPayment', openRecharge);
   $document.on('click.levelupBooking', '#backToBooking', () => showBookingStep('booking'));
   $document.on('click.levelupBooking', '#cancelBooking, #cancelBookingPayment, #closeBooking', () => closeBooking(true));
   $document.on('click.levelupBooking', '#finishBooking', function () {
     state.selectedMachine = null;
+    state.selectedResourceType = null;
     state.booking = null;
     closeModal('#bookingModal');
     showView('cuenta');
@@ -986,12 +1078,24 @@ function bindLevelUpEvents() {
   });
   $document.on('submit.levelupContact', '#contactForm', function (event) { event.preventDefault(); sendContactMessage(); });
 }
-function setQuickFilter(filter) {
-  state.currentFilter = filter;
+function updateQuickFilterButtons(filter) {
   $('[data-filter]').each(function () {
     const active = this.dataset.filter === filter;
     $(this).toggleClass('active', active).attr('aria-pressed', String(active));
   });
+}
+function setQuickFilter(filter) {
+  state.currentFilter = filter;
+  updateQuickFilterButtons(filter);
+  // Los chips rápidos y los selectores dependientes no deben contradecirse.
+  if (['basic', 'standard', 'premium'].includes(filter)) {
+    $('#filterCategory').val(filter);
+    updateCpuOptions();
+    return;
+  }
+  $('#filterCategory').val('');
+  fillSelect('filterCPU', 'Primero elige categoría', [], true);
+  fillSelect('filterGPU', 'Primero elige procesador', [], true);
   applyMachineFilters(true);
 }
 function scrollCarousel(direction) {
@@ -1001,11 +1105,19 @@ function scrollCarousel(direction) {
   carousel.scrollBy({ left: amount * direction, behavior: 'smooth' });
 }
 function continuePendingBooking() {
-  if (state.pendingMachineId === null) return;
-  const id = state.pendingMachineId;
-  state.pendingMachineId = null;
-  showView('computadoras');
-  window.setTimeout(() => openBooking(id), 80);
+  if (state.pendingMachineId !== null) {
+    const id = state.pendingMachineId;
+    state.pendingMachineId = null;
+    showView('computadoras');
+    window.setTimeout(() => openBooking(id), 80);
+    return;
+  }
+  if (state.pendingConsoleId !== null) {
+    const id = state.pendingConsoleId;
+    state.pendingConsoleId = null;
+    showView('consolas');
+    window.setTimeout(() => openConsoleBooking(id), 80);
+  }
 }
 function hydrateLevelUp() {
   const shell = document.getElementById('appShell');

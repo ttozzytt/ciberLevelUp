@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v9-personal-architecture';
+const CACHE_NAME = 'levelup-cibercafe-v11-pc-ps5-tarifas';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,9 +11,13 @@ const APP_SHELL = [
   './pwa.js',
   './manifest.json',
   './data/computadoras.json',
+  './data/consolas.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './imagenes/pc-gamer.webp',
+  './imagenes/pc-basica.webp',
+  './imagenes/pc-estandar.webp',
+  './imagenes/pc-premium.webp',
   './imagenes/playstation.webp'
 ];
 
@@ -68,7 +72,7 @@ self.addEventListener('fetch', event => {
   }
 
   // JSON: red primero para recibir datos recientes y caché como respaldo offline.
-  if (url.pathname.endsWith('/data/computadoras.json')) {
+  if (url.pathname.endsWith('/data/computadoras.json') || url.pathname.endsWith('/data/consolas.json')) {
     event.respondWith(
       fetch(request).then(response => {
         if (response && response.ok) {

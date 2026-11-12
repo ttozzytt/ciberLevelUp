@@ -25,6 +25,7 @@
       <nav class="nav-list">
         <button class="nav-item active" id="navInicio" type="button" data-view-target="inicio" data-hidratado="false" disabled><span class="nav-icon">⌂</span>Inicio</button>
         <button class="nav-item" id="navComputadoras" type="button" data-view-target="computadoras" data-hidratado="false" disabled><span class="nav-icon">▣</span>Computadoras</button>
+        <button class="nav-item" id="navConsolas" type="button" data-view-target="consolas" data-hidratado="false" disabled><span class="nav-icon">🎮</span>PlayStation</button>
         <button class="nav-item" id="navCuenta" type="button" data-view-target="cuenta" data-hidratado="false" disabled><span class="nav-icon">◉</span>Mi cuenta</button>
         <button class="nav-item" id="navServicios" type="button" data-view-target="servicios" data-hidratado="false" disabled><span class="nav-icon">✦</span>Servicios</button>
         <button class="nav-item" id="navContacto" type="button" data-view-target="contacto" data-hidratado="false" disabled><span class="nav-icon">✉</span>Contacto</button>
@@ -42,12 +43,12 @@
         <div class="breadcrumb"><span>MI ESPACIO</span><b>/</b><strong id="pageName">Inicio</strong></div>
         <div class="top-actions">
           <span class="network-status" id="networkStatus" data-state="checking"><span class="status-dot"></span><span id="networkStatusText">Comprobando…</span></span>
-          <button class="secondary-btn top-action-btn" id="installAppButton" type="button" data-hidratado="false" disabled hidden>＋ Instalar</button>
           <button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-label="Abrir menú" aria-expanded="false" data-hidratado="false" disabled>☰</button>
         </div>
         <nav class="mobile-menu" id="mobileMenu" aria-label="Navegación móvil">
           <button class="nav-item active" type="button" data-view-target="inicio" data-close-mobile="true" data-hidratado="false" disabled>⌂ Inicio</button>
           <button class="nav-item" type="button" data-view-target="computadoras" data-close-mobile="true" data-hidratado="false" disabled>▣ Computadoras</button>
+          <button class="nav-item" type="button" data-view-target="consolas" data-close-mobile="true" data-hidratado="false" disabled>🎮 PlayStation</button>
           <button class="nav-item" type="button" data-view-target="cuenta" data-close-mobile="true" data-hidratado="false" disabled>◉ Mi cuenta</button>
           <button class="nav-item" type="button" data-view-target="servicios" data-close-mobile="true" data-hidratado="false" disabled>✦ Servicios</button>
           <button class="nav-item" type="button" data-view-target="contacto" data-close-mobile="true" data-hidratado="false" disabled>✉ Contacto</button>
@@ -89,28 +90,29 @@
           </section>
 
           <section class="home-lower">
-            <article class="panel home-feature"><span class="feature-icon">⚡</span><div><strong>Encuentra tu equipo</strong><p>Compara las categorías Estándar, Pro y VIP. Los detalles y la disponibilidad están en su propio apartado.</p><button class="text-btn" type="button" data-view-target="computadoras" data-hidratado="false" disabled>Ver catálogo <span>→</span></button></div></article>
+            <article class="panel home-feature"><span class="feature-icon">⚡</span><div><strong>Encuentra tu equipo</strong><p>Compara Básica, Estándar y Premium; o visita la zona PlayStation. Los detalles y la disponibilidad están en sus apartados.</p><button class="text-btn" type="button" data-view-target="computadoras" data-hidratado="false" disabled>Ver catálogo <span>→</span></button></div></article>
             <article class="panel home-feature"><span class="feature-icon">◉</span><div><strong>Tu cuenta y tu saldo</strong><p>Registra un número, consulta tu saldo de demostración y revisa la actividad guardada en este navegador.</p><button class="text-btn" type="button" data-view-target="cuenta" data-hidratado="false" disabled>Ir a mi cuenta <span>→</span></button></div></article>
+            <article class="panel home-feature"><span class="feature-icon">🎮</span><div><strong>Zona PlayStation</strong><p>Cuatro consolas PS5, un mando incluido por consola y opción de sumar otro por Bs 6.</p><button class="text-btn" type="button" data-view-target="consolas" data-hidratado="false" disabled>Ver consolas <span>→</span></button></div></article>
           </section>
         </section>
 
         <!-- COMPUTADORAS: el catálogo solo se crea al entrar a esta vista. -->
         <section class="view" id="view-computadoras" aria-labelledby="computersTitle" aria-hidden="true">
-          <div class="view-heading"><div><p class="eyebrow">CATÁLOGO DE ESTACIONES</p><h1 id="computersTitle">Encuentra tu <span style="color:var(--cyan)">computadora.</span></h1><p>Compara especificaciones, precio por hora y disponibilidad antes de elegir.</p></div><div class="view-count"><span id="resultCount">15</span><small> EQUIPOS</small></div></div>
+          <div class="view-heading"><div><p class="eyebrow">CATÁLOGO DE ESTACIONES</p><h1 id="computersTitle">Encuentra tu <span style="color:var(--cyan)">computadora.</span></h1><p>Compara las tres gamas: Básica, Estándar y Premium. Cada una tiene equipo y asiento diferentes.</p></div><div class="view-count"><span id="resultCount">15</span><small> EQUIPOS</small></div></div>
           <section class="panel catalog-panel" aria-label="Catálogo de computadoras LevelUp">
             <div class="catalog-toolbar">
-              <div class="catalog-heading"><h2>Estaciones LevelUp</h2><p>Desliza para explorar el catálogo completo.</p></div>
+              <div class="catalog-heading"><h2>Estaciones PC LevelUp</h2><p>Desliza para comparar las 15 estaciones por precio, hardware y comodidad.</p></div>
               <div class="filter-chips" role="group" aria-label="Filtro rápido de equipos">
                 <button class="filter-chip active" type="button" data-filter="all" aria-pressed="true" data-hidratado="false" disabled>Todas</button>
                 <button class="filter-chip" type="button" data-filter="available" aria-pressed="false" data-hidratado="false" disabled>Disponibles</button>
                 <button class="filter-chip" type="button" data-filter="occupied" aria-pressed="false" data-hidratado="false" disabled>Ocupadas</button>
-                <button class="filter-chip" type="button" data-filter="standard" aria-pressed="false" data-hidratado="false" disabled>Estándar</button>
-                <button class="filter-chip" type="button" data-filter="pro" aria-pressed="false" data-hidratado="false" disabled>Pro</button>
-                <button class="filter-chip" type="button" data-filter="vip" aria-pressed="false" data-hidratado="false" disabled>VIP</button>
+                <button class="filter-chip" type="button" data-filter="basic" aria-pressed="false" data-hidratado="false" disabled>Básica · Bs 3</button>
+                <button class="filter-chip" type="button" data-filter="standard" aria-pressed="false" data-hidratado="false" disabled>Estándar · Bs 6</button>
+                <button class="filter-chip" type="button" data-filter="premium" aria-pressed="false" data-hidratado="false" disabled>Premium · Bs 10</button>
               </div>
             </div>
             <div class="search-filter-row">
-              <label class="search-wrap"><span aria-hidden="true">⌕</span><input id="searchPC" class="search-input" type="search" placeholder="Buscar PC, procesador o gráfica…" aria-label="Buscar computadoras" data-hidratado="false" disabled></label>
+              <label class="search-wrap"><span aria-hidden="true">⌕</span><input id="searchPC" class="search-input" type="search" placeholder="Buscar estación, procesador o gráfica…" aria-label="Buscar computadoras" data-hidratado="false" disabled></label>
               <label class="form-field"><span class="side-caption">CATEGORÍA</span><select id="filterCategory" class="field-control" data-hidratado="false" disabled><option value="">Todas</option></select></label>
               <label class="form-field"><span class="side-caption">PROCESADOR</span><select id="filterCPU" class="field-control" data-hidratado="false" disabled><option value="">Primero elige categoría</option></select></label>
               <label class="form-field"><span class="side-caption">GRÁFICA</span><select id="filterGPU" class="field-control" data-hidratado="false" disabled><option value="">Primero elige procesador</option></select></label>
@@ -119,8 +121,20 @@
             <div class="pc-carousel" id="pcCarousel" tabindex="0" aria-label="Carrusel horizontal de computadoras"><div class="pc-track" id="pcGrid"><div class="catalog-state"><strong>Preparando catálogo…</strong>Las estaciones aparecerán aquí.</div></div></div>
             <div class="catalog-empty" id="emptyState" hidden><strong>No encontramos equipos</strong>Prueba con otro término o cambia los filtros.</div>
             <div class="catalog-state catalog-state-error" id="catalogError" hidden><strong>No se pudo cargar el catálogo.</strong><span id="catalogErrorText"></span><button class="secondary-btn" id="retryCatalogButton" type="button" data-hidratado="false" disabled>Reintentar carga</button></div>
-            <div class="catalog-foot"><span>Catálogo de 15 estaciones · Imagen representativa del gabinete gamer</span><div class="catalog-progress"><span id="carouselProgress"></span></div></div>
+            <div class="catalog-foot"><span>15 estaciones · Las fotos ilustran cada categoría; las especificaciones se detallan en cada tarjeta.</span><div class="catalog-progress"><span id="carouselProgress"></span></div></div>
           </section>
+        </section>
+
+        <!-- CONSOLAS: cuatro PlayStation 5, con un mando incluido y otro opcional. -->
+        <section class="view" id="view-consolas" aria-labelledby="consolesTitle" aria-hidden="true">
+          <div class="view-heading"><div><p class="eyebrow">ZONA CONSOLE GAMING</p><h1 id="consolesTitle">PlayStation <span style="color:var(--cyan)">5.</span></h1><p>4 PlayStation 5 disponibles. Cada consola incluye 1 mando DualSense; puedes agregar un segundo por Bs 6 por sesión.</p></div><div class="view-count"><span id="consoleCount">4</span><small> CONSOLAS</small></div></div>
+          <section class="console-rate-strip panel" aria-label="Tarifas de PlayStation">
+            <div><span class="console-rate-icon">🎮</span><div><strong>Bs 8 <small>/ hora</small></strong><span>Tarifa sugerida por consola</span></div></div>
+            <div><span class="console-rate-icon">①</span><div><strong>1 mando incluido</strong><span>DualSense por consola</span></div></div>
+            <div><span class="console-rate-icon">＋</span><div><strong>Bs 6 extra</strong><span>Segundo mando · pago único por sesión</span></div></div>
+          </section>
+          <div class="console-grid" id="consoleGrid" aria-live="polite"><div class="catalog-state"><strong>Preparando las consolas…</strong>Las PS5 aparecerán aquí.</div></div>
+          <p class="console-seat-note">La zona PlayStation cuenta con sofá gamer para jugar con más comodidad. Cada PS5 tiene su propio estado, reserva y temporizador.</p>
         </section>
 
         <!-- CUENTA: registro, acceso, saldo e historial. -->
@@ -156,29 +170,34 @@
         <section class="view" id="view-servicios" aria-labelledby="servicesTitle" aria-hidden="true">
           <div class="view-heading"><div><p class="eyebrow">ELIGE SEGÚN TU PARTIDA</p><h1 id="servicesTitle">Servicios y <span style="color:var(--cyan)">tarifas.</span></h1><p>Consulta las categorías y cómo funciona una sesión antes de reservar.</p></div></div>
           <div class="price-grid">
-            <article class="price-card"><small>GAMING ESENCIAL</small><h3>Estándar</h3><p>Para navegación, estudio y juegos ligeros.</p><strong>Bs 8 <span>/ hora</span></strong></article>
-            <article class="price-card featured"><small>RENDIMIENTO PRO</small><h3>Pro</h3><p>Para jugar con más fluidez y mejores gráficos.</p><strong>Bs 12 <span>/ hora</span></strong></article>
-            <article class="price-card"><small>EXPERIENCIA ELITE</small><h3>VIP</h3><p>Equipos de mayor rendimiento y monitores rápidos.</p><strong>Bs 20 <span>/ hora</span></strong></article>
+            <article class="price-card"><small>GAMING DE ENTRADA</small><h3>Básica</h3><p>Intel Core i3-10100 (4 núcleos / 8 hilos) · GTX 1050 Ti 4 GB · 8 GB DDR4 · SSD 480 GB. Silla estándar acolchada.</p><strong>Bs 3 <span>/ hora</span></strong></article>
+            <article class="price-card featured"><small>MEJOR EQUILIBRIO</small><h3>Estándar</h3><p>AMD Ryzen 5 5600 (6 núcleos / 12 hilos) · RTX 3050 8 GB · 16 GB DDR4 · NVMe 512 GB. Silla ergonómica con apoyo lumbar.</p><strong>Bs 6 <span>/ hora</span></strong></article>
+            <article class="price-card"><small>GAMING & STREAMING</small><h3>Premium</h3><p>AMD Ryzen 9 9950X3D2 Dual Edition (16 núcleos / 32 hilos) · RTX 5090 con 32 GB GDDR7 · 32 GB DDR5 · NVMe 2 TB. Dos monitores para juego y streaming, micrófono y silla gamer premium con soporte lumbar y cervical.</p><strong>Bs 10 <span>/ hora</span></strong></article>
+          </div>
+          <div class="price-grid console-price-grid">
+            <article class="price-card console-price-card"><small>ZONA CONSOLE</small><h3>PlayStation 5</h3><p>Cuatro PS5. Incluye un mando DualSense por consola. Segundo mando opcional: Bs 6 por sesión; no se cobra por hora.</p><strong>Bs 8 <span>/ hora · tarifa referencial propuesta</span></strong></article>
           </div>
           <div class="services-layout">
             <section class="panel info-panel"><h3>¿Cómo funciona?</h3>
-              <div class="accordion-item"><button class="accordion-trigger" type="button" data-accordion="step1" aria-expanded="false" data-hidratado="false" disabled>01 · Elige una computadora <span>＋</span></button><div class="accordion-content" id="step1" hidden>Abre Computadoras, utiliza los filtros y revisa la disponibilidad. Solo los equipos libres permiten iniciar una reserva.</div></div>
-              <div class="accordion-item"><button class="accordion-trigger" type="button" data-accordion="step2" aria-expanded="false" data-hidratado="false" disabled>02 · Configura tu sesión <span>＋</span></button><div class="accordion-content" id="step2" hidden>Selecciona la duración. El sistema muestra el importe según la tarifa por hora de la categoría.</div></div>
+              <div class="accordion-item"><button class="accordion-trigger" type="button" data-accordion="step1" aria-expanded="false" data-hidratado="false" disabled>01 · Elige tu experiencia <span>＋</span></button><div class="accordion-content" id="step1" hidden>Entra en Computadoras para elegir una PC o en PlayStation para elegir una de las cuatro consolas. Solo los equipos libres permiten reservar.</div></div>
+              <div class="accordion-item"><button class="accordion-trigger" type="button" data-accordion="step2" aria-expanded="false" data-hidratado="false" disabled>02 · Revisa el puesto <span>＋</span></button><div class="accordion-content" id="step2" hidden>Las sillas varían según la categoría: estándar, ergonómica ajustable o gamer premium. En PS5 dispones de sofá y un mando incluido.</div></div>
               <div class="accordion-item"><button class="accordion-trigger" type="button" data-accordion="step3" aria-expanded="false" data-hidratado="false" disabled>03 · Confirma con tu saldo <span>＋</span></button><div class="accordion-content" id="step3" hidden>La reserva temporal dura 60 segundos. En esta demostración, la sesión comienza al confirmar el pago simulado con el saldo local.</div></div>
-              <div class="accordion-item"><button class="accordion-trigger" type="button" data-accordion="step4" aria-expanded="false" data-hidratado="false" disabled>04 · Controla tu tiempo <span>＋</span></button><div class="accordion-content" id="step4" hidden>La disponibilidad y el tiempo de cada sesión se muestran en el catálogo. Los estados se guardan localmente en el navegador que utiliza esta demostración.</div></div>
+              <div class="accordion-item"><button class="accordion-trigger" type="button" data-accordion="step4" aria-expanded="false" data-hidratado="false" disabled>04 · Extras y tiempo <span>＋</span></button><div class="accordion-content" id="step4" hidden>En PS5 puedes añadir un segundo mando por Bs 6 por sesión. El tiempo y la disponibilidad se muestran en cada tarjeta.</div></div>
             </section>
             <section class="panel info-panel"><h3>Qué debes saber</h3><div class="service-points">
               <div class="service-point"><span class="feature-icon">◷</span><div><strong>Horario de atención</strong><p>Lunes a domingo · 08:00 a 24:00.</p></div></div>
               <div class="service-point"><span class="feature-icon">◎</span><div><strong>Disponibilidad</strong><p>El catálogo muestra estados de ejemplo y cambios guardados en el dispositivo.</p></div></div>
+              <div class="service-point"><span class="feature-icon">▣</span><div><strong>Comodidad según la categoría</strong><p>La comodidad aumenta por categoría: silla estándar acolchada en Básica, silla ergonómica con apoyo lumbar en Estándar y silla gamer premium con soporte lumbar y cervical en Premium. PlayStation dispone de sofá gamer.</p></div></div>
+              <div class="service-point"><span class="feature-icon">🎙</span><div><strong>Streaming en Premium</strong><p>Las estaciones Premium incluyen Ryzen 9 9950X3D2 Dual Edition, RTX 5090 de 32 GB, 32 GB de RAM, dos monitores y micrófono para jugar y transmitir.</p></div></div>
               <div class="service-point"><span class="feature-icon">▣</span><div><strong>Pagos de demostración</strong><p>El saldo y las recargas son simulados. No se conecta con bancos ni pasarelas de pago.</p></div></div>
             </div><button class="primary-btn" style="margin-top:15px" type="button" data-view-target="computadoras" data-hidratado="false" disabled>Ver computadoras →</button></section>
           </div>
           <section class="panel occupancy-panel" aria-labelledby="occupancyTitle">
             <div class="panel-heading"><span class="feature-icon">▥</span><div><h2 id="occupancyTitle">Ocupación por categoría</h2><p>Resumen visual de estaciones libres y en uso, actualizado desde el catálogo.</p></div><strong class="occupancy-total" id="occupancySummary">15 equipos</strong></div>
             <div class="occupancy-chart" id="occupancyChart" aria-live="polite">
+              <div class="occupancy-row"><div class="occupancy-row-head"><strong>Básica</strong><span>Esperando datos…</span></div><div class="occupancy-meter"><span style="width:0%"></span></div></div>
               <div class="occupancy-row"><div class="occupancy-row-head"><strong>Estándar</strong><span>Esperando datos…</span></div><div class="occupancy-meter"><span style="width:0%"></span></div></div>
-              <div class="occupancy-row"><div class="occupancy-row-head"><strong>Pro</strong><span>Esperando datos…</span></div><div class="occupancy-meter"><span style="width:0%"></span></div></div>
-              <div class="occupancy-row"><div class="occupancy-row-head"><strong>VIP</strong><span>Esperando datos…</span></div><div class="occupancy-meter"><span style="width:0%"></span></div></div>
+              <div class="occupancy-row"><div class="occupancy-row-head"><strong>Premium</strong><span>Esperando datos…</span></div><div class="occupancy-meter"><span style="width:0%"></span></div></div>
             </div>
             <p class="occupancy-note">El gráfico muestra cantidades generales; para consultar un equipo concreto entra en Computadoras.</p>
           </section>
@@ -213,6 +232,7 @@
   <nav class="bottom-nav" id="bottomNav" aria-label="Navegación inferior">
     <button class="bottom-item active" type="button" data-view-target="inicio" data-hidratado="false" disabled><span>⌂</span>Inicio</button>
     <button class="bottom-item" type="button" data-view-target="computadoras" data-hidratado="false" disabled><span>▣</span>Equipos</button>
+    <button class="bottom-item" type="button" data-view-target="consolas" data-hidratado="false" disabled><span>🎮</span>PS5</button>
     <button class="bottom-item" type="button" data-view-target="cuenta" data-hidratado="false" disabled><span>◉</span>Cuenta</button>
     <button class="bottom-item" type="button" data-view-target="servicios" data-hidratado="false" disabled><span>✦</span>Servicios</button>
     <button class="bottom-item" type="button" data-view-target="contacto" data-hidratado="false" disabled><span>✉</span>Contacto</button>
@@ -222,7 +242,7 @@
   <div class="modal-backdrop" id="bookingModal" role="presentation" aria-hidden="true">
     <section class="modal" role="dialog" aria-modal="true" aria-labelledby="bookingTitle">
       <div class="modal-head"><div><h2 id="bookingTitle">Configura tu sesión</h2><p id="bookingDescription">Selecciona el tiempo y revisa el importe.</p></div><button class="icon-btn" id="closeBooking" type="button" aria-label="Cerrar reserva" data-hidratado="false" disabled>×</button></div>
-      <div class="hold-notice" id="bookingHoldNotice"><span>Tu equipo está apartado durante un minuto. Completa la reserva antes de que termine.</span><strong id="bookingCountdown">01:00</strong></div>
+      <div class="hold-notice" id="bookingHoldNotice"><span>Tu puesto está apartado durante un minuto. Completa la reserva antes de que termine.</span><strong id="bookingCountdown">01:00</strong></div>
       <div id="bookingStep">
         <div class="booking-machine"><div><strong id="selectedMachineName">PC #01</strong><small id="selectedMachineSpecs">Categoría y especificaciones</small></div><span class="booking-rate" id="selectedMachineRate">Bs 8/h</span></div>
         <form id="bookingForm" class="account-form" novalidate>
@@ -230,8 +250,10 @@
             <div class="form-field" id="fieldBookingName"><label for="customerName">Nombre completo</label><input id="customerName" type="text" autocomplete="name" maxlength="60" placeholder="Nombre y apellido" data-hidratado="false" disabled><small id="customerNameError"></small></div>
             <div class="form-field" id="fieldBookingPhone"><label for="customerPhone">Celular</label><input id="customerPhone" type="tel" inputmode="numeric" maxlength="8" placeholder="8 dígitos" data-hidratado="false" disabled><small id="customerPhoneError"></small></div>
             <div class="form-field full"><label for="sessionHours">Duración</label><select id="sessionHours" class="field-control" data-hidratado="false" disabled><option value="1">1 hora</option><option value="2">2 horas</option><option value="3">3 horas</option><option value="5">5 horas</option><option value="8">8 horas</option></select></div>
+            <label class="console-extra-option form-field full" id="extraControllerField" hidden><span class="controller-option"><input id="extraController" type="checkbox" data-hidratado="false" disabled><span><strong>Agregar segundo mando</strong><small>Un mando incluido · segundo mando por Bs 6 adicionales, una sola vez por sesión.</small></span><b>+ Bs 6</b></span></label>
           </div>
-          <div class="total-card"><span>Total de la sesión</span><strong id="bookingTotal">Bs 8</strong></div>
+          <div class="booking-cost-breakdown" id="bookingCostBreakdown" hidden><span>Tiempo de juego <b id="bookingBaseAmount">Bs 8</b></span><span>Segundo mando <b id="bookingControllerAmount">Bs 0</b></span></div>
+          <div class="total-card"><span>Total de la sesión</span><strong id="bookingTotal">Bs 3</strong></div>
           <div class="modal-actions"><button class="secondary-btn" id="cancelBooking" type="button" data-hidratado="false" disabled>Cancelar</button><button class="primary-btn" type="submit" data-hidratado="false" disabled>Continuar al pago →</button></div>
         </form>
       </div>
