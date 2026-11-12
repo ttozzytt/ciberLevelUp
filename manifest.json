@@ -1,13 +1,14 @@
 {
-  "id": "./",
+  "id": "./pwa.html",
   "name": "LevelUp Cibercafé | La Paz",
   "short_name": "LevelUp",
-  "description": "LevelUp Cibercafé: catálogo de computadoras gamer, disponibilidad, reservas y cuenta de usuario.",
-  "start_url": "./index.html",
+  "description": "Aplicación de LevelUp Cibercafé para consultar estaciones, servicios y reservar sesiones de demostración.",
+  "start_url": "./pwa.html#inicio",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#090b18",
-  "theme_color": "#090b18",
+  "background_color": "#0b0c16",
+  "theme_color": "#0b0c16",
+  "orientation": "any",
   "icons": [
     {
       "src": "./icons/icon-192.png",
@@ -30,6 +31,5 @@
   "categories": [
     "games",
     "entertainment"
-  ],
-  "orientation": "any"
+  ]
 }

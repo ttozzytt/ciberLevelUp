@@ -1,7 +1,12 @@
-const CACHE_NAME = 'levelup-cibercafe-v5';
+'use strict';
+
+const CACHE_NAME = 'levelup-cibercafe-v8-sectioned-app';
 const APP_SHELL = [
   './',
   './index.html',
+  './pwa.html',
+  './styles.css',
+  './app.js',
   './manifest.json',
   './data/computadoras.json',
   './icons/icon-192.png',
@@ -31,10 +36,17 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
+
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // HTML: intenta red primero y recurre a la copia local cuando no hay conexión.
+  // El health-check debe salir a la red: nunca se responde desde Cache Storage.
+  if (url.searchParams.has('__levelup_health')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Navegación: primero intenta la versión publicada; si falla, usa la copia local.
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).then(response => {
@@ -43,12 +55,31 @@ self.addEventListener('fetch', event => {
           caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
         }
         return response;
-      }).catch(async () => (await caches.match(request)) || (await caches.match('./index.html')))
+      }).catch(async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        const path = url.pathname.endsWith('/pwa.html') ? './pwa.html' : './index.html';
+        return (await caches.match(path)) || Response.error();
+      })
     );
     return;
   }
 
-  // JSON, iconos e imágenes: caché primero para que el catálogo funcione sin conexión.
+  // JSON: red primero para recibir datos recientes y caché como respaldo offline.
+  if (url.pathname.endsWith('/data/computadoras.json')) {
+    event.respondWith(
+      fetch(request).then(response => {
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+        }
+        return response;
+      }).catch(async () => (await caches.match(request)) || (await caches.match('./data/computadoras.json')) || Response.error())
+    );
+    return;
+  }
+
+  // CSS, JavaScript, iconos e imágenes: caché primero para mantener la interfaz disponible.
   event.respondWith(
     caches.match(request).then(cached => cached || fetch(request).then(response => {
       if (response && response.ok) {
