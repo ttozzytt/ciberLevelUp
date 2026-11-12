@@ -215,20 +215,29 @@ function saveMachineStates() {
 }
 
 async function loadConsoleCatalog() {
-  const catalog = await readCatalogJSON('./data/consolas.json', 'Catálogo PlayStation');
+  const catalog = await readCatalogJSON('./data/consolas.json?v=13', 'Catálogo PlayStation');
   if (!Array.isArray(catalog) || catalog.length !== 4) throw new Error('consolas.json debe contener exactamente cuatro consolas.');
   const ids = new Set();
   state.consoles = catalog.map(item => {
     const id = Number(item.id);
     if (!Number.isInteger(id) || id < 101 || id > 104 || ids.has(id)) throw new Error(`consolas.json: identificador no válido o repetido (${item.id}).`);
-    if (!Number.isFinite(Number(item.price)) || Number(item.price) !== 15) throw new Error(`consolas.json: la consola ${id - 100} debe tener tarifa de Bs 15 por hora.`);
+    // La tarifa comercial de PlayStation se define aquí y en consolas.json.
+    // Si GitHub Pages o el navegador entrega un JSON antiguo sin precio (o con otra tarifa),
+    // se normaliza a la tarifa vigente en vez de bloquear las cuatro consolas.
+    const suppliedRate = Number(item.price ?? item.hourlyRate ?? item.pricePerHour);
+    if (!Number.isFinite(suppliedRate) || suppliedRate !== 15) {
+      console.warn(`consolas.json: tarifa antigua/incompleta en la consola ${id - 100}; se aplicará Bs 15 por hora.`);
+    }
     ids.add(id);
     return {
       ...item,
       id,
       kind: 'console',
-      price: Number(item.price),
-      extraControllerFee: Number(item.extraControllerFee || 6),
+      price: 15,
+      hourlyRate: 15,
+      priceNote: 'Tarifa LevelUp · Bs 15 por hora',
+      controllersIncluded: 1,
+      extraControllerFee: 6,
       available: Boolean(item.available),
       elapsed: String(item.elapsed || ''),
       image: String(item.image || './imagenes/playstation.webp'),
