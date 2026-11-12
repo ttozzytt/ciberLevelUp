@@ -1,12 +1,14 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v8-sectioned-app';
+const CACHE_NAME = 'levelup-cibercafe-v9-personal-architecture';
 const APP_SHELL = [
   './',
   './index.html',
   './pwa.html',
-  './styles.css',
-  './app.js',
+  './index.css',
+  './pwa.css',
+  './index.js',
+  './pwa.js',
   './manifest.json',
   './data/computadoras.json',
   './icons/icon-192.png',
