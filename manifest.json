@@ -2,7 +2,7 @@
   "id": "./",
   "name": "LevelUp Cibercafé | La Paz",
   "short_name": "LevelUp",
-  "description": "Catálogo de computadoras, sesiones y servicios LevelUp Cibercafé.",
+  "description": "Catálogo de 15 computadoras gamer, disponibilidad y reservas de LevelUp Cibercafé.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

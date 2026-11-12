@@ -78,6 +78,9 @@
     .select-btn{width:100%;padding:8px 9px;border:0;border-radius:8px;color:#fff;background:linear-gradient(100deg,#8739e1,#5e32cd);font-size:9px;font-weight:800;cursor:pointer;transition:.2s}.select-btn:hover{box-shadow:0 0 15px rgba(139,92,246,.4)}.select-btn:disabled{color:#aaa5bd;background:#28263b;cursor:not-allowed;box-shadow:none}
     .usage{padding:7px 8px;border-radius:7px;text-align:center;color:#aaa4c2;background:rgba(255,255,255,.07);font-size:8px;font-weight:700}.usage b{color:#ffbd5d}
     .empty-state{display:none;padding:30px 12px;text-align:center;color:var(--muted);font-size:11px}.empty-state strong{display:block;margin-bottom:5px;color:#eee}
+    .catalog-status{grid-column:1/-1;display:grid;justify-items:center;gap:9px;padding:28px 14px;text-align:center;color:var(--muted);font-size:11px;min-width:260px}
+    .catalog-status strong{color:var(--text);font-size:13px}
+    .catalog-status-error{color:#ff9aab}
     .lower-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:12px}.panel{min-width:0;padding:13px 15px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(120deg,rgba(20,22,48,.94),rgba(13,16,34,.94))}
     .panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.panel h3{margin:0;font-family:Orbitron,sans-serif;font-size:11px}.panel p{margin:7px 0 0;color:var(--muted);font-size:9px;line-height:1.6}
     .toggle-btn{padding:6px 9px;border:1px solid var(--line);border-radius:8px;color:var(--cyan);background:transparent;font-size:9px;font-weight:800;cursor:pointer}.toggle-btn:hover{border-color:var(--cyan)}
@@ -282,10 +285,114 @@
     }
 
 
-    .karaoke-entry{display:flex;align-items:center;gap:16px;padding:18px 20px;margin-top:13px;border:1px solid rgba(0,229,255,.28);border-radius:16px;background:linear-gradient(105deg,rgba(33,17,79,.95),rgba(13,35,57,.95));box-shadow:var(--shadow)}
-    .karaoke-entry-icon{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;border:1px solid rgba(0,229,255,.35);border-radius:13px;background:rgba(0,229,255,.1);font-size:24px}
-    .karaoke-entry-copy{flex:1;min-width:0}.karaoke-entry h2{margin:4px 0 4px;font-family:Orbitron,sans-serif;font-size:clamp(13px,1.5vw,19px)}.karaoke-entry p{margin:0;color:#cbc5e1;font-size:11px;line-height:1.5}
-    @media(max-width:600px){.karaoke-entry{align-items:flex-start;flex-wrap:wrap;padding:14px}.karaoke-entry-copy{flex:1 1 calc(100% - 64px)}.karaoke-entry>.primary-btn{width:100%}.feature-strip{display:flex!important}}
+    /* LEVELUP SHOWROOM: catálogo horizontal, fotografías reales y jerarquía gamer. */
+    .hero{grid-template-columns:minmax(0,1.02fr) minmax(390px,.98fr)!important;min-height:270px!important;padding:25px 30px!important;background:radial-gradient(circle at 76% 45%,rgba(0,229,255,.18),transparent 28%),linear-gradient(112deg,#21104f 0%,#19143f 48%,#0b2947 100%)!important}
+    .hero-copy{max-width:660px}
+    .hero h1{font-size:clamp(30px,3vw,46px)!important;white-space:normal!important}
+    .hero p{font-size:13px!important;max-width:500px;line-height:1.7}
+    .hero-visual.hardware-showcase{position:relative;display:grid!important;grid-template-columns:1.08fr .92fr;align-items:center;gap:12px!important;min-height:215px!important;max-height:none!important;width:100%;padding:8px 4px}
+    .hardware-feature{position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:space-between;min-width:0;height:190px;margin:0;padding:9px;border:1px solid rgba(255,255,255,.2);border-radius:16px;background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.035));box-shadow:0 13px 27px rgba(0,0,0,.24);overflow:hidden}
+    .hardware-feature:before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(circle at 50% 42%,rgba(0,229,255,.16),transparent 55%)}
+    .hardware-kicker{position:relative;z-index:2;align-self:flex-start;padding:5px 8px;border:1px solid rgba(0,229,255,.32);border-radius:999px;color:#a6f7ff;background:rgba(3,12,32,.68);font-size:8px;font-weight:900;letter-spacing:1.2px}
+    .hardware-feature img{position:absolute;inset:24px 8px 34px;width:calc(100% - 16px);height:calc(100% - 58px);object-fit:contain;border-radius:10px;background:#f6f7fa}
+    .hardware-feature-pc img{padding:0}
+    .hardware-feature-console img{padding:7px}
+    .hardware-feature figcaption{position:relative;z-index:2;display:flex;flex-direction:column;gap:2px;align-self:flex-start;padding:5px 8px;border-radius:8px;color:#fff;background:rgba(7,10,27,.82);backdrop-filter:blur(8px)}
+    .hardware-feature figcaption strong{font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:.5px}
+    .hardware-feature figcaption span{color:#b9c8df;font-size:8px}
+    .hardware-feature-console{height:158px;margin-top:45px}
+    .hardware-feature-console img{inset:25px 5px 33px;width:calc(100% - 10px);height:calc(100% - 58px)}
+    .hardware-orbit{position:absolute;z-index:-1;border:1px solid rgba(0,229,255,.17);border-radius:50%;pointer-events:none}
+    .hardware-orbit-one{width:210px;height:210px;right:8%;top:0}
+    .hardware-orbit-two{width:155px;height:155px;right:14%;top:28px;border-color:rgba(167,113,255,.22)}
+    .quick-stats{gap:11px;margin-bottom:14px}
+    .stat{padding:13px 15px;border-color:rgba(0,229,255,.16);background:linear-gradient(120deg,rgba(20,24,53,.98),rgba(13,18,39,.98))}
+    .stat strong{font-size:19px}
+    .feature-strip{display:flex!important;padding:12px 17px;margin-bottom:15px;border-color:rgba(0,229,255,.17);font-size:10px}
+    .catalog{padding:18px 18px 16px;border:1px solid rgba(0,229,255,.2);border-radius:20px;background:linear-gradient(145deg,rgba(13,17,39,.97),rgba(10,13,29,.98));box-shadow:0 19px 42px rgba(0,0,0,.25)}
+    .catalog-head{align-items:flex-end;margin-bottom:13px}
+    .catalog-title h2{font-size:19px!important;letter-spacing:.2px}
+    .catalog-title p{font-size:11px!important}
+    .filter-row{gap:6px}
+    .filter-btn{font-size:9px!important;padding:8px 11px!important}
+    .tools{margin-bottom:10px}
+    .search-wrap{max-width:460px}
+    .search{padding:11px 14px 11px 34px;font-size:11px}
+    .pc-carousel-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:7px 0 10px;padding:8px 10px;border:1px solid rgba(139,92,246,.2);border-radius:11px;background:rgba(255,255,255,.025)}
+    .carousel-hint{display:flex;align-items:center;gap:8px;color:#bcb7d1;font-size:9px;font-weight:700}
+    .carousel-swipe-icon{display:grid;place-items:center;width:25px;height:25px;border-radius:8px;color:var(--cyan);background:rgba(0,229,255,.09);font-size:17px}
+    .carousel-actions{display:flex;align-items:center;gap:7px}
+    .carousel-position{min-width:80px;color:#c9c3df;font-size:9px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+    .carousel-arrow{display:grid;place-items:center;width:31px;height:31px;border:1px solid rgba(0,229,255,.3);border-radius:9px;color:#e8faff;background:#102039;font-size:22px;line-height:1;cursor:pointer;transition:background .2s,border-color .2s,transform .2s}
+    .carousel-arrow:hover:not(:disabled){transform:translateY(-1px);border-color:var(--cyan);background:#12334a}
+    .carousel-arrow:disabled{opacity:.3;cursor:not-allowed}
+    .pc-carousel{overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:rgba(0,229,255,.45) rgba(255,255,255,.045);padding:3px 2px 13px;outline-offset:4px}
+    .pc-carousel::-webkit-scrollbar{height:7px}.pc-carousel::-webkit-scrollbar-track{border-radius:99px;background:rgba(255,255,255,.045)}.pc-carousel::-webkit-scrollbar-thumb{border-radius:99px;background:rgba(0,229,255,.4)}
+    .pc-grid.pc-track{display:flex!important;flex-wrap:nowrap!important;align-items:stretch;gap:14px!important;width:max-content;min-width:100%;padding:1px 1px 3px;grid-template-columns:none!important}
+    .pc-card{display:flex;flex:0 0 clamp(300px,25vw,350px);flex-direction:column;min-width:0;min-height:360px;padding:12px!important;border:1px solid rgba(139,92,246,.36)!important;border-radius:16px!important;background:linear-gradient(155deg,#1d1b3c 0%,#11172e 55%,#0c1328 100%)!important;box-shadow:0 8px 22px rgba(0,0,0,.22);scroll-snap-align:start;transition:transform .22s,border-color .22s,box-shadow .22s}
+    .pc-card:hover{transform:translateY(-4px);border-color:rgba(0,229,255,.58)!important;box-shadow:0 15px 28px rgba(0,0,0,.3),0 0 18px rgba(0,229,255,.09)}
+    .pc-card[hidden]{display:none!important}
+    .pc-card-head{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-bottom:9px}
+    .pc-number{color:#a7f5ff;font-family:Orbitron,sans-serif;font-size:9px;font-weight:800;letter-spacing:1px}
+    .pc-card .status{font-size:8px!important;padding:5px 8px!important}
+    .pc-visual.pc-product-visual{position:relative;display:grid;place-items:center;isolation:isolate;height:164px!important;min-height:164px;overflow:hidden;border:1px solid rgba(255,255,255,.11);border-radius:12px;background:linear-gradient(135deg,#f4f5f8,#fff 50%,#e8ebf2)}
+    .pc-image-glow{position:absolute;width:72%;height:66%;border-radius:50%;background:rgba(0,229,255,.16);filter:blur(25px);z-index:-1}
+    .pc-visual img{display:block;width:100%;height:100%;padding:3px;object-fit:contain;transition:transform .25s}
+    .pc-card:hover .pc-visual img{transform:scale(1.045)}
+    .pc-tier-label{position:absolute;right:8px;bottom:8px;padding:5px 7px;border:1px solid rgba(12,16,35,.1);border-radius:7px;color:#22233c;background:rgba(255,255,255,.88);font-size:7px;font-weight:900;letter-spacing:.7px}
+    .pc-card.pro .pc-tier-label{color:#123b53}.pc-card.vip .pc-tier-label{color:#62420b}
+    .pc-card-info{display:grid;gap:7px;padding:11px 1px 10px;flex:1}
+    .pc-type-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .pc-card .pc-type{padding:5px 7px;border:1px solid rgba(139,92,246,.28);border-radius:6px;color:#dcd2ff;background:rgba(139,92,246,.12);font-family:Inter,Arial,sans-serif;font-size:8px;font-weight:900;letter-spacing:.5px;text-align:left}
+    .pc-card.pro .pc-type{color:#b7edff;border-color:rgba(0,229,255,.23);background:rgba(0,229,255,.08)}
+    .pc-card.vip .pc-type{color:#ffe0a0;border-color:rgba(255,200,87,.25);background:rgba(255,200,87,.09)}
+    .pc-hourly{color:#fff;font-family:Orbitron,sans-serif;font-size:16px;font-weight:800;white-space:nowrap}
+    .pc-hourly small{margin-left:4px;color:#939bb7;font-family:Inter,Arial,sans-serif;font-size:7px;letter-spacing:.6px}
+    .pc-card-info h3{margin:0;color:#fff;font-size:13px;font-weight:800;line-height:1.25}
+    .pc-card-info h3 span{color:var(--cyan)}
+    .pc-specs{display:flex;flex-wrap:wrap;gap:5px}
+    .pc-specs span{padding:5px 6px;border:1px solid rgba(255,255,255,.07);border-radius:6px;color:#c2c8dc;background:rgba(255,255,255,.045);font-size:8px;font-weight:600}
+    .pc-card .select-btn{margin-top:auto;min-height:39px;padding:10px 12px!important;border:1px solid rgba(0,229,255,.18);border-radius:9px;color:#071524;background:linear-gradient(100deg,#20e2f4,#43b5f4)!important;font-size:10px!important;font-weight:900;letter-spacing:.2px}
+    .pc-card .select-btn:hover{box-shadow:0 0 18px rgba(0,229,255,.2)}
+    .pc-card .usage{margin-top:auto;padding:10px 8px;border:1px solid rgba(255,200,87,.18);border-radius:9px;background:rgba(255,255,255,.045);font-size:9px}
+    .pc-card.occupied .usage{border-color:rgba(255,85,118,.17)}
+    .pc-card.available .pc-visual{border-color:rgba(49,230,160,.2)}
+    .carousel-progress{height:3px;margin:1px 2px 0;overflow:hidden;border-radius:99px;background:rgba(255,255,255,.07)}
+    .carousel-progress span{display:block;width:8%;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--cyan),var(--purple));transition:width .18s}
+    .empty-state{padding:24px 12px}
+    .lower-grid{margin-top:15px}
+    .whatsapp-float{box-shadow:0 0 25px rgba(49,230,160,.32),0 8px 22px rgba(0,0,0,.25)}
+    @media(max-width:1050px){.hero{grid-template-columns:minmax(0,1fr) minmax(310px,.9fr)!important}.pc-card{flex-basis:320px}}
+    @media(max-width:760px){
+      .shell{width:calc(100% - 22px)!important}
+      .hero{grid-template-columns:1fr!important;padding:18px!important;gap:8px!important}
+      .hero-copy{max-width:none}.hero h1{font-size:clamp(26px,7vw,36px)!important}.hero p{font-size:12px!important}
+      .hero-visual.hardware-showcase{grid-template-columns:1.05fr .95fr!important;min-height:174px!important;max-height:190px!important;gap:9px!important}
+      .hardware-feature{height:154px;padding:7px;border-radius:12px}.hardware-feature-console{height:128px;margin-top:25px}
+      .hardware-kicker{font-size:7px;padding:4px 6px}.hardware-feature figcaption{padding:4px 6px}.hardware-feature figcaption strong{font-size:8px}.hardware-feature figcaption span{font-size:7px}
+      .hardware-orbit-one{width:160px;height:160px;right:7%;top:4px}.hardware-orbit-two{width:120px;height:120px;right:13%;top:23px}
+      .quick-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+      .feature-strip{display:flex!important;gap:8px 12px;font-size:9px;padding:10px 12px}
+      .catalog{padding:13px 11px 12px}
+      .catalog-head{align-items:flex-start!important}.catalog-title h2{font-size:16px!important}.catalog-title p{font-size:10px!important}
+      .filter-row{width:100%;flex-wrap:wrap;gap:5px}.filter-btn{font-size:8px!important;padding:7px 9px!important}
+      .tools{gap:8px}.search-wrap{max-width:none}.search{font-size:10px}
+      .pc-carousel-toolbar{padding:7px;margin-top:4px}.carousel-hint{font-size:8px}.carousel-position{font-size:8px;min-width:66px}
+      .carousel-arrow{width:29px;height:29px}
+      .pc-grid.pc-track{gap:10px!important}
+      .pc-card{flex-basis:min(78vw,300px);min-height:350px;padding:10px!important}
+      .pc-visual.pc-product-visual{height:150px!important;min-height:150px}
+      .pc-card-info h3{font-size:12px}.pc-specs span{font-size:7px}
+      .lower-grid{grid-template-columns:1fr!important}
+    }
+    @media(max-width:430px){
+      .hero{padding:14px!important}.hero-visual.hardware-showcase{min-height:155px!important;max-height:170px!important}
+      .hardware-feature{height:142px}.hardware-feature-console{height:116px;margin-top:22px}
+      .stat{padding:9px 10px!important}.stat strong{font-size:15px!important}.stat span:last-child{font-size:8px!important}
+      .feature-strip span{white-space:normal}.catalog-title h2{font-size:15px!important}
+      .pc-card{flex-basis:82vw;max-width:310px}.pc-visual.pc-product-visual{height:145px!important;min-height:145px}
+    }
+    @media(prefers-reduced-motion:reduce){.pc-carousel{scroll-behavior:auto}.pc-card,.pc-visual img{transition:none}}
   </style>
 </head>
 <body>
@@ -300,7 +407,6 @@
         <a href="#catalogo">Computadoras</a>
         <a href="#informacion">Información</a>
         <a href="#contacto">Contacto</a>
-        <a href="./karaoke/">🎤 Karaoke</a>
       </nav>
       <div class="top-actions">
         <button class="small-btn account-btn" id="accountButton" type="button">👤 Mi cuenta</button>
@@ -317,47 +423,26 @@
         <p>Encuentra una PC libre, elige tu tiempo y prepárate para jugar.</p>
         <div class="hero-buttons"><a class="primary-btn" href="#catalogo">⚡ Elegir computadora</a><a class="secondary-btn" href="#informacion">Conocer el servicio</a></div>
       </div>
-      <div class="hero-visual game-collage" aria-label="Juegos populares disponibles">
-        <div class="game-cover cover-minecraft">
-          <svg viewBox="0 0 260 130" role="img" aria-label="Paisaje de bloques inspirado en Minecraft">
-            <defs><linearGradient id="mcSky" x2="0" y2="1"><stop stop-color="#26b5d7"/><stop offset="1" stop-color="#17345f"/></linearGradient></defs>
-            <rect width="260" height="130" fill="url(#mcSky)"/><circle cx="204" cy="28" r="17" fill="#ffe68a"/>
-            <path d="M0 88 48 48 80 78 126 34 175 82 214 52 260 89V130H0Z" fill="#346b55"/>
-            <path d="M0 100 43 75 84 97 128 62 170 96 216 75 260 104V130H0Z" fill="#214b3c"/>
-            <path d="M0 112H260V130H0Z" fill="#183b31"/><g fill="#4b8b43"><rect x="25" y="82" width="15" height="22"/><rect x="31" y="72" width="11" height="13"/><rect x="224" y="83" width="12" height="22"/></g>
-            <g fill="#855b3b"><rect x="30" y="101" width="8" height="18"/><rect x="228" y="101" width="6" height="17"/></g>
-          </svg><div class="game-caption"><small>EXPLORA Y CONSTRUYE</small><strong>MINECRAFT</strong></div>
-        </div>
-        <div class="game-cover cover-gta">
-          <svg viewBox="0 0 260 130" role="img" aria-label="Ciudad al atardecer inspirada en GTA V">
-            <defs><linearGradient id="gtaSky" x2="0" y2="1"><stop stop-color="#f9a65a"/><stop offset=".55" stop-color="#b64d7b"/><stop offset="1" stop-color="#281e54"/></linearGradient></defs>
-            <rect width="260" height="130" fill="url(#gtaSky)"/><circle cx="183" cy="46" r="22" fill="#ffd27a" opacity=".9"/>
-            <g fill="#20213f"><path d="M0 83h24V55h18v28h15V43h28v40h20V62h22v21h22V48h20v35h20V59h18v24h30v47H0Z"/><path d="M0 110h260v20H0Z" fill="#11152e"/></g>
-            <g stroke="#e7a27b" stroke-width="3" fill="none"><path d="M34 130V75m0 5C15 63 13 55 13 48m21 34c13-20 20-23 30-25m-30 31C21 70 18 68 8 67"/><path d="M225 130V66m0 9c-12-18-17-20-26-20m26 28c12-18 18-21 27-21"/></g>
-          </svg><div class="game-caption"><small>ACCIÓN EN MUNDO ABIERTO</small><strong>GTA V</strong></div>
-        </div>
-        <div class="game-cover cover-rocket">
-          <svg viewBox="0 0 260 130" role="img" aria-label="Auto y balón inspirados en Rocket League">
-            <defs><linearGradient id="rlSky" x2="0" y2="1"><stop stop-color="#126c9e"/><stop offset="1" stop-color="#11183f"/></linearGradient></defs>
-            <rect width="260" height="130" fill="url(#rlSky)"/><path d="M0 94Q130 48 260 94V130H0Z" fill="#192a54"/><path d="M0 110Q130 66 260 110" fill="none" stroke="#42d9ff" stroke-width="3" opacity=".55"/>
-            <circle cx="207" cy="43" r="21" fill="#eef7ff"/><path d="m207 29 9 7-4 12h-11l-5-10Zm-17 13 9 6-4 12m27-15 8 5m-24 10 8 5" fill="#1c5484" stroke="#1c5484" stroke-width="4"/>
-            <path d="M38 91 57 70h65l20 18 18 7-7 13H42Z" fill="#00d7f2" stroke="#d8faff" stroke-width="2"/><path d="M69 72h43l14 15H57Z" fill="#162c63"/><circle cx="68" cy="109" r="10" fill="#11182d" stroke="#8deaff" stroke-width="4"/><circle cx="137" cy="109" r="10" fill="#11182d" stroke="#8deaff" stroke-width="4"/>
-          </svg><div class="game-caption"><small>FÚTBOL SOBRE RUEDAS</small><strong>ROCKET LEAGUE</strong></div>
-        </div>
-        <div class="game-cover cover-valorant">
-          <svg viewBox="0 0 260 130" role="img" aria-label="Arte abstracto rojo inspirado en Valorant">
-            <defs><linearGradient id="valBg" x2="1" y2="1"><stop stop-color="#4d132e"/><stop offset="1" stop-color="#10142e"/></linearGradient></defs>
-            <rect width="260" height="130" fill="url(#valBg)"/><path d="M0 0 95 0 42 130H0Zm260 0h-65l48 130h17Z" fill="#e94359" opacity=".45"/>
-            <path d="m83 25 48 88 48-88-33 5-15 35-16-35Z" fill="#ff5268"/><path d="m131 63 17 31h-34Z" fill="#ffbd9c"/><path d="M0 112 65 82l-12 48H0Zm260-8-58-22 17 48h41Z" fill="#8f274c"/>
-          </svg><div class="game-caption"><small>COMPETITIVO TÁCTICO</small><strong>VALORANT</strong></div>
-        </div>
+      <div class="hero-visual hardware-showcase" aria-label="Fotografías de equipos gamer">
+        <figure class="hardware-feature hardware-feature-pc">
+          <span class="hardware-kicker">RIG GAMER RGB</span>
+          <img src="./imagenes/pc-gamer.webp" alt="Gabinete de computadora gamer con iluminación RGB" width="225" height="225" fetchpriority="high">
+          <figcaption><strong>PC GAMER</strong><span>Potencia para competir</span></figcaption>
+        </figure>
+        <figure class="hardware-feature hardware-feature-console">
+          <span class="hardware-kicker">GAMING ZONE</span>
+          <img src="./imagenes/playstation.webp" alt="Consola PlayStation 5 con control" width="365" height="355">
+          <figcaption><strong>PLAYSTATION</strong><span>Tu espacio de juego</span></figcaption>
+        </figure>
+        <span class="hardware-orbit hardware-orbit-one" aria-hidden="true"></span>
+        <span class="hardware-orbit hardware-orbit-two" aria-hidden="true"></span>
       </div>
     </section>
 
     <section class="quick-stats" aria-label="Estado del cibercafé">
-      <div class="stat"><span class="stat-icon">🖥️</span><div><strong id="totalCount">12</strong><span>Computadoras</span></div></div>
-      <div class="stat free"><span class="stat-icon">🟢</span><div><strong id="freeCount">2</strong><span>Disponibles ahora</span></div></div>
-      <div class="stat busy"><span class="stat-icon">🔴</span><div><strong id="busyCount">10</strong><span>En uso</span></div></div>
+      <div class="stat"><span class="stat-icon">🖥️</span><div><strong id="totalCount">15</strong><span>Computadoras</span></div></div>
+      <div class="stat free"><span class="stat-icon">🟢</span><div><strong id="freeCount">—</strong><span>Disponibles ahora</span></div></div>
+      <div class="stat busy"><span class="stat-icon">🔴</span><div><strong id="busyCount">—</strong><span>En uso</span></div></div>
       <div class="stat"><span class="stat-icon">🕒</span><div><strong>08–24</strong><span>Atención todos los días</span></div></div>
     </section>
 
@@ -367,7 +452,7 @@
 
     <section class="catalog" id="catalogo" aria-labelledby="catalog-title">
       <div class="catalog-head">
-        <div class="catalog-title"><h2 id="catalog-title">🎮 Nuestras computadoras</h2><p>Selecciona una PC disponible para configurar tu sesión.</p></div>
+        <div class="catalog-title"><h2 id="catalog-title">🎮 Nuestras computadoras</h2><p>Catálogo cargado desde datos JSON: filtra, compara y desliza para encontrar tu estación ideal.</p></div>
         <div class="filter-row" role="group" aria-label="Filtrar computadoras">
           <button class="filter-btn active" type="button" data-filter="all">Todas</button>
           <button class="filter-btn" type="button" data-filter="available"><span class="dot" style="color:#31e6a0"></span>Disponibles</button>
@@ -379,9 +464,20 @@
       </div>
       <div class="tools">
         <label class="search-wrap"><span aria-hidden="true">⌕</span><input class="search" id="searchPC" type="search" placeholder="Buscar PC, procesador o gráfica..." aria-label="Buscar computadoras"></label>
-        <span class="result-count" id="resultCount" aria-live="polite">12 equipos</span>
+        <span class="result-count" id="resultCount" aria-live="polite">15 equipos</span>
       </div>
-      <div class="pc-grid" id="pcGrid"></div>
+      <div class="pc-carousel-toolbar">
+        <div class="carousel-hint"><span class="carousel-swipe-icon" aria-hidden="true">↔</span><span>Desliza para descubrir las 15 estaciones gamer</span></div>
+        <div class="carousel-actions">
+          <span class="carousel-position" id="pcCarouselPosition" aria-live="polite">1–4 de 15</span>
+          <button class="carousel-arrow" id="pcScrollPrev" type="button" aria-label="Ver computadoras anteriores" disabled>‹</button>
+          <button class="carousel-arrow" id="pcScrollNext" type="button" aria-label="Ver más computadoras">›</button>
+        </div>
+      </div>
+      <div class="pc-carousel" id="pcCarousel" tabindex="0" aria-label="Catálogo horizontal de computadoras">
+        <div class="pc-grid pc-track" id="pcGrid"><p class="catalog-status" role="status">Cargando catálogo de computadoras…</p></div>
+      </div>
+      <div class="carousel-progress" aria-hidden="true"><span id="pcCarouselProgress"></span></div>
       <div class="empty-state" id="emptyState"><strong>No encontramos equipos</strong>Prueba con otro filtro o término de búsqueda.</div>
     </section>
 
@@ -401,17 +497,7 @@
         </div>
       </section>
     </div>
-
-    <section class="karaoke-entry" aria-labelledby="karaoke-entry-title">
-      <div class="karaoke-entry-icon" aria-hidden="true">🎤</div>
-      <div class="karaoke-entry-copy">
-        <span class="eyebrow">OTRA EXPERIENCIA LEVELUP</span>
-        <h2 id="karaoke-entry-title">Tu turno también puede ser de karaoke.</h2>
-        <p>Explora el catálogo, arma tu cola de canciones y envía una solicitud para reservar una sala.</p>
-      </div>
-      <a class="primary-btn" href="./karaoke/">Abrir Karaoke →</a>
-    </section>
-    <footer><span>© 2026 <strong>LevelUp Cibercafé</strong> · Proyecto de Microempresa</span><span>Diseñado para jugar mejor. <b>GAME ON ⚡</b></span></footer>
+<footer><span>© 2026 <strong>LevelUp Cibercafé</strong> · Proyecto de Microempresa</span><span>Diseñado para jugar mejor. <b>GAME ON ⚡</b></span></footer>
   </main>
 
   <a class="whatsapp-float" href="https://wa.me/59164133234" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp">✆</a>
@@ -514,21 +600,9 @@
 
 </script>
   <script>
+
     'use strict';
-    const machines = [
-      {id:1,type:'standard',label:'Estándar',price:8,cpu:'Core i3',ram:'8 GB RAM',gpu:'Integrados',storage:'SSD 256 GB',monitor:'22 pulgadas',available:false,elapsed:'1:18:50',sessionEndsAt:null},
-      {id:2,type:'standard',label:'Estándar',price:8,cpu:'Core i3',ram:'8 GB RAM',gpu:'Integrados',storage:'SSD 256 GB',monitor:'22 pulgadas',available:false,elapsed:'18:17',sessionEndsAt:null},
-      {id:3,type:'standard',label:'Estándar',price:8,cpu:'Core i3',ram:'8 GB RAM',gpu:'Integrados',storage:'SSD 256 GB',monitor:'22 pulgadas',available:false,elapsed:'1:06:26',sessionEndsAt:null},
-      {id:4,type:'standard',label:'Estándar',price:8,cpu:'Core i3',ram:'8 GB RAM',gpu:'Integrados',storage:'SSD 256 GB',monitor:'22 pulgadas',available:false,elapsed:'33:18',sessionEndsAt:null},
-      {id:5,type:'standard',label:'Estándar',price:8,cpu:'Core i3',ram:'8 GB RAM',gpu:'Integrados',storage:'SSD 256 GB',monitor:'22 pulgadas',available:false,elapsed:'57:19',sessionEndsAt:null},
-      {id:6,type:'standard',label:'Estándar',price:8,cpu:'Core i3',ram:'8 GB RAM',gpu:'Integrados',storage:'SSD 256 GB',monitor:'22 pulgadas',available:false,elapsed:'1:10:24',sessionEndsAt:null},
-      {id:7,type:'pro',label:'Pro',price:12,cpu:'Core i5',ram:'16 GB RAM',gpu:'GTX 1660',storage:'SSD 512 GB',monitor:'24 pulgadas · 144 Hz',available:false,elapsed:'43:48',sessionEndsAt:null},
-      {id:8,type:'pro',label:'Pro',price:12,cpu:'Core i5',ram:'16 GB RAM',gpu:'GTX 1660',storage:'SSD 512 GB',monitor:'24 pulgadas · 144 Hz',available:false,elapsed:'43:22',sessionEndsAt:null},
-      {id:9,type:'pro',label:'Pro',price:12,cpu:'Core i5',ram:'16 GB RAM',gpu:'GTX 1660',storage:'SSD 512 GB',monitor:'24 pulgadas · 144 Hz',available:false,elapsed:'19:03',sessionEndsAt:null},
-      {id:10,type:'pro',label:'Pro',price:12,cpu:'Core i5',ram:'16 GB RAM',gpu:'GTX 1660',storage:'SSD 512 GB',monitor:'24 pulgadas · 144 Hz',available:true,elapsed:'',sessionEndsAt:null},
-      {id:11,type:'vip',label:'VIP',price:20,cpu:'Core i7',ram:'32 GB RAM',gpu:'RTX 3060',storage:'SSD 1 TB',monitor:'27 pulgadas · 165 Hz',available:false,elapsed:'40:35',sessionEndsAt:null},
-      {id:12,type:'vip',label:'VIP',price:20,cpu:'Core i7',ram:'32 GB RAM',gpu:'RTX 3060',storage:'SSD 1 TB',monitor:'27 pulgadas · 165 Hz',available:true,elapsed:'',sessionEndsAt:null}
-    ];
+    let machines = [];
 
     const ACCOUNTS_KEY = 'levelup_accounts_v1';
     const ACTIVE_KEY = 'levelup_active_phone_v1';
@@ -545,6 +619,60 @@
 
     const money = value => `Bs ${Number(value).toFixed(2).replace(/\.00$/, '')}`;
     const pad = value => String(value).padStart(2, '0');
+    let sessionTimerId = null;
+
+    // Catálogo propio de LevelUp: carga asíncrona desde JSON (patrón Fetch/AJAX de la guía).
+    // Se valida tanto el estado HTTP como la estructura antes de dibujar tarjetas.
+    async function loadMachineCatalog() {
+      const response = await fetch('./data/computadoras.json');
+      if (!response.ok) throw new Error(`No se pudo cargar el catálogo (HTTP ${response.status}).`);
+      const catalog = await response.json();
+      if (!Array.isArray(catalog) || catalog.length < 15) {
+        throw new Error('El catálogo debe contener al menos 15 computadoras.');
+      }
+      const ids = new Set();
+      machines = catalog.map(item => {
+        const id = Number(item.id);
+        if (!Number.isInteger(id) || id < 1 || ids.has(id)) throw new Error('El catálogo contiene identificadores inválidos o repetidos.');
+        if (!['standard', 'pro', 'vip'].includes(item.type)) throw new Error(`Categoría inválida en la estación ${id}.`);
+        if (!Number.isFinite(Number(item.price)) || Number(item.price) <= 0) throw new Error(`Precio inválido en la estación ${id}.`);
+        ids.add(id);
+        return {
+          ...item,
+          id,
+          price: Number(item.price),
+          available: Boolean(item.available),
+          elapsed: String(item.elapsed || ''),
+          image: String(item.image || './imagenes/pc-gamer.webp'),
+          imageAlt: String(item.imageAlt || `Computadora gamer LevelUp ${id}`),
+          sessionEndsAt: null,
+          sessionStartedAt: null,
+          reservationExpiresAt: null
+        };
+      });
+      if (ids.size !== catalog.length) throw new Error('Hay estaciones duplicadas en el catálogo.');
+    }
+
+    function escapeCatalogText(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    }
+
+    async function initializeMachineCatalog() {
+      const grid = document.getElementById('pcGrid');
+      grid.innerHTML = '<p class="catalog-status" role="status">Cargando catálogo de computadoras…</p>';
+      try {
+        await loadMachineCatalog();
+        loadMachineStates();
+        saveMachineStates();
+        renderMachines();
+        tickSessionTimers();
+        if (sessionTimerId === null) sessionTimerId = window.setInterval(tickSessionTimers, 1000);
+      } catch (error) {
+        console.error('Error al cargar las computadoras de LevelUp:', error);
+        grid.innerHTML = `<div class="catalog-status catalog-status-error" role="alert"><strong>No se pudo cargar el catálogo.</strong><span>${escapeCatalogText(error.message)}</span><button class="secondary-btn" id="retryMachineCatalog" type="button">Reintentar carga</button></div>`;
+        updateStats();
+      }
+    }
 
     function parseElapsedTime(value) {
       const parts = String(value || '0').split(':').map(Number);
@@ -834,24 +962,33 @@
         const isReserved = Boolean(pc.reservationExpiresAt && pc.reservationExpiresAt > Date.now());
         const status = isReserved ? 'Reservada' : pc.available ? 'Disponible' : 'Ocupada';
         const cardState = isReserved ? 'reserved' : pc.available ? 'available' : 'occupied';
+        const tierName = pc.type === 'vip' ? 'EXPERIENCIA ELITE' : pc.type === 'pro' ? 'RENDIMIENTO PRO' : 'GAMING ESENCIAL';
         const extra = isReserved
           ? `<div class="usage">⏳ Apartada · <b data-reservation-countdown="${pc.id}">${formatReservationRemaining(pc.reservationExpiresAt - Date.now())}</b></div>`
           : pc.available
-            ? `<button class="select-btn" type="button" data-select="${pc.id}">Seleccionar equipo →</button>`
+            ? `<button class="select-btn btn-elegir-equipo" type="button" data-select="${pc.id}">Elegir esta PC <span aria-hidden="true">→</span></button>`
             : pc.sessionEndsAt
               ? `<div class="usage">⏱️ Restante · <b data-countdown="${pc.id}">${formatRemaining(pc.sessionEndsAt - Date.now())}</b></div>`
               : `<div class="usage">🔒 En uso · <b data-elapsed="${pc.id}">${formatElapsed((Date.now() - (pc.sessionStartedAt || Date.now())) / 1000)}</b></div>`;
-        return `<article class="pc-card ${pc.type} ${cardState}" data-id="${pc.id}" data-type="${pc.type}" data-status="${pc.available && !isReserved ? 'available' : 'occupied'}" data-search="pc ${number} ${pc.label.toLowerCase()} ${pc.cpu.toLowerCase()} ${pc.gpu.toLowerCase()} ${pc.ram.toLowerCase()}">
-          <div class="pc-top"><span class="pc-name">PC #${number}</span><span class="status ${cardState}">${status}</span></div>
-          <div class="pc-visual" aria-hidden="true"><div class="tower"><i class="fan"></i><i class="fan"></i><i class="fan"></i></div></div>
-          <div class="pc-type">${pc.label} · ${money(pc.price)}/h</div>
-          <div class="specs"><span>${pc.cpu}</span><span>${pc.ram}</span><span>${pc.gpu}</span></div>
-          <div class="pc-price-line"><span class="price">${money(pc.price)} <small>/ hora</small></span><span style="color:#8985a8;font-size:8px">${pc.monitor}</span></div>
+        const searchText = `pc ${number} ${pc.label} ${pc.cpu} ${pc.gpu} ${pc.ram} ${pc.storage} ${pc.monitor}`.toLowerCase();
+        return `<article class="pc-card ${pc.type} ${cardState}" data-id="${pc.id}" data-type="${pc.type}" data-status="${pc.available && !isReserved ? 'available' : 'occupied'}" data-search="${escapeCatalogText(searchText)}">
+          <div class="pc-card-head"><span class="pc-number">ESTACIÓN ${number}</span><span class="status ${cardState}">${status}</span></div>
+          <div class="pc-visual pc-product-visual">
+            <span class="pc-image-glow" aria-hidden="true"></span>
+            <img src="${escapeCatalogText(pc.image)}" alt="${escapeCatalogText(pc.imageAlt)}" width="225" height="225" loading="lazy" decoding="async">
+            <span class="pc-tier-label">${tierName}</span>
+          </div>
+          <div class="pc-card-info">
+            <div class="pc-type-row"><span class="pc-type">LEVELUP ${escapeCatalogText(pc.label.toUpperCase())}</span><span class="pc-hourly">${money(pc.price)}<small>/ HORA</small></span></div>
+            <h3>${escapeCatalogText(pc.cpu)} <span>·</span> ${escapeCatalogText(pc.gpu)}</h3>
+            <div class="pc-specs"><span>▣ ${escapeCatalogText(pc.ram)}</span><span>⚡ ${escapeCatalogText(pc.storage)}</span><span>▤ ${escapeCatalogText(pc.monitor)}</span></div>
+          </div>
           ${extra}
         </article>`;
       }).join('');
       updateStats();
       applyFilters(false);
+      updatePcCarouselStatus();
     }
 
     function updateStats() {
@@ -861,7 +998,7 @@
       $('#busyCount').text(machines.length - free);
     }
 
-    function applyFilters(animate = true) {
+    function applyFilters() {
       const search = $('#searchPC').val().trim().toLowerCase();
       let shown = 0;
       $('.pc-card').each(function() {
@@ -870,16 +1007,43 @@
         const status = $card.attr('data-status');
         const matchesFilter = currentFilter === 'all' || type === currentFilter || status === currentFilter;
         const matchesSearch = $card.attr('data-search').includes(search);
-        if (matchesFilter && matchesSearch) {
-          shown++;
-          if (animate) $card.stop(true, true).fadeIn(130);
-          else $card.show();
-        } else {
-          $card.stop(true, true).hide();
-        }
+        this.hidden = !(matchesFilter && matchesSearch);
+        if (!this.hidden) shown++;
       });
       $('#resultCount').text(`${shown} ${shown === 1 ? 'equipo' : 'equipos'}`);
       $('#emptyState').toggle(shown === 0);
+      const carousel = document.getElementById('pcCarousel');
+      if (carousel) carousel.scrollTo({left:0, behavior:'smooth'});
+      updatePcCarouselStatus();
+    }
+
+    function updatePcCarouselStatus() {
+      const carousel = document.getElementById('pcCarousel');
+      const track = document.getElementById('pcGrid');
+      if (!carousel || !track) return;
+      const visibleCards = Array.from(track.children).filter(card => !card.hidden);
+      const total = visibleCards.length;
+      const position = document.getElementById('pcCarouselPosition');
+      const progress = document.getElementById('pcCarouselProgress');
+      const prev = document.getElementById('pcScrollPrev');
+      const next = document.getElementById('pcScrollNext');
+      if (!total) {
+        if (position) position.textContent = '0 equipos';
+        if (progress) progress.style.width = '0%';
+        if (prev) prev.disabled = true;
+        if (next) next.disabled = true;
+        return;
+      }
+      const firstCard = visibleCards[0];
+      const cardStep = firstCard.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || getComputedStyle(track).gap || 0);
+      const first = Math.min(total, Math.max(1, Math.floor(carousel.scrollLeft / Math.max(cardStep, 1)) + 1));
+      const cardsInView = Math.max(1, Math.floor(carousel.clientWidth / Math.max(cardStep, 1)));
+      const last = Math.min(total, first + cardsInView - 1);
+      if (position) position.textContent = `${first}–${last} de ${total}`;
+      const maxScroll = Math.max(1, carousel.scrollWidth - carousel.clientWidth);
+      if (progress) progress.style.width = `${Math.min(100, Math.max(8, (carousel.scrollLeft / maxScroll) * 100))}%`;
+      if (prev) prev.disabled = carousel.scrollLeft <= 2;
+      if (next) next.disabled = carousel.scrollLeft >= maxScroll - 2;
     }
 
     function calculateTotal() {
@@ -946,12 +1110,8 @@
 
     $(function() {
       loadAccounts();
-      loadMachineStates();
-      saveMachineStates();
       updateAccountUI();
-      renderMachines();
-      tickSessionTimers();
-      window.setInterval(tickSessionTimers, 1000);
+      initializeMachineCatalog();
 
       $('#accountButton').on('click', openAccountModal);
       $('#walletButton, #accountRechargeButton').on('click', function() {
@@ -1048,7 +1208,15 @@
         applyFilters();
       });
       $('#searchPC').on('input', () => applyFilters());
-      $('#pcGrid').on('click', '[data-select]', function() { openBooking(Number($(this).data('select'))); });
+      const pcCarousel = document.getElementById('pcCarousel');
+      $('#pcScrollPrev').on('click', () => pcCarousel?.scrollBy({left: -Math.max(280, pcCarousel.clientWidth * 0.82), behavior:'smooth'}));
+      $('#pcScrollNext').on('click', () => pcCarousel?.scrollBy({left: Math.max(280, pcCarousel.clientWidth * 0.82), behavior:'smooth'}));
+      pcCarousel?.addEventListener('scroll', () => window.requestAnimationFrame(updatePcCarouselStatus), {passive:true});
+      window.addEventListener('resize', updatePcCarouselStatus, {passive:true});
+      $('#pcGrid').off('click.levelupCatalog', '.btn-elegir-equipo').on('click.levelupCatalog', '.btn-elegir-equipo', function() {
+        openBooking(Number($(this).data('select')));
+      });
+      $('#pcGrid').off('click.levelupRetry', '#retryMachineCatalog').on('click.levelupRetry', '#retryMachineCatalog', initializeMachineCatalog);
       $('#sessionHours').on('change', updateTotal);
 
       $('#customerName').on('input blur', () => validateName());
@@ -1105,7 +1273,7 @@
       $('#closeModal, #cancelBooking').on('click', closeBooking);
       $('#finishBooking').on('click', function() { closeBooking(); selectedMachine = null; bookingData = null; showToast(`Saldo disponible: ${activeUser ? money(activeUser.balance) : 'Bs 0'}.`); });
       $('#bookingModal').on('click', function(event) { if (event.target === this) closeBooking(); });
-      $(document).on('keydown', function(event) {
+      $(document).off('keydown.levelup').on('keydown.levelup', function(event) {
         if (event.key === 'Escape') {
           if ($('#rechargeModal').hasClass('open')) closeLayer('#rechargeModal');
           else if ($('#accountModal').hasClass('open')) closeLayer('#accountModal');
@@ -1119,7 +1287,8 @@
         $(this).attr('aria-expanded', String(!expanded)).text(expanded ? 'Ver pasos ＋' : 'Ocultar pasos −');
       });
     });
-  </script>
+  
+</script>
 
   <script>
     // PWA LevelUp: registro único del Service Worker de la página principal.
