@@ -129,11 +129,12 @@
         <section class="view" id="view-consolas" aria-labelledby="consolesTitle" aria-hidden="true">
           <div class="view-heading"><div><p class="eyebrow">ZONA CONSOLE GAMING</p><h1 id="consolesTitle">PlayStation <span style="color:var(--cyan)">5.</span></h1><p>4 PlayStation 5 disponibles. Cada consola incluye 1 mando DualSense; puedes agregar un segundo por Bs 6 por sesión.</p></div><div class="view-count"><span id="consoleCount">4</span><small> CONSOLAS</small></div></div>
           <section class="console-rate-strip panel" aria-label="Tarifas de PlayStation">
-            <div><span class="console-rate-icon">🎮</span><div><strong>Bs 8 <small>/ hora</small></strong><span>Tarifa sugerida por consola</span></div></div>
+            <div><span class="console-rate-icon">🎮</span><div><strong>Bs 15 <small>/ hora</small></strong><span>Tarifa por consola</span></div></div>
             <div><span class="console-rate-icon">①</span><div><strong>1 mando incluido</strong><span>DualSense por consola</span></div></div>
             <div><span class="console-rate-icon">＋</span><div><strong>Bs 6 extra</strong><span>Segundo mando · pago único por sesión</span></div></div>
           </section>
           <div class="console-grid" id="consoleGrid" aria-live="polite"><div class="catalog-state"><strong>Preparando las consolas…</strong>Las PS5 aparecerán aquí.</div></div>
+          <div class="catalog-state catalog-state-error" id="consoleCatalogError" hidden role="alert"><strong>No se pudieron cargar las consolas.</strong><span id="consoleCatalogErrorText"></span><button class="secondary-btn" type="button" data-retry-catalog data-hidratado="false" disabled>Reintentar carga</button></div>
           <p class="console-seat-note">La zona PlayStation cuenta con sofá gamer para jugar con más comodidad. Cada PS5 tiene su propio estado, reserva y temporizador.</p>
         </section>
 
@@ -175,7 +176,7 @@
             <article class="price-card"><small>GAMING & STREAMING</small><h3>Premium</h3><p>AMD Ryzen 9 9950X3D2 Dual Edition (16 núcleos / 32 hilos) · RTX 5090 con 32 GB GDDR7 · 32 GB DDR5 · NVMe 2 TB. Dos monitores para juego y streaming, micrófono y silla gamer premium con soporte lumbar y cervical.</p><strong>Bs 10 <span>/ hora</span></strong></article>
           </div>
           <div class="price-grid console-price-grid">
-            <article class="price-card console-price-card"><small>ZONA CONSOLE</small><h3>PlayStation 5</h3><p>Cuatro PS5. Incluye un mando DualSense por consola. Segundo mando opcional: Bs 6 por sesión; no se cobra por hora.</p><strong>Bs 8 <span>/ hora · tarifa referencial propuesta</span></strong></article>
+            <article class="price-card console-price-card"><small>ZONA CONSOLE</small><h3>PlayStation 5</h3><p>Cuatro PS5. Incluye un mando DualSense por consola. Segundo mando opcional: Bs 6 por sesión; no se cobra por hora.</p><strong>Bs 15 <span>/ hora</span></strong></article>
           </div>
           <div class="services-layout">
             <section class="panel info-panel"><h3>¿Cómo funciona?</h3>
@@ -244,7 +245,7 @@
       <div class="modal-head"><div><h2 id="bookingTitle">Configura tu sesión</h2><p id="bookingDescription">Selecciona el tiempo y revisa el importe.</p></div><button class="icon-btn" id="closeBooking" type="button" aria-label="Cerrar reserva" data-hidratado="false" disabled>×</button></div>
       <div class="hold-notice" id="bookingHoldNotice"><span>Tu puesto está apartado durante un minuto. Completa la reserva antes de que termine.</span><strong id="bookingCountdown">01:00</strong></div>
       <div id="bookingStep">
-        <div class="booking-machine"><div><strong id="selectedMachineName">PC #01</strong><small id="selectedMachineSpecs">Categoría y especificaciones</small></div><span class="booking-rate" id="selectedMachineRate">Bs 8/h</span></div>
+        <div class="booking-machine"><div><strong id="selectedMachineName">PC #01</strong><small id="selectedMachineSpecs">Categoría y especificaciones</small></div><span class="booking-rate" id="selectedMachineRate">—</span></div>
         <form id="bookingForm" class="account-form" novalidate>
           <div class="booking-grid">
             <div class="form-field" id="fieldBookingName"><label for="customerName">Nombre completo</label><input id="customerName" type="text" autocomplete="name" maxlength="60" placeholder="Nombre y apellido" data-hidratado="false" disabled><small id="customerNameError"></small></div>
@@ -252,13 +253,13 @@
             <div class="form-field full"><label for="sessionHours">Duración</label><select id="sessionHours" class="field-control" data-hidratado="false" disabled><option value="1">1 hora</option><option value="2">2 horas</option><option value="3">3 horas</option><option value="5">5 horas</option><option value="8">8 horas</option></select></div>
             <label class="console-extra-option form-field full" id="extraControllerField" hidden><span class="controller-option"><input id="extraController" type="checkbox" data-hidratado="false" disabled><span><strong>Agregar segundo mando</strong><small>Un mando incluido · segundo mando por Bs 6 adicionales, una sola vez por sesión.</small></span><b>+ Bs 6</b></span></label>
           </div>
-          <div class="booking-cost-breakdown" id="bookingCostBreakdown" hidden><span>Tiempo de juego <b id="bookingBaseAmount">Bs 8</b></span><span>Segundo mando <b id="bookingControllerAmount">Bs 0</b></span></div>
+          <div class="booking-cost-breakdown" id="bookingCostBreakdown" hidden><span>Tiempo de juego <b id="bookingBaseAmount">Bs 15</b></span><span>Segundo mando <b id="bookingControllerAmount">Bs 0</b></span></div>
           <div class="total-card"><span>Total de la sesión</span><strong id="bookingTotal">Bs 3</strong></div>
           <div class="modal-actions"><button class="secondary-btn" id="cancelBooking" type="button" data-hidratado="false" disabled>Cancelar</button><button class="primary-btn" type="submit" data-hidratado="false" disabled>Continuar al pago →</button></div>
         </form>
       </div>
       <div id="paymentStep" hidden>
-        <div class="booking-machine"><div><strong id="paymentMachine">PC #01</strong><small id="paymentSummary">1 hora · al confirmar el pago simulado</small></div><span class="booking-rate" id="paymentTotal">Bs 8</span></div>
+        <div class="booking-machine"><div><strong id="paymentMachine">PC #01</strong><small id="paymentSummary">1 hora · al confirmar el pago simulado</small></div><span class="booking-rate" id="paymentTotal">Bs 0</span></div>
         <div class="total-card"><span>Saldo disponible</span><strong id="currentBalance">Bs 0</strong></div>
         <p class="form-status error" id="balanceWarning" hidden></p>
         <p class="payment-note">El pago es una simulación académica. No se realiza ningún cobro real.</p>

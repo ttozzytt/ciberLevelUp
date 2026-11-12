@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v11-pc-ps5-tarifas';
+const CACHE_NAME = 'levelup-cibercafe-v12-catalog-fix-ps15';
 const APP_SHELL = [
   './',
   './index.html',
@@ -73,15 +73,34 @@ self.addEventListener('fetch', event => {
 
   // JSON: red primero para recibir datos recientes y caché como respaldo offline.
   if (url.pathname.endsWith('/data/computadoras.json') || url.pathname.endsWith('/data/consolas.json')) {
-    event.respondWith(
-      fetch(request).then(response => {
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(request);
         if (response && response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+          // Guarda cada JSON con su propia URL. Nunca uses computadoras.json como
+          // sustituto de consolas.json: ambos catálogos tienen esquemas distintos.
+          try {
+            const cache = await caches.open(CACHE_NAME);
+            const cacheKey = new Request(url.href, { method: 'GET', credentials: 'same-origin' });
+            await cache.put(cacheKey, response.clone());
+          } catch (cacheError) {
+            console.warn('No se pudo actualizar la copia local del catálogo:', cacheError);
+          }
         }
         return response;
-      }).catch(async () => (await caches.match(request)) || (await caches.match('./data/computadoras.json')) || Response.error())
-    );
+      } catch (networkError) {
+        const cached = await caches.match(request, { ignoreSearch: true });
+        if (cached) return cached;
+        return new Response(JSON.stringify({
+          error: 'catalog_unavailable',
+          file: url.pathname.split('/').pop(),
+          message: 'No hay conexión y este catálogo todavía no está guardado en el dispositivo.'
+        }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }
+        });
+      }
+    })());
     return;
   }
 

@@ -103,19 +103,63 @@ function closeMobileMenu() {
   $('#mobileMenuToggle').attr({ 'aria-expanded': 'false', 'aria-label': 'Abrir menú' }).text('☰');
 }
 
-/* Catálogo asíncrono propio de LevelUp. */
+/* Catálogo asíncrono propio de LevelUp. El fetch informa rutas/HTTP y usa Cache Storage como respaldo offline. */
+async function readCatalogJSON(relativePath, label) {
+  const url = new URL(relativePath, document.baseURI);
+  let networkError = null;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 9000);
+  try {
+    const response = await fetch(url.href, {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
+      signal: controller.signal
+    });
+    if (response.ok) {
+      const raw = await response.text();
+      if (/^\s*</.test(raw)) throw new Error('GitHub Pages respondió HTML en lugar de JSON. Revisa que el archivo exista en data/.');
+      try { return JSON.parse(raw); }
+      catch (_) { throw new Error('El archivo existe, pero su contenido no es JSON válido.'); }
+    }
+    networkError = new Error(`HTTP ${response.status} ${response.statusText || ''}`.trim());
+  } catch (error) {
+    networkError = error.name === 'AbortError'
+      ? new Error('La solicitud agotó el tiempo de espera (9 segundos).')
+      : error;
+  } finally {
+    window.clearTimeout(timeout);
+    controller.abort();
+  }
+
+  // Si no responde la red o el servidor devuelve 404/HTML, intenta la copia offline instalada.
+  if ('caches' in window) {
+    try {
+      const cached = await caches.match(url.href, { ignoreSearch: true });
+      if (cached && cached.ok) {
+        const raw = await cached.text();
+        const parsed = JSON.parse(raw);
+        console.info(`${label}: se utilizó la copia guardada en Cache Storage.`);
+        return parsed;
+      }
+    } catch (cacheError) {
+      console.warn(`No se pudo recuperar ${label} desde la caché:`, cacheError);
+    }
+  }
+  throw new Error(`${label}: no se pudo leer ${url.pathname}. ${networkError?.message || 'Comprueba la carpeta data y vuelve a publicar el archivo.'}`);
+}
+
 async function loadMachineCatalog() {
-  const response = await fetch('./data/computadoras.json', { cache: 'no-store' });
-  if (!response.ok) throw new Error(`La solicitud del catálogo respondió HTTP ${response.status}.`);
-  const catalog = await response.json();
-  if (!Array.isArray(catalog) || catalog.length < 15) throw new Error('El catálogo debe contener al menos 15 estaciones.');
+  const catalog = await readCatalogJSON('./data/computadoras.json', 'Catálogo de computadoras');
+  if (!Array.isArray(catalog) || catalog.length < 15) throw new Error('computadoras.json debe contener al menos 15 estaciones.');
   const usedIds = new Set();
   state.machines = catalog.map(item => {
     const id = Number(item.id);
-    if (!Number.isInteger(id) || id < 1 || usedIds.has(id)) throw new Error('Hay identificadores de estación inválidos o repetidos.');
-    if (!['basic', 'standard', 'premium'].includes(item.type)) throw new Error(`La categoría de la estación ${id} no es válida.`);
-    if (!Number.isFinite(Number(item.price)) || Number(item.price) <= 0) throw new Error(`El precio de la estación ${id} no es válido.`);
-    if (!item.cpu || !item.gpu || !item.ram || !item.storage || !item.monitor) throw new Error(`Faltan especificaciones en la estación ${id}.`);
+    if (!Number.isInteger(id) || id < 1 || usedIds.has(id)) throw new Error(`computadoras.json: ID inválido o repetido en la estación ${item.id}.`);
+    if (!['basic', 'standard', 'premium'].includes(item.type)) throw new Error(`computadoras.json: categoría no válida en la estación ${id}.`);
+    if (!Number.isFinite(Number(item.price)) || Number(item.price) <= 0) throw new Error(`computadoras.json: precio no válido en la estación ${id}.`);
+    if (!item.cpu || !item.gpu || !item.ram || !item.storage || !item.monitor) throw new Error(`computadoras.json: faltan especificaciones en la estación ${id}.`);
     usedIds.add(id);
     return {
       ...item,
@@ -171,24 +215,29 @@ function saveMachineStates() {
 }
 
 async function loadConsoleCatalog() {
-  const response = await fetch('./data/consolas.json', { cache: 'no-store' });
-  if (!response.ok) throw new Error(`La solicitud de consolas respondió HTTP ${response.status}.`);
-  const catalog = await response.json();
-  if (!Array.isArray(catalog) || catalog.length !== 4) throw new Error('El catálogo debe contener exactamente cuatro consolas.');
-  state.consoles = catalog.map(item => ({
-    ...item,
-    id: Number(item.id),
-    kind: 'console',
-    price: Number(item.price),
-    extraControllerFee: Number(item.extraControllerFee || 6),
-    available: Boolean(item.available),
-    elapsed: String(item.elapsed || ''),
-    image: String(item.image || './imagenes/playstation.webp'),
-    imageAlt: String(item.imageAlt || `PlayStation ${item.id}`),
-    sessionStartedAt: null,
-    sessionEndsAt: null,
-    reservationExpiresAt: null
-  }));
+  const catalog = await readCatalogJSON('./data/consolas.json', 'Catálogo PlayStation');
+  if (!Array.isArray(catalog) || catalog.length !== 4) throw new Error('consolas.json debe contener exactamente cuatro consolas.');
+  const ids = new Set();
+  state.consoles = catalog.map(item => {
+    const id = Number(item.id);
+    if (!Number.isInteger(id) || id < 101 || id > 104 || ids.has(id)) throw new Error(`consolas.json: identificador no válido o repetido (${item.id}).`);
+    if (!Number.isFinite(Number(item.price)) || Number(item.price) !== 15) throw new Error(`consolas.json: la consola ${id - 100} debe tener tarifa de Bs 15 por hora.`);
+    ids.add(id);
+    return {
+      ...item,
+      id,
+      kind: 'console',
+      price: Number(item.price),
+      extraControllerFee: Number(item.extraControllerFee || 6),
+      available: Boolean(item.available),
+      elapsed: String(item.elapsed || ''),
+      image: String(item.image || './imagenes/playstation.webp'),
+      imageAlt: String(item.imageAlt || `PlayStation ${id - 100}`),
+      sessionStartedAt: null,
+      sessionEndsAt: null,
+      reservationExpiresAt: null
+    };
+  });
   restoreConsoleStates();
 }
 function restoreConsoleStates() {
@@ -378,11 +427,17 @@ function updateCarouselPosition() {
   $('#carouselProgress').css('width', `${maxScroll ? current / maxScroll * 100 : 100}%`);
 }
 async function initializeCatalog() {
-  $('#catalogError').prop('hidden', true);
+  $('#catalogError, #consoleCatalogError').prop('hidden', true);
   $('#catalogStatus').text('Cargando catálogo…');
-  $('#pcGrid').html('<div class="catalog-state"><strong>Preparando las estaciones…</strong>Estamos leyendo el archivo de datos.</div>');
-  try {
-    await Promise.all([loadMachineCatalog(), loadConsoleCatalog()]);
+  $('#pcGrid').html('<div class="catalog-state"><strong>Preparando las estaciones…</strong>Estamos leyendo data/computadoras.json.</div>');
+  $('#consoleGrid').html('<div class="catalog-state"><strong>Preparando las consolas…</strong>Estamos leyendo data/consolas.json.</div>');
+
+  const [machinesResult, consolesResult] = await Promise.allSettled([
+    loadMachineCatalog(),
+    loadConsoleCatalog()
+  ]);
+
+  if (machinesResult.status === 'fulfilled') {
     fillSelect('filterCategory', 'Todas las categorías', ['basic', 'standard', 'premium'], false);
     const categoryLabels = { basic: 'Básica', standard: 'Estándar', premium: 'Premium' };
     [...document.getElementById('filterCategory').options].forEach(option => {
@@ -391,15 +446,30 @@ async function initializeCatalog() {
     fillSelect('filterCPU', 'Primero elige categoría', [], true);
     fillSelect('filterGPU', 'Primero elige procesador', [], true);
     renderMachines();
-    renderConsoles();
-    startSessionTicker();
-  } catch (error) {
-    console.error('Error al cargar el catálogo de LevelUp:', error);
+    $('#catalogStatus').text(`${state.machines.length} estaciones listas`);
+  } else {
+    const error = machinesResult.reason;
+    console.error('Error en data/computadoras.json:', error);
+    state.machines = [];
     $('#pcGrid').empty();
-    $('#catalogStatus').text('No se pudo cargar el catálogo');
-    $('#catalogErrorText').text(error.message);
+    $('#catalogStatus').text('No se pudo cargar el catálogo de computadoras');
+    $('#catalogErrorText').text(error?.message || 'Comprueba que data/computadoras.json esté publicado.');
     $('#catalogError').prop('hidden', false);
+    updateStats();
   }
+
+  if (consolesResult.status === 'fulfilled') {
+    renderConsoles();
+    $('#consoleCatalogError').prop('hidden', true);
+  } else {
+    const error = consolesResult.reason;
+    console.error('Error en data/consolas.json:', error);
+    state.consoles = [];
+    $('#consoleGrid').empty();
+    $('#consoleCatalogErrorText').text(error?.message || 'Comprueba que data/consolas.json esté publicado.');
+    $('#consoleCatalogError').prop('hidden', false);
+  }
+  startSessionTicker();
 }
 
 /* Cuentas y actividad local. Se conservan las claves usadas por el prototipo anterior. */
@@ -933,6 +1003,7 @@ function bindLevelUpEvents() {
   $document.on('click.levelupCatalog', '[data-select-machine]', function () { openBooking(Number(this.dataset.selectMachine)); });
   $document.on('click.levelupConsoles', '[data-select-console]', function () { openConsoleBooking(Number(this.dataset.selectConsole)); });
   $document.on('click.levelupCatalog', '#retryCatalogButton', initializeCatalog);
+  $document.on('click.levelupCatalog', '[data-retry-catalog]', initializeCatalog);
   const carousel = document.getElementById('pcCarousel');
   if (carousel) $(carousel).off('scroll.levelupCarousel').on('scroll.levelupCarousel', updateCarouselPosition);
   $(window).off('resize.levelupCarousel').on('resize.levelupCarousel', updateCarouselPosition);
