@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v21-reservas-integradas';
+const CACHE_NAME = 'levelup-cibercafe-v22-turno-a-sesion';
 const APP_SHELL = [
   './',
   './index.html',

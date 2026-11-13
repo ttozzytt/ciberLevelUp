@@ -563,3 +563,16 @@ button:disabled { opacity: .48; cursor: not-allowed !important; transform: none 
 
 /* Mensaje de conflicto entre una sesión inmediata y un turno futuro. */
 .booking-conflict-message { margin: 9px 0 0; padding: 9px 11px; border-radius: 9px; background: rgba(255,113,140,.08); border: 1px solid rgba(255,113,140,.24); font-size: 11px; line-height: 1.45; }
+
+
+/* Acciones del turno reservado: el inicio convierte la reserva en una sesión del catálogo. */
+.reservation-actions { display: flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.reservation-state { display: inline-flex; width: fit-content; align-items: center; border-radius: 999px; padding: 3px 8px; color: var(--muted); background: rgba(255,255,255,.045); }
+.reservation-state.ready { color: var(--green); background: rgba(92,230,165,.09); }
+.reservation-start { min-width: 112px; min-height: 44px; padding: 8px 13px; border: 0; border-bottom: 3px solid #f97316; border-radius: 8px; color: #fff; background: #0f172a; font-size: 10px; font-weight: 850; cursor: pointer; }
+.reservation-start:hover { background: #18243b; }
+.reservation-start:disabled { cursor: wait; opacity: .7; }
+.reservation-cancel { min-width: 88px; min-height: 44px; padding: 8px 12px; border: 1px solid rgba(255,113,140,.24); border-bottom: 3px solid #f97316; border-radius: 8px; color: #fff; background: #0f172a; font-size: 10px; font-weight: 800; cursor: pointer; }
+.reservation-cancel:hover { background: #261725; border-color: rgba(255,113,140,.5); }
+.reservation-cancel:disabled { cursor: wait; opacity: .65; }
+@media (max-width: 680px) { .reservation-item { align-items: flex-start; flex-direction: column; } .reservation-actions { width: 100%; justify-content: flex-start; } }
