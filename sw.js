@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v17-responsive-accessories';
+const CACHE_NAME = 'levelup-cibercafe-v18-snacks-prices-images';
 const APP_SHELL = [
   './',
   './index.html',
@@ -18,7 +18,14 @@ const APP_SHELL = [
   './imagenes/pc-basica.webp',
   './imagenes/pc-estandar.webp',
   './imagenes/pc-premium.webp',
-  './imagenes/playstation.webp'
+  './imagenes/playstation.webp',
+  './imagenes/snack-papas-georges.jpg',
+  './imagenes/snack-nachos-picantes.jpg',
+  './imagenes/snack-chizitos-queso.jpg',
+  './imagenes/bebida-gaseosa-personal.jpg',
+  './imagenes/comida-maruchan-vaso.jpg',
+  './imagenes/accesorio-cascos-gamer.jpg',
+  './imagenes/accesorio-mousepad-gamer.jpg'
 ];
 
 self.addEventListener('install', event => {

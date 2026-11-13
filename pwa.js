@@ -1391,10 +1391,14 @@ function markHydrated() {
   else console.info(`Hidratación LevelUp completada: ${document.querySelectorAll('[data-hidratado="true"]').length} controles activados.`);
 }
 const ACCESSORY_ITEMS = {
-  controller: { name: 'Mando adicional para PlayStation', price: 6, priceLabel: 'Bs 6 / sesión' },
-  headset: { name: 'Audífonos gamer', price: null, priceLabel: 'Precio a consultar' },
-  mousepad: { name: 'Mousepad gamer', price: null, priceLabel: 'Precio a consultar' },
-  drink: { name: 'Bebidas frías', price: null, priceLabel: 'Precio a consultar' }
+  papas: { name: "Papas George's Chip", price: 5, priceLabel: 'Bs 5 / unidad' },
+  nachos: { name: 'Nachos picantes', price: 3, priceLabel: 'Bs 3 / unidad' },
+  chizitos: { name: 'Chizitos', price: 2, priceLabel: 'Bs 2 / unidad' },
+  drink: { name: 'Gaseosa personal (Coca-Cola, Sprite o Fanta)', price: 3, priceLabel: 'Bs 3 / unidad' },
+  maruchan: { name: 'Maruchan en vaso', price: 17, priceLabel: 'Bs 17 / vaso' },
+  headset: { name: 'Cascos gamer', price: 10, priceLabel: 'Bs 10' },
+  mousepad: { name: 'Mousepad gamer', price: 5, priceLabel: 'Bs 5' },
+  controller: { name: 'Mando adicional para PlayStation', price: 6, priceLabel: 'Bs 6 / sesión' }
 };
 function loadAccessoryQueue() {
   try {
@@ -1412,7 +1416,10 @@ function renderAccessoryQueue() {
   const count = document.getElementById('accessoryQueueCount');
   if (!list || !count) return;
   const total = state.accessoryQueue.reduce((sum, item) => sum + item.quantity, 0);
+  const estimatedTotal = state.accessoryQueue.reduce((sum, item) => sum + (ACCESSORY_ITEMS[item.id].price * item.quantity), 0);
+  const totalLabel = document.getElementById('accessoryQueueTotal');
   count.textContent = `${total} ${total === 1 ? 'artículo' : 'artículos'}`;
+  if (totalLabel) totalLabel.textContent = `Total estimado: Bs ${estimatedTotal}`;
   if (!state.accessoryQueue.length) {
     list.replaceChildren(createTextElement('p', 'accessory-empty', 'Todavía no agregaste artículos.'));
     return;
@@ -1422,7 +1429,7 @@ function renderAccessoryQueue() {
     const product = ACCESSORY_ITEMS[item.id];
     const row = createTextElement('div', 'accessory-queue-row');
     const name = createTextElement('span', 'accessory-queue-name', product.name);
-    const detail = createTextElement('span', 'accessory-queue-detail', `${item.quantity} × ${product.priceLabel}`);
+    const detail = createTextElement('span', 'accessory-queue-detail', `${item.quantity} × ${product.priceLabel} = Bs ${product.price * item.quantity}`);
     const remove = createTextElement('button', 'btn-tactil accessory-remove', 'Quitar');
     remove.type = 'button';
     remove.dataset.accessoryRemove = item.id;
