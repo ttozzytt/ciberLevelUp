@@ -460,7 +460,7 @@ button:disabled { opacity: .48; cursor: not-allowed !important; transform: none 
 .snack-product-track { display: flex; align-items: stretch; height: 100%; min-height: 0; gap: 10px; }
 .snack-product-card { flex: 0 0 calc((100% - 30px)/4); min-width: 0; height: 100%; max-height: 285px; scroll-snap-align: start; }
 .snack-product-card[hidden] { display: none !important; }
-.snack-product-card .accessory-art { height: 88px; min-height: 88px; padding: 6px; }
+.snack-product-card .accessory-art { height: 64px; min-height: 64px; padding: 3px; background: rgba(255,255,255,.035); }
 .snack-product-card .accessory-copy { gap: 5px; padding: 9px; }
 .snack-product-card .accessory-copy h3 { font-size: 12px; }
 .snack-product-card .accessory-copy p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; min-height: 28px; font-size: 10px; line-height: 1.4; }
@@ -522,7 +522,7 @@ body.snack-view-open .main-content { flex: 1 1 auto; height: 0; min-height: 0; o
   .snack-category-tab { flex: 1 1 0; min-width: 0; min-height: 42px; padding: 7px 6px; font-size: 10px; }
   .snack-carousel-tools { margin-left: auto; }
   .snack-product-card { flex-basis: calc((100% - 10px)/2); max-height: 265px; }
-  .snack-product-card .accessory-art { height: 82px; min-height: 82px; }
+  .snack-product-card .accessory-art { height: 58px; min-height: 58px; padding: 2px; }
   .snack-product-card .accessory-copy { gap: 4px; padding: 8px; }
   .snack-product-card .accessory-copy h3 { font-size: 11px; }
   .snack-product-card .accessory-copy p { min-height: 26px; font-size: 9px; }
@@ -550,14 +550,14 @@ body.snack-view-open .main-content { flex: 1 1 auto; height: 0; min-height: 0; o
   .snack-view.active { gap: 6px; }
   .snack-view-heading h1 { font-size: 21px; }
   .snack-view-heading p:last-child { display: none; }
-  .snack-product-card .accessory-art { height: 65px; min-height: 65px; }
+  .snack-product-card .accessory-art { height: 52px; min-height: 52px; padding: 2px; }
   .snack-product-card .accessory-copy { gap: 3px; padding: 6px; }
   .snack-product-card .accessory-copy p { min-height: 20px; }
   .snack-product-card .accessory-add { min-height: 40px; }
 }
 /* Ajuste final de la vista compacta y de los siete accesos del menú móvil. */
 @media (max-width: 820px) {
-  .bottom-nav { grid-template-columns: repeat(7, minmax(0,1fr)); }
+  .bottom-nav { grid-template-columns: repeat(6, minmax(0,1fr)); }
   body.snack-view-open .snack-workspace { display: block; height: 100%; flex: 1 1 auto; overflow: hidden; }
   body.snack-view-open .snack-catalog-panel { height: 100%; }
 }

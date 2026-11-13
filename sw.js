@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v20-snacks-layout-compacto';
+const CACHE_NAME = 'levelup-cibercafe-v21-snacks-images-trimmed';
 const APP_SHELL = [
   './',
   './index.html',
@@ -25,7 +25,8 @@ const APP_SHELL = [
   './imagenes/bebida-gaseosa-personal.jpg',
   './imagenes/comida-maruchan-vaso.jpg',
   './imagenes/accesorio-cascos-gamer.jpg',
-  './imagenes/accesorio-mousepad-gamer.jpg'
+  './imagenes/accesorio-mousepad-gamer.jpg',
+  './imagenes/mando-adicional-ps5.jpg'
 ];
 
 self.addEventListener('install', event => {
