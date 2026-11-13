@@ -9,10 +9,11 @@ const STORAGE = {
   machines: 'levelup_machine_states_v3',
   consoles: 'levelup_console_states_v1',
   pending: 'levelup_pending_actions_v1',
-  scheduledReservations: 'levelup_scheduled_reservations_v1'
+  scheduledReservations: 'levelup_scheduled_reservations_v1',
+  accessoryQueue: 'levelup_accessory_queue_v1'
 };
 const state = {
-  machines: [], consoles: [], accounts: [], scheduledReservations: [], activeUser: null, currentFilter: 'all',
+  machines: [], consoles: [], accounts: [], scheduledReservations: [], accessoryQueue: [], activeUser: null, currentFilter: 'all',
   selectedMachine: null, selectedResourceType: null, booking: null, pendingMachineId: null, pendingConsoleId: null,
   rechargeAmount: 20, rechargeMethod: 'QR',
   hydrationComplete: false, networkState: 'checking',
@@ -609,7 +610,6 @@ async function initializeCatalog() {
 
 /* Reservas futuras de turno: ejercicio local de validación y persistencia, separado del apartado de reserva inmediata. */
 const RESERVATION_DURATIONS = [1, 2, 3, 5, 8];
-const MINIMUM_RESERVATION_LEAD_MS = 5 * 60 * 1000;
 function loadScheduledReservations() {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE.scheduledReservations) || '[]');
@@ -619,7 +619,7 @@ function loadScheduledReservations() {
       .filter(item => item && typeof item === 'object' && typeof item.id === 'string'
         && typeof item.name === 'string' && typeof item.resourceKey === 'string'
         && typeof item.startsAt === 'string' && Number.isFinite(new Date(item.startsAt).getTime())
-        && new Date(item.startsAt).getTime() >= now
+        && new Date(item.startsAt).getTime() + Number(item.durationHours) * 60 * 60 * 1000 >= now
         && RESERVATION_DURATIONS.includes(Number(item.durationHours)))
       .slice(0, 50)
       .map(item => ({
@@ -687,14 +687,15 @@ function localDateTimeInputValue(timestamp) {
   const date = new Date(timestamp - new Date(timestamp).getTimezoneOffset() * 60000);
   return date.toISOString().slice(0, 16);
 }
+function getCurrentMinuteStart(now = new Date()) {
+  const currentMinute = new Date(now.getTime());
+  currentMinute.setSeconds(0, 0);
+  return currentMinute;
+}
 function getNextReservationStart(now = new Date()) {
-  // Propone una hora cercana en el día actual; si el horario ya terminó,
-  // propone las 08:00 del siguiente día de atención.
-  const candidate = new Date(now.getTime() + 30 * 60 * 1000);
-  candidate.setSeconds(0, 0);
-  const remainder = candidate.getMinutes() % 15;
-  if (remainder) candidate.setMinutes(candidate.getMinutes() + (15 - remainder));
-
+  // Para una contratación inmediata, propone este mismo minuto, sin espera artificial.
+  // Si el local está fuera de horario, propone la próxima apertura.
+  const candidate = getCurrentMinuteStart(now);
   if (candidate.getHours() < 8) candidate.setHours(8, 0, 0, 0);
   if (candidate.getHours() >= 23) {
     candidate.setDate(candidate.getDate() + 1);
@@ -705,14 +706,13 @@ function getNextReservationStart(now = new Date()) {
 function setReservationDateMinimum() {
   const input = document.getElementById('fechaTurno');
   if (!input) return;
-  const minimum = Date.now() + MINIMUM_RESERVATION_LEAD_MS;
+  const minimum = getCurrentMinuteStart().getTime();
   input.min = localDateTimeInputValue(minimum);
   const selected = input.value ? new Date(input.value).getTime() : NaN;
-  // La fecha inicial se rellena automáticamente con hoy (si aún hay horario)
-  // o con el próximo día de atención. Nunca se conserva un valor pasado.
+  // La fecha inicial es hoy y el horario puede comenzar inmediatamente.
+  // Solo se impiden minutos anteriores al minuto actual.
   if (!Number.isFinite(selected) || selected < minimum) {
-    const suggested = getNextReservationStart(new Date());
-    input.value = localDateTimeInputValue(Math.max(suggested.getTime(), minimum));
+    input.value = localDateTimeInputValue(getNextReservationStart().getTime());
   }
 }
 function reservationDateLabel(value) {
@@ -766,15 +766,19 @@ function validateScheduledReservation() {
     : name.length < 2 ? 'El nombre debe tener al menos 2 caracteres.' : '';
   const resource = getReservationResource(resourceKey);
   const resourceError = !resource ? 'Selecciona un equipo válido del catálogo.' : '';
+  const currentMinute = getCurrentMinuteStart().getTime();
   const dateError = !dateValue ? 'Selecciona la fecha y hora del turno.'
     : !Number.isFinite(startAt) ? 'La fecha y hora no son válidas.'
-    : startAt < Date.now() + MINIMUM_RESERVATION_LEAD_MS ? 'No se permiten fechas u horas anteriores. Elige desde hoy y al menos 5 minutos después de ahora.' : '';
+    : startAt < currentMinute ? 'No se permiten fechas u horas anteriores al momento actual.' : '';
   const durationError = !RESERVATION_DURATIONS.includes(duration) ? 'Selecciona una duración disponible.' : '';
   setReservationFieldError('clienteNombre', 'clienteNombreError', nameError);
   setReservationFieldError('recursoSelect', 'recursoSelectError', resourceError);
   setReservationFieldError('fechaTurno', 'fechaTurnoError', dateError);
   setReservationFieldError('duracionTurno', 'duracionTurnoError', durationError);
-  return { valid: !(nameError || resourceError || dateError || durationError), name, resource, startAt, duration };
+  // Si se elige el minuto actual, comienza ahora mismo; no se añade ningún margen de espera.
+  const effectiveStartAt = Number.isFinite(startAt) && startAt >= currentMinute && startAt <= Date.now()
+    ? Date.now() : startAt;
+  return { valid: !(nameError || resourceError || dateError || durationError), name, resource, startAt: effectiveStartAt, duration };
 }
 function reservationOverlaps(resourceKey, startAt, endAt) {
   return state.scheduledReservations.some(item => {
@@ -1386,6 +1390,63 @@ function markHydrated() {
   if (remaining.length) console.error('Quedaron controles sin hidratar:', [...remaining].map(item => item.id || item.textContent.trim()));
   else console.info(`Hidratación LevelUp completada: ${document.querySelectorAll('[data-hidratado="true"]').length} controles activados.`);
 }
+const ACCESSORY_ITEMS = {
+  controller: { name: 'Mando adicional para PlayStation', price: 6, priceLabel: 'Bs 6 / sesión' },
+  headset: { name: 'Audífonos gamer', price: null, priceLabel: 'Precio a consultar' },
+  mousepad: { name: 'Mousepad gamer', price: null, priceLabel: 'Precio a consultar' },
+  drink: { name: 'Bebidas frías', price: null, priceLabel: 'Precio a consultar' }
+};
+function loadAccessoryQueue() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE.accessoryQueue) || '[]');
+    state.accessoryQueue = Array.isArray(saved) ? saved.filter(item => ACCESSORY_ITEMS[item.id] && Number.isInteger(item.quantity) && item.quantity > 0).slice(0, 30) : [];
+  } catch (_) { state.accessoryQueue = []; }
+  renderAccessoryQueue();
+}
+function saveAccessoryQueue() {
+  try { localStorage.setItem(STORAGE.accessoryQueue, JSON.stringify(state.accessoryQueue)); }
+  catch (_) { showToast('No se pudo guardar la lista en este navegador.', 'error'); }
+}
+function renderAccessoryQueue() {
+  const list = document.getElementById('accessoryQueue');
+  const count = document.getElementById('accessoryQueueCount');
+  if (!list || !count) return;
+  const total = state.accessoryQueue.reduce((sum, item) => sum + item.quantity, 0);
+  count.textContent = `${total} ${total === 1 ? 'artículo' : 'artículos'}`;
+  if (!state.accessoryQueue.length) {
+    list.replaceChildren(createTextElement('p', 'accessory-empty', 'Todavía no agregaste artículos.'));
+    return;
+  }
+  const fragment = document.createDocumentFragment();
+  state.accessoryQueue.forEach(item => {
+    const product = ACCESSORY_ITEMS[item.id];
+    const row = createTextElement('div', 'accessory-queue-row');
+    const name = createTextElement('span', 'accessory-queue-name', product.name);
+    const detail = createTextElement('span', 'accessory-queue-detail', `${item.quantity} × ${product.priceLabel}`);
+    const remove = createTextElement('button', 'btn-tactil accessory-remove', 'Quitar');
+    remove.type = 'button';
+    remove.dataset.accessoryRemove = item.id;
+    remove.setAttribute('aria-label', `Quitar ${product.name}`);
+    row.append(name, detail, remove);
+    fragment.append(row);
+  });
+  list.replaceChildren(fragment);
+}
+function addAccessoryToQueue(id) {
+  if (!ACCESSORY_ITEMS[id]) return;
+  const existing = state.accessoryQueue.find(item => item.id === id);
+  if (existing) existing.quantity = Math.min(20, existing.quantity + 1);
+  else if (state.accessoryQueue.length < 12) state.accessoryQueue.push({ id, quantity: 1 });
+  else { showToast('La lista admite hasta 12 tipos de artículos.', 'error'); return; }
+  saveAccessoryQueue();
+  renderAccessoryQueue();
+  showToast(`${ACCESSORY_ITEMS[id].name} agregado a tu lista.`);
+}
+function removeAccessoryFromQueue(id) {
+  state.accessoryQueue = state.accessoryQueue.filter(item => item.id !== id);
+  saveAccessoryQueue();
+  renderAccessoryQueue();
+}
 function bindLevelUpEvents() {
   /* Limpieza previa: evita duplicar escuchadores si se ejecuta una segunda hidratación. */
   $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupAccordion .levelupValidation .levelupReservation');
@@ -1522,6 +1583,14 @@ function bindLevelUpEvents() {
     if (event.target === this) closeModal('#rechargeModal');
   });
 
+  /* Lista de accesorios y bebidas: controles dinámicos mediante delegación de eventos. */
+  $document.on('click.levelupAccessories', '[data-accessory-add]', function () {
+    addAccessoryToQueue(this.dataset.accessoryAdd);
+  });
+  $document.on('click.levelupAccessories', '[data-accessory-remove]', function () {
+    removeAccessoryFromQueue(this.dataset.accessoryRemove);
+  });
+
   /* Acordeones desplegables de información. */
   $document.on('click.levelupAccordion', '[data-accordion]', function () {
     const panel = document.getElementById(this.dataset.accordion);
@@ -1577,8 +1646,8 @@ function bindLevelUpEvents() {
   });
   $document.on('change.levelupReservation blur.levelupReservation', '#fechaTurno', function () {
     const date = new Date(this.value);
-    const valid = this.value && !Number.isNaN(date.getTime()) && date.getTime() >= Date.now() + MINIMUM_RESERVATION_LEAD_MS;
-    setReservationFieldError('fechaTurno', 'fechaTurnoError', valid ? '' : 'Elige hoy o un día posterior y una hora al menos 5 minutos después de ahora.');
+    const valid = this.value && !Number.isNaN(date.getTime()) && date.getTime() >= getCurrentMinuteStart().getTime();
+    setReservationFieldError('fechaTurno', 'fechaTurnoError', valid ? '' : 'Elige el minuto actual o un horario posterior; no se permiten fechas u horas pasadas.');
   });
   $document.on('change.levelupReservation', '#duracionTurno', function () {
     setReservationFieldError('duracionTurno', 'duracionTurnoError', RESERVATION_DURATIONS.includes(Number(this.value)) ? '' : 'Selecciona una duración válida.');
@@ -1637,6 +1706,7 @@ function hydrateLevelUp() {
   loadAccounts();
   loadScheduledReservations();
   renderScheduledReservations();
+  loadAccessoryQueue();
   renderAccount();
   const initialView = location.hash.slice(1);
   showView(LEVELUP_VIEWS.includes(initialView) ? initialView : 'inicio', false);
@@ -1689,3 +1759,13 @@ window.addEventListener('pageshow', event => {
 $(function () {
   window.setTimeout(hydrateLevelUp, 420);
 });
+
+/* Evita que la navegación inferior tape formularios cuando aparece el teclado móvil. */
+if (window.visualViewport) {
+  const updateKeyboardViewport = () => {
+    const keyboardLikelyOpen = window.innerHeight - window.visualViewport.height > 140;
+    document.body.classList.toggle('keyboard-open', keyboardLikelyOpen);
+  };
+  window.visualViewport.addEventListener('resize', updateKeyboardViewport);
+  window.visualViewport.addEventListener('scroll', updateKeyboardViewport);
+}

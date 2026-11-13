@@ -386,3 +386,46 @@ button:disabled { opacity: .48; cursor: not-allowed !important; transform: none 
   .reservation-list-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
   .reservation-item { align-items: flex-start; }
 }
+
+/* Guía Parte 2: responsividad crítica y lista de accesorios adaptada de la cola Karaoke. */
+.accessory-panel { margin-top: 18px; }
+.accessory-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.accessory-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.025); }
+.accessory-art { display: grid; min-height: 92px; place-items: center; background: linear-gradient(135deg,rgba(77,231,238,.10),rgba(116,66,229,.16)); font-size: 42px; }
+.accessory-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px; }
+.accessory-copy h3 { width: 100%; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.accessory-copy p { min-width: 0; margin: 0; color: var(--muted); font-size: 12px; }
+.accessory-copy strong { margin-top: auto; font-size: 13px; }
+.accessory-copy strong small { color: var(--muted); font-weight: 500; }
+.btn-tactil { min-width: 44px; min-height: 44px; }
+.accessory-add { width: 100%; margin-top: 4px; }
+.accessory-queue-wrap { margin-top: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; }
+.accessory-queue-heading { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 10px; }
+.accessory-queue-heading h3 { min-width: 0; margin: 0; font-size: 15px; }
+.accessory-queue-heading span { flex: 0 0 auto; color: var(--muted); font-size: 12px; }
+.accessory-queue { display: grid; gap: 8px; margin-top: 10px; }
+.accessory-queue-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 10px; min-width: 0; padding: 8px; border-bottom: 1px solid var(--line); }
+.accessory-queue-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.accessory-queue-detail { color: var(--muted); font-size: 12px; }
+.accessory-remove { padding: 0 10px; }
+.accessory-empty,.accessory-note { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+@media (max-width: 820px) {
+  .accessory-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  .accessory-queue-row { grid-template-columns: minmax(0,1fr) auto; }
+  .accessory-queue-detail { grid-column: 1; }
+  .accessory-remove { grid-column: 2; grid-row: 1 / span 2; }
+}
+@media (max-width: 380px) {
+  .accessory-copy { padding: 9px; }
+  .accessory-art { min-height: 72px; }
+  .accessory-queue-wrap { padding: 10px; }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .topbar { min-height: 48px; padding-top: 5px; padding-bottom: 5px; }
+  .main-content { padding-top: 12px; padding-bottom: 12px; }
+  .accessory-art { min-height: 58px; }
+}
+@media (max-width: 820px) {
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus { scroll-margin-bottom: 35vh; }
+  body.keyboard-open .bottom-nav { display: none; }
+}

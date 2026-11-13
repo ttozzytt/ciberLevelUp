@@ -193,6 +193,23 @@
               <div class="service-point"><span class="feature-icon">▣</span><div><strong>Métodos de pago</strong><p>Puedes elegir QR o efectivo para registrar una recarga. Esta versión todavía no genera cobros bancarios ni se conecta con una pasarela de pago.</p></div></div>
             </div><button class="primary-btn" style="margin-top:15px" type="button" data-view-target="computadoras" data-hidratado="false" disabled>Ver computadoras →</button></section>
           </div>
+          <section class="panel accessory-panel" aria-labelledby="accessoryTitle">
+            <div class="panel-heading">
+              <span class="feature-icon">🎧</span>
+              <div><h2 id="accessoryTitle">Extras para tu partida</h2><p>Solicita mandos, periféricos y bebidas durante tu visita.</p></div>
+            </div>
+            <div class="accessory-grid" id="accessoryCatalog">
+              <article class="accessory-card"><div class="accessory-art">🎮</div><div class="accessory-copy"><h3 title="Mando adicional para PlayStation">Mando adicional para PlayStation</h3><p>Un mando extra para jugar acompañado.</p><strong>Bs 6 <small>/ sesión</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="controller" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+              <article class="accessory-card"><div class="accessory-art">🎧</div><div class="accessory-copy"><h3 title="Audífonos gamer">Audífonos gamer</h3><p>Audífonos cómodos para una mejor experiencia.</p><strong>Precio a consultar</strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="headset" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+              <article class="accessory-card"><div class="accessory-art">🖱️</div><div class="accessory-copy"><h3 title="Mousepad gamer">Mousepad gamer</h3><p>Superficie amplia para mayor control.</p><strong>Precio a consultar</strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="mousepad" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+              <article class="accessory-card"><div class="accessory-art">🥤</div><div class="accessory-copy"><h3 title="Bebidas frías">Bebidas frías</h3><p>Consulta las opciones disponibles en el local.</p><strong>Precio a consultar</strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="drink" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+            </div>
+            <div class="accessory-queue-wrap">
+              <div class="accessory-queue-heading"><h3>Mi lista de pedidos</h3><span id="accessoryQueueCount">0 artículos</span></div>
+              <div id="accessoryQueue" class="accessory-queue" aria-live="polite"><p class="accessory-empty">Todavía no agregaste artículos.</p></div>
+              <p class="accessory-note">Esta lista es una solicitud local de demostración; confirma disponibilidad y precios con el personal. No realiza cobros.</p>
+            </div>
+          </section>
           <section class="panel scheduled-reservation-panel" aria-labelledby="scheduledReservationTitle">
             <div class="panel-heading">
               <span class="feature-icon">◷</span>
@@ -218,8 +235,8 @@
                 </div>
                 <div class="form-field" id="fieldFechaTurno">
                   <label for="fechaTurno">Fecha y hora del turno</label>
-                  <input id="fechaTurno" name="fechaTurno" type="datetime-local" step="900" required data-hidratado="false" disabled>
-                  <small class="field-hint">Se propone hoy automáticamente. La fecha de solicitud se registra al guardar; también puedes elegir un día posterior.</small>
+                  <input id="fechaTurno" name="fechaTurno" type="datetime-local" step="60" required data-hidratado="false" disabled>
+                  <small class="field-hint">Se propone la hora actual para comenzar de inmediato. Puedes elegir hoy o una fecha futura; no se permiten horarios pasados.</small>
                   <small id="fechaTurnoError" aria-live="polite"></small>
                 </div>
                 <div class="form-field" id="fieldDuracionTurno">
