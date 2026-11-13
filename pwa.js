@@ -1,8 +1,8 @@
 'use strict';
 
 /* LevelUp: SPA ligera, hidratación controlada y delegación de eventos. */
-const LEVELUP_VIEWS = ['inicio', 'computadoras', 'consolas', 'cuenta', 'servicios', 'contacto'];
-const VIEW_LABELS = { inicio: 'Inicio', computadoras: 'Computadoras', consolas: 'PlayStation', cuenta: 'Mi cuenta', servicios: 'Servicios', contacto: 'Contacto' };
+const LEVELUP_VIEWS = ['inicio', 'computadoras', 'consolas', 'snacks', 'cuenta', 'servicios', 'contacto'];
+const VIEW_LABELS = { inicio: 'Inicio', computadoras: 'Computadoras', consolas: 'PlayStation', snacks: 'Snacks y pedidos', cuenta: 'Mi cuenta', servicios: 'Servicios', contacto: 'Contacto' };
 const STORAGE = {
   accounts: 'levelup_accounts_v1',
   activePhone: 'levelup_active_phone_v1',
@@ -97,6 +97,9 @@ function showView(name, updateHistory = true) {
   if (!LEVELUP_VIEWS.includes(name)) return;
   const target = document.getElementById(`view-${name}`);
   if (!target) return;
+  document.body.classList.toggle('snack-view-open', name === 'snacks');
+  document.body.classList.remove('snack-order-open');
+  document.getElementById('snackOrderPanel')?.setAttribute('aria-hidden', window.matchMedia('(max-width: 820px)').matches ? 'true' : 'false');
   const previousIndex = LEVELUP_VIEWS.indexOf(state.currentView);
   const nextIndex = LEVELUP_VIEWS.indexOf(name);
   const viewChanged = state.currentView !== name;
@@ -127,6 +130,7 @@ function showView(name, updateHistory = true) {
   }
   closeMobileMenu();
   if (name === 'computadoras') requestAnimationFrame(updateCarouselPosition);
+  if (name === 'snacks') requestAnimationFrame(updateSnackCarouselPosition);
   if (name === 'cuenta') renderAccount();
 }
 function closeMobileMenu() {
@@ -1390,16 +1394,99 @@ function markHydrated() {
   if (remaining.length) console.error('Quedaron controles sin hidratar:', [...remaining].map(item => item.id || item.textContent.trim()));
   else console.info(`Hidratación LevelUp completada: ${document.querySelectorAll('[data-hidratado="true"]').length} controles activados.`);
 }
+let currentSnackCategory = 'snacks';
+function updateSnackCarouselPosition() {
+  const carousel = document.getElementById('snackCarousel');
+  const track = document.getElementById('snackProductTrack');
+  if (!carousel || !track) return;
+  const cards = [...track.querySelectorAll('[data-snack-item]:not([hidden])')];
+  const first = cards[0];
+  if (!first) return;
+  const gap = Number.parseFloat(getComputedStyle(track).gap) || 0;
+  const step = first.getBoundingClientRect().width + gap;
+  const visible = Math.max(1, Math.floor((carousel.clientWidth + gap) / step));
+  const index = Math.min(cards.length - 1, Math.max(0, Math.round(carousel.scrollLeft / step)));
+  const end = Math.min(cards.length, index + visible);
+  const status = document.getElementById('snackCarouselPosition');
+  const previous = document.getElementById('snackCarouselPrev');
+  const next = document.getElementById('snackCarouselNext');
+  if (status) status.textContent = `${index + 1}–${end} de ${cards.length}`;
+  if (previous) previous.disabled = index === 0;
+  if (next) next.disabled = end >= cards.length;
+}
+function setSnackCategory(category) {
+  if (!['snacks', 'accessories'].includes(category)) return;
+  currentSnackCategory = category;
+  document.querySelectorAll('[data-snack-category]').forEach(button => {
+    const active = button.dataset.snackCategory === category;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  document.querySelectorAll('[data-snack-item]').forEach(card => {
+    card.hidden = card.dataset.snackGroup !== category;
+  });
+  const carousel = document.getElementById('snackCarousel');
+  if (carousel) carousel.scrollLeft = 0;
+  requestAnimationFrame(updateSnackCarouselPosition);
+}
+function scrollSnackCarousel(direction) {
+  const carousel = document.getElementById('snackCarousel');
+  const track = document.getElementById('snackProductTrack');
+  const first = track?.querySelector('[data-snack-item]:not([hidden])');
+  if (!carousel || !track || !first) return;
+  const gap = Number.parseFloat(getComputedStyle(track).gap) || 0;
+  const step = first.getBoundingClientRect().width + gap;
+  const visible = Math.max(1, Math.floor((carousel.clientWidth + gap) / step));
+  carousel.scrollBy({ left: direction * step * visible, behavior: 'smooth' });
+}
+function openSnackOrder() {
+  document.body.classList.add('snack-order-open');
+  document.getElementById('snackOrderPanel')?.setAttribute('aria-hidden', 'false');
+  document.getElementById('closeSnackOrder')?.focus();
+}
+function closeSnackOrder() {
+  document.body.classList.remove('snack-order-open');
+  document.getElementById('snackOrderPanel')?.setAttribute('aria-hidden', 'true');
+}
+
 const ACCESSORY_ITEMS = {
   papas: { name: "Papas George's Chip", price: 5, priceLabel: 'Bs 5 / unidad' },
   nachos: { name: 'Nachos picantes', price: 3, priceLabel: 'Bs 3 / unidad' },
   chizitos: { name: 'Chizitos', price: 2, priceLabel: 'Bs 2 / unidad' },
   drink: { name: 'Gaseosa personal (Coca-Cola, Sprite o Fanta)', price: 3, priceLabel: 'Bs 3 / unidad' },
   maruchan: { name: 'Maruchan en vaso', price: 17, priceLabel: 'Bs 17 / vaso' },
-  headset: { name: 'Cascos gamer', price: 10, priceLabel: 'Bs 10' },
-  mousepad: { name: 'Mousepad gamer', price: 5, priceLabel: 'Bs 5' },
+  headset: { name: 'Cascos gamer', price: 10, priceLabel: 'Bs 10 / unidad' },
+  mousepad: { name: 'Mousepad gamer', price: 5, priceLabel: 'Bs 5 / unidad' },
   controller: { name: 'Mando adicional para PlayStation', price: 6, priceLabel: 'Bs 6 / sesión' }
 };
+const ACCESSORY_ALIASES = {
+  papas: ["papas", "papas george", "georges chip", "george's chip"],
+  nachos: ['nachos', 'nachos picantes'],
+  chizitos: ['chizitos', 'chizitos queso'],
+  drink: ['gaseosa', 'gaseosa personal', 'coca cola', 'coca-cola', 'sprite', 'fanta'],
+  maruchan: ['maruchan', 'maruchan vaso', 'maruchan en vaso'],
+  headset: ['cascos', 'cascos gamer', 'audifonos', 'audifonos gamer', 'audífonos gamer'],
+  mousepad: ['mousepad', 'mouse pad', 'mousepad gamer'],
+  controller: ['mando', 'mando adicional', 'segundo mando', 'mando adicional para playstation']
+};
+function normalizeOrderText(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function findAccessoryIdByName(value) {
+  const query = normalizeOrderText(value);
+  if (!query) return null;
+  for (const [id, item] of Object.entries(ACCESSORY_ITEMS)) {
+    const names = [item.name, ...(ACCESSORY_ALIASES[id] || [])];
+    if (names.some(name => normalizeOrderText(name) === query)) return id;
+  }
+  return null;
+}
+function setQuickOrderStatus(message, isError = false) {
+  const status = document.getElementById('quickOrderStatus');
+  if (!status) return;
+  status.textContent = String(message || '');
+  status.classList.toggle('error', Boolean(isError));
+}
 function loadAccessoryQueue() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE.accessoryQueue) || '[]');
@@ -1409,7 +1496,7 @@ function loadAccessoryQueue() {
 }
 function saveAccessoryQueue() {
   try { localStorage.setItem(STORAGE.accessoryQueue, JSON.stringify(state.accessoryQueue)); }
-  catch (_) { showToast('No se pudo guardar la lista en este navegador.', 'error'); }
+  catch (_) { showToast('No se pudo guardar el pedido en este navegador.', 'error'); }
 }
 function renderAccessoryQueue() {
   const list = document.getElementById('accessoryQueue');
@@ -1418,23 +1505,47 @@ function renderAccessoryQueue() {
   const total = state.accessoryQueue.reduce((sum, item) => sum + item.quantity, 0);
   const estimatedTotal = state.accessoryQueue.reduce((sum, item) => sum + (ACCESSORY_ITEMS[item.id].price * item.quantity), 0);
   const totalLabel = document.getElementById('accessoryQueueTotal');
+  const clearButton = document.getElementById('clearAccessoryQueue');
+  const headerCount = document.getElementById('snackHeaderCount');
+  const headerTotal = document.getElementById('snackHeaderTotal');
+  if (headerCount) headerCount.textContent = String(total);
+  if (headerTotal) headerTotal.textContent = `Bs ${estimatedTotal}`;
   count.textContent = `${total} ${total === 1 ? 'artículo' : 'artículos'}`;
   if (totalLabel) totalLabel.textContent = `Total estimado: Bs ${estimatedTotal}`;
+  if (clearButton) clearButton.hidden = state.accessoryQueue.length === 0;
   if (!state.accessoryQueue.length) {
-    list.replaceChildren(createTextElement('p', 'accessory-empty', 'Todavía no agregaste artículos.'));
+    list.replaceChildren(createTextElement('p', 'accessory-empty', 'Todavía no agregaste productos. Pulsa «Agregar al pedido» en un producto.'));
     return;
   }
   const fragment = document.createDocumentFragment();
   state.accessoryQueue.forEach(item => {
     const product = ACCESSORY_ITEMS[item.id];
     const row = createTextElement('div', 'accessory-queue-row');
-    const name = createTextElement('span', 'accessory-queue-name', product.name);
-    const detail = createTextElement('span', 'accessory-queue-detail', `${item.quantity} × ${product.priceLabel} = Bs ${product.price * item.quantity}`);
+    const info = createTextElement('div', 'accessory-queue-info');
+    const name = createTextElement('strong', 'accessory-queue-name', product.name);
+    const detail = createTextElement('span', 'accessory-queue-detail', `${item.quantity} × ${product.priceLabel}`);
+    info.append(name, detail);
+    const lineTotal = createTextElement('strong', 'accessory-line-total', `Bs ${product.price * item.quantity}`);
+    const quantity = createTextElement('div', 'accessory-quantity');
+    const decrease = createTextElement('button', 'btn-tactil accessory-quantity-btn', '−');
+    decrease.type = 'button';
+    decrease.dataset.accessoryDecrease = item.id;
+    decrease.setAttribute('aria-label', `Quitar una unidad de ${product.name}`);
+    const quantityValue = createTextElement('span', 'accessory-quantity-value', String(item.quantity));
+    const increase = createTextElement('button', 'btn-tactil accessory-quantity-btn', '+');
+    increase.type = 'button';
+    increase.dataset.accessoryIncrease = item.id;
+    increase.setAttribute('aria-label', `Agregar una unidad de ${product.name}`);
+    if (item.id === 'controller') {
+      increase.disabled = true;
+      increase.title = 'Solo se permite un segundo mando por sesión.';
+    }
+    quantity.append(decrease, quantityValue, increase);
     const remove = createTextElement('button', 'btn-tactil accessory-remove', 'Quitar');
     remove.type = 'button';
     remove.dataset.accessoryRemove = item.id;
-    remove.setAttribute('aria-label', `Quitar ${product.name}`);
-    row.append(name, detail, remove);
+    remove.setAttribute('aria-label', `Quitar ${product.name} del pedido`);
+    row.append(info, lineTotal, quantity, remove);
     fragment.append(row);
   });
   list.replaceChildren(fragment);
@@ -1442,21 +1553,63 @@ function renderAccessoryQueue() {
 function addAccessoryToQueue(id) {
   if (!ACCESSORY_ITEMS[id]) return;
   const existing = state.accessoryQueue.find(item => item.id === id);
-  if (existing) existing.quantity = Math.min(20, existing.quantity + 1);
-  else if (state.accessoryQueue.length < 12) state.accessoryQueue.push({ id, quantity: 1 });
-  else { showToast('La lista admite hasta 12 tipos de artículos.', 'error'); return; }
+  if (existing) {
+    if (id === 'controller') {
+      showToast('Solo puedes agregar un segundo mando por sesión.', 'error');
+      return;
+    }
+    existing.quantity = Math.min(20, existing.quantity + 1);
+  } else if (state.accessoryQueue.length < 12) state.accessoryQueue.push({ id, quantity: 1 });
+  else { showToast('El pedido admite hasta 12 tipos de productos.', 'error'); return; }
   saveAccessoryQueue();
   renderAccessoryQueue();
-  showToast(`${ACCESSORY_ITEMS[id].name} agregado a tu lista.`);
+  setQuickOrderStatus(`${ACCESSORY_ITEMS[id].name} agregado a tu pedido.`);
+  showToast(`${ACCESSORY_ITEMS[id].name} agregado al pedido.`);
+}
+function changeAccessoryQuantity(id, change) {
+  const item = state.accessoryQueue.find(entry => entry.id === id);
+  if (!item) return;
+  if (id === 'controller' && change > 0) return;
+  item.quantity += change;
+  if (item.quantity <= 0) state.accessoryQueue = state.accessoryQueue.filter(entry => entry.id !== id);
+  else item.quantity = Math.min(20, item.quantity);
+  saveAccessoryQueue();
+  renderAccessoryQueue();
 }
 function removeAccessoryFromQueue(id) {
   state.accessoryQueue = state.accessoryQueue.filter(item => item.id !== id);
   saveAccessoryQueue();
   renderAccessoryQueue();
+  setQuickOrderStatus(`${ACCESSORY_ITEMS[id]?.name || 'Producto'} quitado del pedido.`);
 }
+function clearAccessoryQueue() {
+  state.accessoryQueue = [];
+  saveAccessoryQueue();
+  renderAccessoryQueue();
+  setQuickOrderStatus('El pedido está vacío. Agrega productos desde el catálogo.');
+}
+function handleQuickOrderSubmit(event) {
+  event.preventDefault();
+  const input = document.getElementById('pedidoProductoInput');
+  const value = input?.value.trim() || '';
+  if (!value) {
+    setQuickOrderStatus('Escribe o selecciona un producto antes de agregarlo.', true);
+    input?.focus();
+    return;
+  }
+  const id = findAccessoryIdByName(value);
+  if (!id) {
+    setQuickOrderStatus('No encontré ese producto. Elige uno de los nombres del catálogo.', true);
+    input?.focus();
+    return;
+  }
+  addAccessoryToQueue(id);
+  if (input) input.value = '';
+}
+
 function bindLevelUpEvents() {
   /* Limpieza previa: evita duplicar escuchadores si se ejecuta una segunda hidratación. */
-  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupAccordion .levelupValidation .levelupReservation');
+  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupAccordion .levelupValidation .levelupReservation .levelupAccessories');
   $(window).off('.levelupRuntime .levelupCarousel');
 
   $document.on('click.levelupNavigation', '[data-view-target]', function (event) {
@@ -1597,6 +1750,23 @@ function bindLevelUpEvents() {
   $document.on('click.levelupAccessories', '[data-accessory-remove]', function () {
     removeAccessoryFromQueue(this.dataset.accessoryRemove);
   });
+  $document.on('click.levelupAccessories', '[data-accessory-increase]', function () {
+    changeAccessoryQuantity(this.dataset.accessoryIncrease, 1);
+  });
+  $document.on('click.levelupAccessories', '[data-accessory-decrease]', function () {
+    changeAccessoryQuantity(this.dataset.accessoryDecrease, -1);
+  });
+  $document.on('click.levelupAccessories', '#clearAccessoryQueue', clearAccessoryQueue);
+  $document.on('submit.levelupAccessories', '#quickOrderForm', handleQuickOrderSubmit);
+  $document.on('click.levelupAccessories', '[data-snack-category]', function () { setSnackCategory(this.dataset.snackCategory); });
+  $document.on('click.levelupAccessories', '#snackCarouselPrev', () => scrollSnackCarousel(-1));
+  $document.on('click.levelupAccessories', '#snackCarouselNext', () => scrollSnackCarousel(1));
+  $document.on('click.levelupAccessories', '#openSnackOrder', openSnackOrder);
+  $document.on('click.levelupAccessories', '#closeSnackOrder, #snackOrderBackdrop', closeSnackOrder);
+  $document.on('keydown.levelupAccessories', function (event) { if (event.key === 'Escape') closeSnackOrder(); });
+  const snackCarousel = document.getElementById('snackCarousel');
+  if (snackCarousel) $(snackCarousel).off('scroll.levelupSnackCarousel').on('scroll.levelupSnackCarousel', updateSnackCarouselPosition);
+  $(window).off('resize.levelupSnackCarousel').on('resize.levelupSnackCarousel', updateSnackCarouselPosition);
 
   /* Acordeones desplegables de información. */
   $document.on('click.levelupAccordion', '[data-accordion]', function () {
