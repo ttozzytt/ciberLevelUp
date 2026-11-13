@@ -356,3 +356,32 @@ button:disabled { opacity: .48; cursor: not-allowed !important; transform: none 
 }
 
 .console-rate-note { margin: -5px 0 9px; color: var(--muted); font-size: 8px; line-height: 1.4; }
+
+
+/* Bloque de reservas futuras adaptado a PC y PlayStation (Guía Parte 1). */
+.scheduled-reservation-panel { margin-top: 14px; padding: 19px; }
+.scheduled-reservation-panel > .panel-heading { align-items: center; }
+.reservation-count { display: grid; min-width: 30px; height: 30px; place-items: center; margin-left: auto; border: 1px solid rgba(77,231,238,.25); border-radius: 999px; color: var(--cyan); background: rgba(77,231,238,.07); font-size: 11px; font-weight: 900; }
+.reservation-form { margin-top: 13px; }
+.reservation-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px; }
+.reservation-submit { justify-self: start; min-width: 235px; }
+.reservation-list-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--line); }
+.reservation-list-heading h3 { margin: 0; color: var(--text); font-size: 12px; }
+.reservation-list-heading > span { color: var(--muted); font-size: 9px; }
+.scheduled-reservation-list { display: grid; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; }
+.reservation-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 12px; border: 1px solid rgba(255,255,255,.07); border-radius: 11px; background: rgba(255,255,255,.025); }
+.reservation-item > div { display: grid; min-width: 0; gap: 4px; }
+.reservation-item strong { overflow-wrap: anywhere; color: var(--text); font-size: 10px; }
+.reservation-item span { color: #d3d0e6; font-size: 9px; }
+.reservation-item small { color: var(--muted); font-size: 8px; line-height: 1.5; }
+.reservation-cancel { flex: 0 0 auto; padding: 7px 10px; border: 1px solid rgba(255,113,140,.22); border-radius: 8px; color: #ff9eae; background: rgba(255,113,140,.06); font-size: 9px; font-weight: 800; cursor: pointer; }
+.reservation-cancel:hover { border-color: rgba(255,113,140,.5); background: rgba(255,113,140,.12); }
+.reservation-empty { padding: 15px; border: 1px dashed var(--line); border-radius: 10px; color: var(--muted); text-align: center; font-size: 9px; }
+.reservation-disclaimer { margin: 13px 0 0; padding: 10px 12px; border-left: 2px solid var(--gold); border-radius: 0 8px 8px 0; color: var(--muted); background: rgba(255,209,109,.045); font-size: 9px; line-height: 1.65; }
+@media (max-width: 560px) {
+  .scheduled-reservation-panel { padding: 13px; }
+  .reservation-form-grid { grid-template-columns: 1fr; gap: 9px; }
+  .reservation-submit { width: 100%; min-width: 0; }
+  .reservation-list-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .reservation-item { align-items: flex-start; }
+}

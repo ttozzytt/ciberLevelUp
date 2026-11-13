@@ -193,6 +193,55 @@
               <div class="service-point"><span class="feature-icon">▣</span><div><strong>Pagos de demostración</strong><p>El saldo y las recargas son simulados. No se conecta con bancos ni pasarelas de pago.</p></div></div>
             </div><button class="primary-btn" style="margin-top:15px" type="button" data-view-target="computadoras" data-hidratado="false" disabled>Ver computadoras →</button></section>
           </div>
+          <section class="panel scheduled-reservation-panel" aria-labelledby="scheduledReservationTitle">
+            <div class="panel-heading">
+              <span class="feature-icon">◷</span>
+              <div>
+                <h2 id="scheduledReservationTitle">Reserva de turno</h2>
+                <p>Registra una solicitud para una PC o una PlayStation en una fecha y hora futuras.</p>
+              </div>
+              <span class="reservation-count" id="reservationCount">0</span>
+            </div>
+            <form id="formReserva" class="account-form reservation-form" novalidate>
+              <div class="reservation-form-grid">
+                <div class="form-field" id="fieldClienteNombre">
+                  <label for="clienteNombre">Nombre o grupo</label>
+                  <input id="clienteNombre" name="clienteNombre" type="text" maxlength="60" autocomplete="name" placeholder="Nombre de quien solicita" required data-hidratado="false" disabled>
+                  <small id="clienteNombreError" aria-live="polite"></small>
+                </div>
+                <div class="form-field" id="fieldRecursoSelect">
+                  <label for="recursoSelect">Equipo</label>
+                  <select id="recursoSelect" name="recursoSelect" required data-hidratado="false" disabled>
+                    <option value="">Cargando equipos…</option>
+                  </select>
+                  <small id="recursoSelectError" aria-live="polite"></small>
+                </div>
+                <div class="form-field" id="fieldFechaTurno">
+                  <label for="fechaTurno">Fecha y hora</label>
+                  <input id="fechaTurno" name="fechaTurno" type="datetime-local" required data-hidratado="false" disabled>
+                  <small id="fechaTurnoError" aria-live="polite"></small>
+                </div>
+                <div class="form-field" id="fieldDuracionTurno">
+                  <label for="duracionTurno">Duración</label>
+                  <select id="duracionTurno" name="duracionTurno" required data-hidratado="false" disabled>
+                    <option value="1">1 hora</option>
+                    <option value="2">2 horas</option>
+                    <option value="3">3 horas</option>
+                    <option value="5">5 horas</option>
+                    <option value="8">8 horas</option>
+                  </select>
+                  <small id="duracionTurnoError" aria-live="polite"></small>
+                </div>
+              </div>
+              <button class="primary-btn reservation-submit" type="submit" data-hidratado="false" disabled>Guardar solicitud de turno →</button>
+              <p class="form-status" id="reservationFormStatus" role="status" aria-live="polite"></p>
+            </form>
+            <div class="reservation-list-heading"><h3>Solicitudes de este dispositivo</h3><span>Guardadas localmente</span></div>
+            <ul id="listaReservas" class="scheduled-reservation-list" aria-live="polite">
+              <li class="reservation-empty">Cargando solicitudes guardadas…</li>
+            </ul>
+            <p class="reservation-disclaimer">Esta es una práctica de reservas con almacenamiento local. La solicitud queda guardada únicamente en este navegador: no se envía al negocio, no sincroniza con otros celulares y no bloquea una PC o consola para otros clientes. Para confirmar turnos reales entre dispositivos hace falta un servidor o una base de datos compartida.</p>
+          </section>
           <section class="panel occupancy-panel" aria-labelledby="occupancyTitle">
             <div class="panel-heading"><span class="feature-icon">▥</span><div><h2 id="occupancyTitle">Ocupación por categoría</h2><p>Resumen visual de estaciones libres y en uso, actualizado desde el catálogo.</p></div><strong class="occupancy-total" id="occupancySummary">15 equipos</strong></div>
             <div class="occupancy-chart" id="occupancyChart" aria-live="polite">

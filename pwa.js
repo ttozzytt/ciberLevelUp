@@ -8,26 +8,56 @@ const STORAGE = {
   activePhone: 'levelup_active_phone_v1',
   machines: 'levelup_machine_states_v3',
   consoles: 'levelup_console_states_v1',
-  pending: 'levelup_pending_actions_v1'
+  pending: 'levelup_pending_actions_v1',
+  scheduledReservations: 'levelup_scheduled_reservations_v1'
 };
 const state = {
-  machines: [], consoles: [], accounts: [], activeUser: null, currentFilter: 'all',
+  machines: [], consoles: [], accounts: [], scheduledReservations: [], activeUser: null, currentFilter: 'all',
   selectedMachine: null, selectedResourceType: null, booking: null, pendingMachineId: null, pendingConsoleId: null,
   rechargeAmount: 20, rechargeMethod: 'QR',
   hydrationComplete: false, networkState: 'checking',
   networkCheckId: 0, networkTimer: null, sessionTimer: null,
-  toastTimer: null, viewTransitionTimer: null, currentView: 'inicio',
-  intersectionObserver: null
+  toastTimer: null, viewTransitionTimer: null, currentView: 'inicio'
 };
 const $document = $(document);
 const modalReturnFocus = new WeakMap();
 
-function escapeHTML(value) {
-  return String(value ?? '').replace(/[&<>"']/g, character => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  })[character]);
-}
 function money(value) { return `Bs ${Number(value || 0).toLocaleString('es-BO', { maximumFractionDigits: 2 })}`; }
+function createTextElement(tag, className = '', text = '') {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  element.textContent = String(text ?? '');
+  return element;
+}
+function safeCatalogImage(path, fallback) {
+  const value = String(path || '');
+  return /^\.\/imagenes\/[a-z0-9._-]+\.(?:webp|png|jpe?g)$/i.test(value) ? value : fallback;
+}
+function createUsageTimer(label, id, attribute, value) {
+  const wrapper = createTextElement('div', 'pc-usage');
+  const timer = createTextElement('strong', '', value);
+  timer.setAttribute(attribute, String(id));
+  wrapper.append(document.createTextNode(`${label} · `), timer);
+  return wrapper;
+}
+function createPhotoButton({ className, path, fallback, caption, alt, width, height, label }) {
+  const button = createTextElement('button', className);
+  button.type = 'button';
+  button.dataset.photoOpen = '';
+  button.dataset.photo = safeCatalogImage(path, fallback);
+  button.dataset.caption = String(caption || 'Fotografía LevelUp');
+  button.setAttribute('aria-label', String(label || 'Ampliar fotografía'));
+  button.dataset.hidratado = 'true';
+  const image = document.createElement('img');
+  image.src = button.dataset.photo;
+  image.alt = String(alt || 'Imagen representativa de LevelUp');
+  image.width = width;
+  image.height = height;
+  image.loading = 'lazy';
+  image.decoding = 'async';
+  button.append(image);
+  return button;
+}
 function pad(value) { return String(value).padStart(2, '0'); }
 function formatClock(milliseconds) {
   const seconds = Math.max(0, Math.ceil(milliseconds / 1000));
@@ -215,7 +245,7 @@ function saveMachineStates() {
 }
 
 async function loadConsoleCatalog() {
-  const catalog = await readCatalogJSON('./data/consolas.json?v=13', 'Catálogo PlayStation');
+  const catalog = await readCatalogJSON('./data/consolas.json?v=14', 'Catálogo PlayStation');
   if (!Array.isArray(catalog) || catalog.length !== 4) throw new Error('consolas.json debe contener exactamente cuatro consolas.');
   const ids = new Set();
   state.consoles = catalog.map(item => {
@@ -285,24 +315,60 @@ function renderConsoles() {
   const grid = document.getElementById('consoleGrid');
   if (!grid) return;
   $('#consoleCount').text(state.consoles.length);
-  grid.innerHTML = state.consoles.map(consoleUnit => {
+  const fragment = document.createDocumentFragment();
+  state.consoles.forEach(consoleUnit => {
     const status = cardStatus(consoleUnit);
     const number = String(consoleUnit.id - 100).padStart(2, '0');
-    const usage = isReserved(consoleUnit)
-      ? `<div class="pc-usage">Apartada · <strong data-hold-timer="${consoleUnit.id}">${formatHold(consoleUnit.reservationExpiresAt - Date.now())}</strong></div>`
-      : consoleUnit.sessionEndsAt
-        ? `<div class="pc-usage">Tiempo restante · <strong data-session-timer="${consoleUnit.id}">${formatClock(consoleUnit.sessionEndsAt - Date.now())}</strong></div>`
-        : !consoleUnit.available
-          ? `<div class="pc-usage">En uso · <strong data-elapsed-timer="${consoleUnit.id}">${formatClock(Date.now() - (consoleUnit.sessionStartedAt || Date.now()))}</strong></div>`
-          : `<button class="select-pc-btn console-select-btn" type="button" data-select-console="${consoleUnit.id}" data-hidratado="true">Reservar consola →</button>`;
-    return `<article class="console-card ${status.className}" data-console-card="${consoleUnit.id}">
-      <div class="console-card-top"><span>PLAYSTATION 5 · #${number}</span><span class="pc-status ${status.className}">${status.label}</span></div>
-      <button class="console-photo" type="button" data-photo-open data-photo="${escapeHTML(consoleUnit.image)}" data-caption="PlayStation 5 · Consola #${number}" aria-label="Ampliar imagen de PlayStation 5 número ${number}" data-hidratado="true"><img src="${escapeHTML(consoleUnit.image)}" alt="${escapeHTML(consoleUnit.imageAlt)}" width="800" height="800" loading="lazy" decoding="async"></button>
-      <div class="console-card-body"><div class="console-card-title"><strong>${escapeHTML(consoleUnit.label)}</strong><span>${money(consoleUnit.price)} <small>/ hora</small></span></div><p class="console-rate-note">${escapeHTML(consoleUnit.priceNote || 'Tarifa por hora')}</p>
-        <div class="console-details"><span>🎮 1 mando incluido</span><span>＋ Segundo mando: ${money(consoleUnit.extraControllerFee)} por sesión</span><span>🛋 ${escapeHTML(consoleUnit.seat)}</span></div>
-        <div class="console-card-action">${usage}</div></div>
-    </article>`;
-  }).join('');
+    const card = createTextElement('article', `console-card ${status.className}`);
+    card.dataset.consoleCard = String(consoleUnit.id);
+
+    const top = createTextElement('div', 'console-card-top');
+    top.append(
+      createTextElement('span', '', `PLAYSTATION 5 · #${number}`),
+      createTextElement('span', `pc-status ${status.className}`, status.label)
+    );
+    card.append(top);
+    card.append(createPhotoButton({
+      className: 'console-photo', path: consoleUnit.image, fallback: './imagenes/playstation.webp',
+      caption: `PlayStation 5 · Consola #${number}`, alt: consoleUnit.imageAlt,
+      width: 800, height: 800, label: `Ampliar imagen de PlayStation 5 número ${number}`
+    }));
+
+    const body = createTextElement('div', 'console-card-body');
+    const title = createTextElement('div', 'console-card-title');
+    title.append(createTextElement('strong', '', consoleUnit.label));
+    const price = createTextElement('span', '', money(consoleUnit.price));
+    price.append(createTextElement('small', '', '/ hora'));
+    title.append(price);
+    body.append(title, createTextElement('p', 'console-rate-note', consoleUnit.priceNote || 'Tarifa por hora'));
+
+    const details = createTextElement('div', 'console-details');
+    details.append(
+      createTextElement('span', '', '🎮 1 mando incluido'),
+      createTextElement('span', '', `＋ Segundo mando: ${money(consoleUnit.extraControllerFee)} por sesión`),
+      createTextElement('span', '', `🛋 ${consoleUnit.seat || 'Asiento cómodo'}`)
+    );
+    body.append(details);
+
+    const action = createTextElement('div', 'console-card-action');
+    if (isReserved(consoleUnit)) {
+      action.append(createUsageTimer('Apartada', consoleUnit.id, 'data-hold-timer', formatHold(consoleUnit.reservationExpiresAt - Date.now())));
+    } else if (consoleUnit.sessionEndsAt) {
+      action.append(createUsageTimer('Tiempo restante', consoleUnit.id, 'data-session-timer', formatClock(consoleUnit.sessionEndsAt - Date.now())));
+    } else if (!consoleUnit.available) {
+      action.append(createUsageTimer('En uso', consoleUnit.id, 'data-elapsed-timer', formatClock(Date.now() - (consoleUnit.sessionStartedAt || Date.now()))));
+    } else {
+      const reserve = createTextElement('button', 'select-pc-btn console-select-btn', 'Reservar consola →');
+      reserve.type = 'button';
+      reserve.dataset.selectConsole = String(consoleUnit.id);
+      reserve.dataset.hidratado = 'true';
+      action.append(reserve);
+    }
+    body.append(action);
+    card.append(body);
+    fragment.append(card);
+  });
+  grid.replaceChildren(fragment);
 }
 
 /* Filtros de tres capas: categoría -> procesador -> gráfica. */
@@ -359,29 +425,66 @@ function renderMachines() {
   $('#emptyState').prop('hidden', filtered.length !== 0);
   $('#pcCarousel').toggle(filtered.length !== 0);
   $('#catalogStatus').text(`${filtered.length} ${filtered.length === 1 ? 'equipo encontrado' : 'equipos encontrados'}`);
-  grid.innerHTML = filtered.map(machine => {
+
+  const fragment = document.createDocumentFragment();
+  filtered.forEach(machine => {
     const status = cardStatus(machine);
     const number = pad(machine.id);
-    const usage = isReserved(machine)
-      ? `<div class="pc-usage">Apartada · <strong data-hold-timer="${machine.id}">${formatHold(machine.reservationExpiresAt - Date.now())}</strong></div>`
-      : machine.sessionEndsAt
-        ? `<div class="pc-usage">Tiempo restante · <strong data-session-timer="${machine.id}">${formatClock(machine.sessionEndsAt - Date.now())}</strong></div>`
-        : `<div class="pc-usage">En uso · <strong data-elapsed-timer="${machine.id}">${formatClock((Date.now() - (machine.sessionStartedAt || Date.now())) * 1)}</strong></div>`;
-    const action = status.className === 'available'
-      ? `<button class="select-pc-btn" type="button" data-select-machine="${machine.id}" data-hidratado="true">Elegir esta PC →</button>`
-      : usage;
-    return `<article class="pc-card ${status.className}" data-machine-card="${machine.id}" data-type="${machine.type}">
-      <div class="pc-card-top"><span class="pc-name">ESTACIÓN #${number}</span><span class="pc-status ${status.className}">${status.label}</span></div>
-      <button class="pc-photo" type="button" data-photo-open data-photo="${escapeHTML(machine.image)}" data-caption="Estación #${number} · ${escapeHTML(machine.label)} · ${escapeHTML(machine.cpu)} · ${escapeHTML(machine.gpu)} · Imagen representativa de la categoría" aria-label="Ampliar imagen de la estación ${number}" data-hidratado="true"><img src="${escapeHTML(machine.image)}" alt="${escapeHTML(machine.imageAlt)}" width="225" height="225" loading="lazy" decoding="async"></button>
-      <div class="pc-card-body"><div class="pc-card-title"><strong>${escapeHTML(machine.label)}</strong><span class="pc-price">${money(machine.price)} <small>/h</small></span></div>
-        <div class="pc-specs"><span>${escapeHTML(machine.cpu)}</span><span>${escapeHTML(machine.gpu)}</span><span>${escapeHTML(machine.ram)}</span><span>${escapeHTML(machine.storage)}</span><span>${escapeHTML(machine.monitor)}</span><span>🪑 ${escapeHTML(machine.seat)}</span>${(machine.features || []).map(feature => `<span class="pc-feature-pill">${escapeHTML(feature)}</span>`).join('')}</div>
-        <div class="pc-card-foot">${action}</div>
-      </div>
-    </article>`;
-  }).join('');
+    const card = createTextElement('article', `pc-card ${status.className}`);
+    card.dataset.machineCard = String(machine.id);
+    card.dataset.type = String(machine.type);
+
+    const top = createTextElement('div', 'pc-card-top');
+    top.append(
+      createTextElement('span', 'pc-name', `ESTACIÓN #${number}`),
+      createTextElement('span', `pc-status ${status.className}`, status.label)
+    );
+    card.append(top);
+    card.append(createPhotoButton({
+      className: 'pc-photo', path: machine.image, fallback: './imagenes/pc-gamer.webp',
+      caption: `Estación #${number} · ${machine.label} · ${machine.cpu} · ${machine.gpu} · Imagen representativa de la categoría`,
+      alt: machine.imageAlt, width: 225, height: 225, label: `Ampliar imagen de la estación ${number}`
+    }));
+
+    const body = createTextElement('div', 'pc-card-body');
+    const title = createTextElement('div', 'pc-card-title');
+    title.append(createTextElement('strong', '', machine.label));
+    const price = createTextElement('span', 'pc-price', money(machine.price));
+    price.append(createTextElement('small', '', '/h'));
+    title.append(price);
+    body.append(title);
+
+    const specs = createTextElement('div', 'pc-specs');
+    [machine.cpu, machine.gpu, machine.ram, machine.storage, machine.monitor, `🪑 ${machine.seat}`]
+      .forEach(value => specs.append(createTextElement('span', '', value)));
+    (Array.isArray(machine.features) ? machine.features : []).forEach(feature => {
+      specs.append(createTextElement('span', 'pc-feature-pill', feature));
+    });
+    body.append(specs);
+
+    const foot = createTextElement('div', 'pc-card-foot');
+    if (status.className === 'available') {
+      const select = createTextElement('button', 'select-pc-btn', 'Elegir esta PC →');
+      select.type = 'button';
+      select.dataset.selectMachine = String(machine.id);
+      select.dataset.hidratado = 'true';
+      foot.append(select);
+    } else if (isReserved(machine)) {
+      foot.append(createUsageTimer('Apartada', machine.id, 'data-hold-timer', formatHold(machine.reservationExpiresAt - Date.now())));
+    } else if (machine.sessionEndsAt) {
+      foot.append(createUsageTimer('Tiempo restante', machine.id, 'data-session-timer', formatClock(machine.sessionEndsAt - Date.now())));
+    } else {
+      foot.append(createUsageTimer('En uso', machine.id, 'data-elapsed-timer', formatClock(Date.now() - (machine.sessionStartedAt || Date.now()))));
+    }
+    body.append(foot);
+    card.append(body);
+    fragment.append(card);
+  });
+  grid.replaceChildren(fragment);
   requestAnimationFrame(updateCarouselPosition);
   updateStats();
 }
+
 function applyMachineFilters(resetScroll = false) {
   renderMachines();
   if (resetScroll) document.getElementById('pcCarousel')?.scrollTo({ left: 0, behavior: 'smooth' });
@@ -402,19 +505,31 @@ function renderOccupancyChart() {
     { id: 'standard', label: 'Estándar' },
     { id: 'premium', label: 'Premium' }
   ];
-  const rows = categories.map(category => {
+  const fragment = document.createDocumentFragment();
+  categories.forEach(category => {
     const machines = state.machines.filter(machine => machine.type === category.id);
     const occupied = machines.filter(machine => !isAvailable(machine)).length;
     const free = machines.length - occupied;
-    const ratio = machines.length ? Math.round(occupied / machines.length * 100) : 0;
-    return `<div class="occupancy-row">
-      <div class="occupancy-row-head"><strong>${category.label}</strong><span>${occupied} de ${machines.length} en uso · ${free} libres</span></div>
-      <div class="occupancy-meter" role="img" aria-label="${category.label}: ${ratio}% de ocupación"><span style="width:${ratio}%"></span></div>
-    </div>`;
-  }).join('');
-  chart.innerHTML = rows;
+    const ratio = machines.length ? Math.min(100, Math.round(occupied / machines.length * 100)) : 0;
+    const row = createTextElement('div', 'occupancy-row');
+    const head = createTextElement('div', 'occupancy-row-head');
+    head.append(
+      createTextElement('strong', '', category.label),
+      createTextElement('span', '', `${occupied} de ${machines.length} en uso · ${free} libres`)
+    );
+    const meter = createTextElement('div', 'occupancy-meter');
+    meter.setAttribute('role', 'img');
+    meter.setAttribute('aria-label', `${category.label}: ${ratio}% de ocupación`);
+    const fill = document.createElement('span');
+    fill.style.width = `${ratio}%`;
+    meter.append(fill);
+    row.append(head, meter);
+    fragment.append(row);
+  });
+  chart.replaceChildren(fragment);
   $('#occupancySummary').text(`${state.machines.length} equipos · ${state.machines.filter(isAvailable).length} libres`);
 }
+
 function updateCarouselPosition() {
   const carousel = document.getElementById('pcCarousel');
   const cards = [...document.querySelectorAll('#pcGrid .pc-card')];
@@ -435,11 +550,19 @@ function updateCarouselPosition() {
   $('#pcScrollNext').prop('disabled', current >= maxScroll - 3);
   $('#carouselProgress').css('width', `${maxScroll ? current / maxScroll * 100 : 100}%`);
 }
+function setCatalogLoadingState(containerId, title, detail) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const stateBox = createTextElement('div', 'catalog-state');
+  stateBox.append(createTextElement('strong', '', title), document.createTextNode(detail));
+  container.replaceChildren(stateBox);
+}
+
 async function initializeCatalog() {
   $('#catalogError, #consoleCatalogError').prop('hidden', true);
   $('#catalogStatus').text('Cargando catálogo…');
-  $('#pcGrid').html('<div class="catalog-state"><strong>Preparando las estaciones…</strong>Estamos leyendo data/computadoras.json.</div>');
-  $('#consoleGrid').html('<div class="catalog-state"><strong>Preparando las consolas…</strong>Estamos leyendo data/consolas.json.</div>');
+  setCatalogLoadingState('pcGrid', 'Preparando las estaciones…', 'Estamos leyendo data/computadoras.json.');
+  setCatalogLoadingState('consoleGrid', 'Preparando las consolas…', 'Estamos leyendo data/consolas.json.');
 
   const [machinesResult, consolesResult] = await Promise.allSettled([
     loadMachineCatalog(),
@@ -460,7 +583,7 @@ async function initializeCatalog() {
     const error = machinesResult.reason;
     console.error('Error en data/computadoras.json:', error);
     state.machines = [];
-    $('#pcGrid').empty();
+    document.getElementById('pcGrid')?.replaceChildren();
     $('#catalogStatus').text('No se pudo cargar el catálogo de computadoras');
     $('#catalogErrorText').text(error?.message || 'Comprueba que data/computadoras.json esté publicado.');
     $('#catalogError').prop('hidden', false);
@@ -474,11 +597,233 @@ async function initializeCatalog() {
     const error = consolesResult.reason;
     console.error('Error en data/consolas.json:', error);
     state.consoles = [];
-    $('#consoleGrid').empty();
+    document.getElementById('consoleGrid')?.replaceChildren();
     $('#consoleCatalogErrorText').text(error?.message || 'Comprueba que data/consolas.json esté publicado.');
     $('#consoleCatalogError').prop('hidden', false);
   }
+  populateReservationResources();
+  setReservationDateMinimum();
+  renderScheduledReservations();
   startSessionTicker();
+}
+
+/* Reservas futuras de turno: ejercicio local de validación y persistencia, separado del apartado de reserva inmediata. */
+const RESERVATION_DURATIONS = [1, 2, 3, 5, 8];
+const MINIMUM_RESERVATION_LEAD_MS = 5 * 60 * 1000;
+function loadScheduledReservations() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE.scheduledReservations) || '[]');
+    state.scheduledReservations = Array.isArray(stored) ? stored
+      .filter(item => item && typeof item === 'object' && typeof item.id === 'string'
+        && typeof item.name === 'string' && typeof item.resourceKey === 'string'
+        && typeof item.startsAt === 'string' && Number.isFinite(new Date(item.startsAt).getTime())
+        && RESERVATION_DURATIONS.includes(Number(item.durationHours)))
+      .slice(0, 50)
+      .map(item => ({
+        id: item.id.slice(0, 80), name: item.name.slice(0, 60),
+        resourceKey: item.resourceKey.slice(0, 40), resourceLabel: String(item.resourceLabel || 'Equipo LevelUp').slice(0, 120),
+        startsAt: item.startsAt, durationHours: Number(item.durationHours), createdAt: String(item.createdAt || '')
+      })) : [];
+  } catch (error) {
+    state.scheduledReservations = [];
+    console.warn('No se pudieron leer las solicitudes de turno guardadas en este navegador.', error);
+  }
+}
+function saveScheduledReservations() {
+  try {
+    localStorage.setItem(STORAGE.scheduledReservations, JSON.stringify(state.scheduledReservations));
+    return true;
+  } catch (error) {
+    showToast('El navegador no permitió guardar la solicitud. Libera espacio e inténtalo de nuevo.', 'error');
+    return false;
+  }
+}
+function getReservationResource(resourceKey) {
+  const match = /^(pc|console):(\d+)$/.exec(String(resourceKey || ''));
+  if (!match) return null;
+  const id = Number(match[2]);
+  if (match[1] === 'pc') {
+    const item = state.machines.find(machine => machine.id === id);
+    return item ? { key: `pc:${id}`, item, label: `PC #${pad(id)} · ${item.label} · ${money(item.price)}/h` } : null;
+  }
+  const item = state.consoles.find(consoleUnit => consoleUnit.id === id);
+  return item ? { key: `console:${id}`, item, label: `${item.label} · ${money(item.price)}/h` } : null;
+}
+function populateReservationResources() {
+  const select = document.getElementById('recursoSelect');
+  if (!select) return;
+  const previous = select.value;
+  const placeholder = new Option('Selecciona una PC o PlayStation', '');
+  select.replaceChildren(placeholder);
+  const machinesGroup = document.createElement('optgroup');
+  machinesGroup.label = 'Computadoras';
+  state.machines.forEach(machine => {
+    const option = new Option(`PC #${pad(machine.id)} · ${machine.label} · ${money(machine.price)}/h`, `pc:${machine.id}`);
+    machinesGroup.append(option);
+  });
+  const consolesGroup = document.createElement('optgroup');
+  consolesGroup.label = 'PlayStation 5';
+  state.consoles.forEach(consoleUnit => {
+    const option = new Option(`${consoleUnit.label} · ${money(consoleUnit.price)}/h`, `console:${consoleUnit.id}`);
+    consolesGroup.append(option);
+  });
+  if (machinesGroup.children.length) select.append(machinesGroup);
+  if (consolesGroup.children.length) select.append(consolesGroup);
+  select.disabled = !machinesGroup.children.length && !consolesGroup.children.length;
+  if ([...select.options].some(option => option.value === previous)) select.value = previous;
+}
+function localDateTimeInputValue(timestamp) {
+  const date = new Date(timestamp - new Date(timestamp).getTimezoneOffset() * 60000);
+  return date.toISOString().slice(0, 16);
+}
+function setReservationDateMinimum() {
+  const input = document.getElementById('fechaTurno');
+  if (input) input.min = localDateTimeInputValue(Date.now() + MINIMUM_RESERVATION_LEAD_MS);
+}
+function reservationDateLabel(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Fecha no disponible'
+    : date.toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short' });
+}
+function renderScheduledReservations() {
+  const list = document.getElementById('listaReservas');
+  if (!list) return;
+  const fragment = document.createDocumentFragment();
+  if (!state.scheduledReservations.length) {
+    fragment.append(createTextElement('li', 'reservation-empty', 'Todavía no hay solicitudes de turno guardadas en este dispositivo.'));
+  } else {
+    state.scheduledReservations
+      .slice()
+      .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))
+      .forEach(item => {
+        const row = createTextElement('li', 'reservation-item');
+        const content = document.createElement('div');
+        content.append(
+          createTextElement('strong', '', item.name),
+          createTextElement('span', '', item.resourceLabel),
+          createTextElement('small', '', `${reservationDateLabel(item.startsAt)} · ${item.durationHours} h · Solicitud guardada localmente`)
+        );
+        const cancel = createTextElement('button', 'reservation-cancel', 'Cancelar');
+        cancel.type = 'button';
+        cancel.dataset.cancelReservation = item.id;
+        cancel.dataset.hidratado = 'true';
+        cancel.setAttribute('aria-label', `Cancelar solicitud de ${item.name}`);
+        row.append(content, cancel);
+        fragment.append(row);
+      });
+  }
+  list.replaceChildren(fragment);
+  const count = document.getElementById('reservationCount');
+  if (count) count.textContent = String(state.scheduledReservations.length);
+}
+function setReservationFieldError(fieldId, errorId, message) {
+  return setFieldError(fieldId, errorId, message);
+}
+function validateScheduledReservation() {
+  const name = String($('#clienteNombre').val() || '').trim();
+  const resourceKey = String($('#recursoSelect').val() || '');
+  const dateValue = String($('#fechaTurno').val() || '');
+  const duration = Number($('#duracionTurno').val());
+  const start = dateValue ? new Date(dateValue) : null;
+  const startAt = start && !Number.isNaN(start.getTime()) ? start.getTime() : NaN;
+  const nameError = !name ? 'Escribe el nombre de la persona que solicita el turno.'
+    : name.length < 2 ? 'El nombre debe tener al menos 2 caracteres.' : '';
+  const resource = getReservationResource(resourceKey);
+  const resourceError = !resource ? 'Selecciona un equipo válido del catálogo.' : '';
+  const dateError = !dateValue ? 'Selecciona la fecha y hora del turno.'
+    : !Number.isFinite(startAt) ? 'La fecha y hora no son válidas.'
+    : startAt < Date.now() + MINIMUM_RESERVATION_LEAD_MS ? 'El turno debe comenzar al menos 5 minutos después de ahora.' : '';
+  const durationError = !RESERVATION_DURATIONS.includes(duration) ? 'Selecciona una duración disponible.' : '';
+  setReservationFieldError('clienteNombre', 'clienteNombreError', nameError);
+  setReservationFieldError('recursoSelect', 'recursoSelectError', resourceError);
+  setReservationFieldError('fechaTurno', 'fechaTurnoError', dateError);
+  setReservationFieldError('duracionTurno', 'duracionTurnoError', durationError);
+  return { valid: !(nameError || resourceError || dateError || durationError), name, resource, startAt, duration };
+}
+function reservationOverlaps(resourceKey, startAt, endAt) {
+  return state.scheduledReservations.some(item => {
+    if (item.resourceKey !== resourceKey) return false;
+    const existingStart = new Date(item.startsAt).getTime();
+    const existingEnd = existingStart + Number(item.durationHours) * 60 * 60 * 1000;
+    return Number.isFinite(existingStart) && startAt < existingEnd && endAt > existingStart;
+  });
+}
+function submitScheduledReservation(event) {
+  event.preventDefault();
+  const result = validateScheduledReservation();
+  const status = $('#reservationFormStatus');
+  status.text('').attr('class', 'form-status');
+  if (!result.valid) {
+    const firstInvalid = document.querySelector('#formReserva .form-field.invalid input, #formReserva .form-field.invalid select');
+    firstInvalid?.focus();
+    status.text('Revisa los campos marcados antes de guardar.').attr('class', 'form-status error');
+    return;
+  }
+
+  const endAt = result.startAt + result.duration * 60 * 60 * 1000;
+  const endMinusOne = new Date(endAt - 1);
+  const startDate = new Date(result.startAt);
+  if (startDate.getHours() < 8 || endMinusOne.getFullYear() !== startDate.getFullYear()
+    || endMinusOne.getMonth() !== startDate.getMonth() || endMinusOne.getDate() !== startDate.getDate()) {
+    setReservationFieldError('fechaTurno', 'fechaTurnoError', 'El turno debe estar dentro del horario de 08:00 a 24:00 y terminar el mismo día.');
+    document.getElementById('fechaTurno')?.focus();
+    status.text('El horario seleccionado queda fuera de atención.').attr('class', 'form-status error');
+    return;
+  }
+
+  const resource = result.resource;
+  const liveBusyUntil = Number(resource.item.sessionEndsAt || resource.item.reservationExpiresAt || 0);
+  if (!resource.item.available && (!liveBusyUntil || result.startAt < liveBusyUntil)) {
+    setReservationFieldError('recursoSelect', 'recursoSelectError', 'El catálogo muestra este equipo ocupado y no tiene una hora de liberación confirmada. Elige otro equipo.');
+    document.getElementById('recursoSelect')?.focus();
+    status.text('No se puede proponer ese turno para un equipo ocupado sin hora de liberación.').attr('class', 'form-status error');
+    return;
+  }
+  if (reservationOverlaps(resource.key, result.startAt, endAt)) {
+    setReservationFieldError('fechaTurno', 'fechaTurnoError', 'Ese equipo ya tiene otra solicitud en un horario que se cruza.');
+    document.getElementById('fechaTurno')?.focus();
+    status.text('Cambia el horario o selecciona otro equipo.').attr('class', 'form-status error');
+    return;
+  }
+
+  if (state.scheduledReservations.length >= 50) {
+    status.text('Este dispositivo ya tiene 50 solicitudes guardadas. Cancela una antes de agregar otra.').attr('class', 'form-status error');
+    return;
+  }
+
+  const reservation = {
+    id: (window.crypto && typeof window.crypto.randomUUID === 'function') ? window.crypto.randomUUID() : `turno-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: result.name,
+    resourceKey: resource.key,
+    resourceLabel: resource.label,
+    startsAt: new Date(result.startAt).toISOString(),
+    durationHours: result.duration,
+    createdAt: new Date().toISOString()
+  };
+  state.scheduledReservations.push(reservation);
+  if (!saveScheduledReservations()) {
+    state.scheduledReservations.pop();
+    return;
+  }
+  renderScheduledReservations();
+  event.currentTarget.reset();
+  document.querySelectorAll('#formReserva .form-field').forEach(field => field.classList.remove('invalid'));
+  ['clienteNombreError', 'recursoSelectError', 'fechaTurnoError', 'duracionTurnoError'].forEach(id => $(`#${id}`).text(''));
+  setReservationDateMinimum();
+  status.text('Solicitud guardada en este dispositivo. Todavía no confirma una reserva con el negocio ni bloquea el equipo en otros dispositivos.').attr('class', 'form-status success');
+  showToast('Solicitud de turno guardada localmente.');
+}
+function cancelScheduledReservation(id) {
+  const index = state.scheduledReservations.findIndex(item => item.id === id);
+  if (index < 0) return;
+  const [removed] = state.scheduledReservations.splice(index, 1);
+  if (!saveScheduledReservations()) {
+    state.scheduledReservations.splice(index, 0, removed);
+    return;
+  }
+  renderScheduledReservations();
+  $('#reservationFormStatus').text('La solicitud local fue cancelada.').attr('class', 'form-status success');
+  showToast('Solicitud local cancelada.');
 }
 
 /* Cuentas y actividad local. Se conservan las claves usadas por el prototipo anterior. */
@@ -519,12 +864,36 @@ function renderAccount() {
   $('#accountDisplayPhone').text(`Celular · ${user.phone}`);
   $('#accountDisplayBalance').text(money(user.balance));
   const history = Array.isArray(user.history) ? [...user.history].reverse().slice(0, 8) : [];
-  $('#accountHistory').html(history.length ? history.map(entry => {
-    const date = entry.date ? new Date(entry.date).toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' }) : 'Fecha no disponible';
-    const amount = Number(entry.amount || 0);
-    const details = entry.machine ? `Estación #${pad(entry.machine)} · ${entry.hours || 1} h` : (entry.method || 'Movimiento local');
-    return `<div class="history-item"><div><strong>${escapeHTML(entry.type || 'Movimiento')}</strong><small>${escapeHTML(details)} · ${escapeHTML(date)}</small></div><span class="history-amount ${amount >= 0 ? 'positive' : 'negative'}">${amount >= 0 ? '+' : '−'}${money(Math.abs(amount))}</span></div>`;
-  }).join('') : '<div class="history-empty">Todavía no tienes movimientos. Cuando recargues o completes una sesión aparecerán aquí.</div>');
+  const historyContainer = document.getElementById('accountHistory');
+  if (historyContainer) {
+    if (!history.length) {
+      historyContainer.replaceChildren(createTextElement('div', 'history-empty', 'Todavía no tienes movimientos. Cuando recargues o completes una sesión aparecerán aquí.'));
+    } else {
+      const fragment = document.createDocumentFragment();
+      history.forEach(entry => {
+        if (!entry || typeof entry !== 'object') return;
+        const row = createTextElement('div', 'history-item');
+        const detailsBox = document.createElement('div');
+        const dateValue = entry.date ? new Date(entry.date) : null;
+        const date = dateValue && !Number.isNaN(dateValue.getTime())
+          ? dateValue.toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' })
+          : 'Fecha no disponible';
+        const amountValue = Number(entry.amount || 0);
+        const amount = Number.isFinite(amountValue) ? amountValue : 0;
+        const details = entry.machine ? `Estación #${pad(entry.machine)} · ${entry.hours || 1} h` : (entry.method || 'Movimiento local');
+        detailsBox.append(
+          createTextElement('strong', '', entry.type || 'Movimiento'),
+          createTextElement('small', '', `${details} · ${date}`)
+        );
+        row.append(
+          detailsBox,
+          createTextElement('span', `history-amount ${amount >= 0 ? 'positive' : 'negative'}`, `${amount >= 0 ? '+' : '−'}${money(Math.abs(amount))}`)
+        );
+        fragment.append(row);
+      });
+      historyContainer.replaceChildren(fragment);
+    }
+  }
 }
 function switchAccountTab(tab) {
   const register = tab === 'register';
@@ -978,7 +1347,7 @@ function markHydrated() {
 }
 function bindLevelUpEvents() {
   /* Limpieza previa: evita duplicar escuchadores si se ejecuta una segunda hidratación. */
-  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupAccordion .levelupValidation');
+  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupAccordion .levelupValidation .levelupReservation');
   $(window).off('.levelupRuntime .levelupCarousel');
 
   $document.on('click.levelupNavigation', '[data-view-target]', function (event) {
@@ -1157,6 +1526,25 @@ function bindLevelUpEvents() {
     $('#contactMessageCounter').text(`${this.value.length} / 300`);
   });
   $document.on('submit.levelupContact', '#contactForm', function (event) { event.preventDefault(); sendContactMessage(); });
+  $document.on('submit.levelupReservation', '#formReserva', submitScheduledReservation);
+  $document.on('input.levelupReservation blur.levelupReservation', '#clienteNombre', function () {
+    const value = this.value.trim();
+    setReservationFieldError('clienteNombre', 'clienteNombreError', !value ? 'Escribe tu nombre.' : value.length < 2 ? 'Debe tener al menos 2 caracteres.' : '');
+  });
+  $document.on('change.levelupReservation blur.levelupReservation', '#recursoSelect', function () {
+    setReservationFieldError('recursoSelect', 'recursoSelectError', getReservationResource(this.value) ? '' : 'Selecciona un equipo válido.');
+  });
+  $document.on('change.levelupReservation blur.levelupReservation', '#fechaTurno', function () {
+    const date = new Date(this.value);
+    const valid = this.value && !Number.isNaN(date.getTime()) && date.getTime() >= Date.now() + MINIMUM_RESERVATION_LEAD_MS;
+    setReservationFieldError('fechaTurno', 'fechaTurnoError', valid ? '' : 'Elige una fecha futura, al menos 5 minutos después de ahora.');
+  });
+  $document.on('change.levelupReservation', '#duracionTurno', function () {
+    setReservationFieldError('duracionTurno', 'duracionTurnoError', RESERVATION_DURATIONS.includes(Number(this.value)) ? '' : 'Selecciona una duración válida.');
+  });
+  $document.on('click.levelupReservation', '[data-cancel-reservation]', function () {
+    cancelScheduledReservation(this.dataset.cancelReservation);
+  });
 }
 function updateQuickFilterButtons(filter) {
   $('[data-filter]').each(function () {
@@ -1206,6 +1594,8 @@ function hydrateLevelUp() {
   markHydrated();
   state.hydrationComplete = true;
   loadAccounts();
+  loadScheduledReservations();
+  renderScheduledReservations();
   renderAccount();
   const initialView = location.hash.slice(1);
   showView(LEVELUP_VIEWS.includes(initialView) ? initialView : 'inicio', false);
