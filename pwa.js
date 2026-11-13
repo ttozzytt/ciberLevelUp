@@ -181,7 +181,7 @@ async function readCatalogJSON(relativePath, label) {
 }
 
 async function loadMachineCatalog() {
-  const catalog = await readCatalogJSON('./data/computadoras.json', 'Catálogo de computadoras');
+  const catalog = await readCatalogJSON('./data/computadoras.json?v=15', 'Catálogo de computadoras');
   if (!Array.isArray(catalog) || catalog.length < 15) throw new Error('computadoras.json debe contener al menos 15 estaciones.');
   const usedIds = new Set();
   state.machines = catalog.map(item => {
@@ -245,7 +245,7 @@ function saveMachineStates() {
 }
 
 async function loadConsoleCatalog() {
-  const catalog = await readCatalogJSON('./data/consolas.json?v=14', 'Catálogo PlayStation');
+  const catalog = await readCatalogJSON('./data/consolas.json?v=15', 'Catálogo PlayStation');
   if (!Array.isArray(catalog) || catalog.length !== 4) throw new Error('consolas.json debe contener exactamente cuatro consolas.');
   const ids = new Set();
   state.consoles = catalog.map(item => {
@@ -613,17 +613,28 @@ const MINIMUM_RESERVATION_LEAD_MS = 5 * 60 * 1000;
 function loadScheduledReservations() {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE.scheduledReservations) || '[]');
-    state.scheduledReservations = Array.isArray(stored) ? stored
+    const now = Date.now();
+    const source = Array.isArray(stored) ? stored : [];
+    state.scheduledReservations = source
       .filter(item => item && typeof item === 'object' && typeof item.id === 'string'
         && typeof item.name === 'string' && typeof item.resourceKey === 'string'
         && typeof item.startsAt === 'string' && Number.isFinite(new Date(item.startsAt).getTime())
+        && new Date(item.startsAt).getTime() >= now
         && RESERVATION_DURATIONS.includes(Number(item.durationHours)))
       .slice(0, 50)
       .map(item => ({
         id: item.id.slice(0, 80), name: item.name.slice(0, 60),
         resourceKey: item.resourceKey.slice(0, 40), resourceLabel: String(item.resourceLabel || 'Equipo LevelUp').slice(0, 120),
         startsAt: item.startsAt, durationHours: Number(item.durationHours), createdAt: String(item.createdAt || '')
-      })) : [];
+      }));
+    // Las solicitudes cuyo turno ya pasó dejan de aparecer en la lista activa.
+    if (state.scheduledReservations.length !== source.length) {
+      try {
+        localStorage.setItem(STORAGE.scheduledReservations, JSON.stringify(state.scheduledReservations));
+      } catch (writeError) {
+        console.warn('No se pudieron depurar las solicitudes antiguas; se ocultarán de la lista activa.', writeError);
+      }
+    }
   } catch (error) {
     state.scheduledReservations = [];
     console.warn('No se pudieron leer las solicitudes de turno guardadas en este navegador.', error);
@@ -676,9 +687,33 @@ function localDateTimeInputValue(timestamp) {
   const date = new Date(timestamp - new Date(timestamp).getTimezoneOffset() * 60000);
   return date.toISOString().slice(0, 16);
 }
+function getNextReservationStart(now = new Date()) {
+  // Propone una hora cercana en el día actual; si el horario ya terminó,
+  // propone las 08:00 del siguiente día de atención.
+  const candidate = new Date(now.getTime() + 30 * 60 * 1000);
+  candidate.setSeconds(0, 0);
+  const remainder = candidate.getMinutes() % 15;
+  if (remainder) candidate.setMinutes(candidate.getMinutes() + (15 - remainder));
+
+  if (candidate.getHours() < 8) candidate.setHours(8, 0, 0, 0);
+  if (candidate.getHours() >= 23) {
+    candidate.setDate(candidate.getDate() + 1);
+    candidate.setHours(8, 0, 0, 0);
+  }
+  return candidate;
+}
 function setReservationDateMinimum() {
   const input = document.getElementById('fechaTurno');
-  if (input) input.min = localDateTimeInputValue(Date.now() + MINIMUM_RESERVATION_LEAD_MS);
+  if (!input) return;
+  const minimum = Date.now() + MINIMUM_RESERVATION_LEAD_MS;
+  input.min = localDateTimeInputValue(minimum);
+  const selected = input.value ? new Date(input.value).getTime() : NaN;
+  // La fecha inicial se rellena automáticamente con hoy (si aún hay horario)
+  // o con el próximo día de atención. Nunca se conserva un valor pasado.
+  if (!Number.isFinite(selected) || selected < minimum) {
+    const suggested = getNextReservationStart(new Date());
+    input.value = localDateTimeInputValue(Math.max(suggested.getTime(), minimum));
+  }
 }
 function reservationDateLabel(value) {
   const date = new Date(value);
@@ -701,7 +736,8 @@ function renderScheduledReservations() {
         content.append(
           createTextElement('strong', '', item.name),
           createTextElement('span', '', item.resourceLabel),
-          createTextElement('small', '', `${reservationDateLabel(item.startsAt)} · ${item.durationHours} h · Solicitud guardada localmente`)
+          createTextElement('small', '', `Turno: ${reservationDateLabel(item.startsAt)} · ${item.durationHours} h`),
+          createTextElement('small', '', `Solicitada: ${reservationDateLabel(item.createdAt || item.startsAt)}`)
         );
         const cancel = createTextElement('button', 'reservation-cancel', 'Cancelar');
         cancel.type = 'button';
@@ -732,7 +768,7 @@ function validateScheduledReservation() {
   const resourceError = !resource ? 'Selecciona un equipo válido del catálogo.' : '';
   const dateError = !dateValue ? 'Selecciona la fecha y hora del turno.'
     : !Number.isFinite(startAt) ? 'La fecha y hora no son válidas.'
-    : startAt < Date.now() + MINIMUM_RESERVATION_LEAD_MS ? 'El turno debe comenzar al menos 5 minutos después de ahora.' : '';
+    : startAt < Date.now() + MINIMUM_RESERVATION_LEAD_MS ? 'No se permiten fechas u horas anteriores. Elige desde hoy y al menos 5 minutos después de ahora.' : '';
   const durationError = !RESERVATION_DURATIONS.includes(duration) ? 'Selecciona una duración disponible.' : '';
   setReservationFieldError('clienteNombre', 'clienteNombreError', nameError);
   setReservationFieldError('recursoSelect', 'recursoSelectError', resourceError);
@@ -881,8 +917,9 @@ function renderAccount() {
         const amountValue = Number(entry.amount || 0);
         const amount = Number.isFinite(amountValue) ? amountValue : 0;
         const details = entry.machine ? `Estación #${pad(entry.machine)} · ${entry.hours || 1} h` : (entry.method || 'Movimiento local');
+        const entryType = entry.type === 'Recarga simulada' ? 'Recarga de saldo' : (entry.type || 'Movimiento');
         detailsBox.append(
-          createTextElement('strong', '', entry.type || 'Movimiento'),
+          createTextElement('strong', '', entryType),
           createTextElement('small', '', `${details} · ${date}`)
         );
         row.append(
@@ -1151,22 +1188,26 @@ function confirmSessionPayment() {
   user.history = Array.isArray(user.history) ? user.history : [];
   const isConsole = state.selectedResourceType === 'console';
   const resourceName = isConsole ? `PlayStation 5 · Consola #${machine.id - 100}` : `Estación #${pad(machine.id)} · ${machine.label}`;
-  const session = { type: isConsole ? 'Sesión PlayStation' : 'Sesión PC', resource: isConsole ? 'console' : 'pc', machine: machine.id, hours: state.booking.hours, extraController: Boolean(state.booking.hasExtraController), controllerFee: Number(state.booking.controllerFee || 0), amount: -state.booking.total, date: new Date().toISOString() };
+  // La fecha de contratación se asigna automáticamente al confirmar el servicio.
+  const contractedAt = new Date();
+  const contractedAtMs = contractedAt.getTime();
+  const session = { type: isConsole ? 'Sesión PlayStation' : 'Sesión PC', resource: isConsole ? 'console' : 'pc', machine: machine.id, hours: state.booking.hours, extraController: Boolean(state.booking.hasExtraController), controllerFee: Number(state.booking.controllerFee || 0), amount: -state.booking.total, date: contractedAt.toISOString() };
   user.history.push(session);
   saveActiveUser();
   machine.available = false;
   machine.reservationExpiresAt = null;
-  machine.sessionStartedAt = Date.now();
-  machine.sessionEndsAt = Date.now() + state.booking.hours * 3600000;
+  machine.sessionStartedAt = contractedAtMs;
+  machine.sessionEndsAt = contractedAtMs + state.booking.hours * 3600000;
   if (state.networkState !== 'online') queueLocalAction(isConsole ? 'sesion-playstation-local' : 'sesion-pc-local', session);
   if (isConsole) { saveConsoleStates(); renderConsoles(); }
   else { saveMachineStates(); renderMachines(); }
   const extra = isConsole && state.booking.hasExtraController ? ' Se añadió un segundo mando por Bs 6.' : '';
   const message = `${state.booking.name}, se asignó ${resourceName} durante ${state.booking.hours} ${state.booking.hours === 1 ? 'hora' : 'horas'}.${extra} Se descontaron ${money(state.booking.total)}. Saldo restante: ${money(user.balance)}.`;
   $('#successText').text(message);
+  $('#contractedAtLabel').text(`Contratado el ${contractedAt.toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short' })}`);
   $('#syncNote').text(state.networkState === 'online'
-    ? 'El pago es simulado y quedó guardado localmente en este navegador.'
-    : 'Sin Internet: la operación quedó guardada en este dispositivo y pendiente de un servidor de sincronización.');
+    ? 'Registro guardado en este navegador. Esta versión no procesa cobros bancarios.'
+    : 'Sin Internet: el registro quedó guardado en este dispositivo. No se ha enviado a un servidor.');
   showBookingStep('success');
   updateBookingCountdown();
 }
@@ -1193,13 +1234,13 @@ function confirmRecharge() {
   const amount = Number(state.rechargeAmount);
   state.activeUser.balance = Number(state.activeUser.balance || 0) + amount;
   state.activeUser.history = Array.isArray(state.activeUser.history) ? state.activeUser.history : [];
-  const recharge = { type: 'Recarga simulada', amount, method: state.rechargeMethod, date: new Date().toISOString() };
+  const recharge = { type: 'Recarga de saldo', amount, method: state.rechargeMethod, date: new Date().toISOString() };
   state.activeUser.history.push(recharge);
   saveActiveUser();
   if (state.networkState !== 'online') queueLocalAction('recarga-local', recharge);
   closeModal('#rechargeModal');
   updatePaymentState();
-  showToast(`${money(amount)} añadidos al saldo de demostración.`);
+  showToast(`${money(amount)} añadidos al saldo de tu cuenta en este navegador.`);
 }
 
 /* Temporizador único: se actualizan los textos, no se adjuntan listeners a cada tarjeta. */
@@ -1407,7 +1448,7 @@ function bindLevelUpEvents() {
     state.accounts.push(state.activeUser);
     saveAccounts();
     renderAccount();
-    showToast(`Bienvenido, ${name.split(' ')[0]}. Tu cuenta de demostración está lista.`);
+    showToast(`Bienvenido, ${name.split(' ')[0]}. Tu cuenta LevelUp está lista.`);
     continuePendingBooking();
   });
   $document.on('submit.levelupAccount', '#loginForm', function (event) {
@@ -1442,7 +1483,7 @@ function bindLevelUpEvents() {
   });
   $document.on('click.levelupAccount', '#openRechargeButton', openRecharge);
 
-  /* Recarga simulada. */
+  /* Recarga local: registra el método elegido sin procesar cobros bancarios. */
   $document.on('click.levelupAccount', '[data-recharge-amount]', function () {
     state.rechargeAmount = Number(this.dataset.rechargeAmount);
     $('[data-recharge-amount]').removeClass('active').attr('aria-pressed', 'false');
@@ -1537,7 +1578,7 @@ function bindLevelUpEvents() {
   $document.on('change.levelupReservation blur.levelupReservation', '#fechaTurno', function () {
     const date = new Date(this.value);
     const valid = this.value && !Number.isNaN(date.getTime()) && date.getTime() >= Date.now() + MINIMUM_RESERVATION_LEAD_MS;
-    setReservationFieldError('fechaTurno', 'fechaTurnoError', valid ? '' : 'Elige una fecha futura, al menos 5 minutos después de ahora.');
+    setReservationFieldError('fechaTurno', 'fechaTurnoError', valid ? '' : 'Elige hoy o un día posterior y una hora al menos 5 minutos después de ahora.');
   });
   $document.on('change.levelupReservation', '#duracionTurno', function () {
     setReservationFieldError('duracionTurno', 'duracionTurnoError', RESERVATION_DURATIONS.includes(Number(this.value)) ? '' : 'Selecciona una duración válida.');

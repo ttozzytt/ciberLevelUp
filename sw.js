@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v14-xss-reservations';
+const CACHE_NAME = 'levelup-cibercafe-v15-fechas-pagos';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,8 +10,8 @@ const APP_SHELL = [
   './index.js',
   './pwa.js',
   './manifest.json',
-  './data/computadoras.json?v=14',
-  './data/consolas.json?v=14',
+  './data/computadoras.json?v=15',
+  './data/consolas.json?v=15',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './imagenes/pc-gamer.webp',
