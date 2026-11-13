@@ -28,7 +28,6 @@
         <button class="nav-item" id="navConsolas" type="button" data-view-target="consolas" data-hidratado="false" disabled><span class="nav-icon">🎮</span>PlayStation</button>
         <button class="nav-item" id="navCuenta" type="button" data-view-target="cuenta" data-hidratado="false" disabled><span class="nav-icon">◉</span>Mi cuenta</button>
         <button class="nav-item" id="navServicios" type="button" data-view-target="servicios" data-hidratado="false" disabled><span class="nav-icon">✦</span>Servicios</button>
-        <button class="nav-item" id="navSnacks" type="button" data-view-target="snacks" data-hidratado="false" disabled><span class="nav-icon">🛒</span>Snacks y pedidos</button>
         <button class="nav-item" id="navContacto" type="button" data-view-target="contacto" data-hidratado="false" disabled><span class="nav-icon">✉</span>Contacto</button>
       </nav>
       <div class="sidebar-bottom">
@@ -52,7 +51,6 @@
           <button class="nav-item" type="button" data-view-target="consolas" data-close-mobile="true" data-hidratado="false" disabled>🎮 PlayStation</button>
           <button class="nav-item" type="button" data-view-target="cuenta" data-close-mobile="true" data-hidratado="false" disabled>◉ Mi cuenta</button>
           <button class="nav-item" type="button" data-view-target="servicios" data-close-mobile="true" data-hidratado="false" disabled>✦ Servicios</button>
-          <button class="nav-item" type="button" data-view-target="snacks" data-close-mobile="true" data-hidratado="false" disabled>🛒 Snacks y pedidos</button>
           <button class="nav-item" type="button" data-view-target="contacto" data-close-mobile="true" data-hidratado="false" disabled>✉ Contacto</button>
         </nav>
       </header>
@@ -95,7 +93,6 @@
             <article class="panel home-feature"><span class="feature-icon">⚡</span><div><strong>Encuentra tu equipo</strong><p>Compara Básica, Estándar y Premium; o visita la zona PlayStation. Los detalles y la disponibilidad están en sus apartados.</p><button class="text-btn" type="button" data-view-target="computadoras" data-hidratado="false" disabled>Ver catálogo <span>→</span></button></div></article>
             <article class="panel home-feature"><span class="feature-icon">◉</span><div><strong>Tu cuenta y tu saldo</strong><p>Registra un número, consulta tu saldo y revisa la actividad guardada en este navegador.</p><button class="text-btn" type="button" data-view-target="cuenta" data-hidratado="false" disabled>Ir a mi cuenta <span>→</span></button></div></article>
             <article class="panel home-feature"><span class="feature-icon">🎮</span><div><strong>Zona PlayStation</strong><p>Cuatro consolas PS5, un mando incluido por consola y opción de sumar otro por Bs 6.</p><button class="text-btn" type="button" data-view-target="consolas" data-hidratado="false" disabled>Ver consolas <span>→</span></button></div></article>
-            <article class="panel home-feature"><span class="feature-icon">🛒</span><div><strong>Snacks y pedidos</strong><p>Elige papas, nachos, chizitos, bebidas, Maruchan y accesorios. Arma tu pedido y revisa el total.</p><button class="text-btn" type="button" data-view-target="snacks" data-hidratado="false" disabled>Hacer un pedido <span>→</span></button></div></article>
           </section>
         </section>
 
@@ -139,68 +136,6 @@
           <div class="console-grid" id="consoleGrid" aria-live="polite"><div class="catalog-state"><strong>Preparando las consolas…</strong>Las PS5 aparecerán aquí.</div></div>
           <div class="catalog-state catalog-state-error" id="consoleCatalogError" hidden role="alert"><strong>No se pudieron cargar las consolas.</strong><span id="consoleCatalogErrorText"></span><button class="secondary-btn" type="button" data-retry-catalog data-hidratado="false" disabled>Reintentar carga</button></div>
           <p class="console-seat-note">La zona PlayStation cuenta con sofá gamer para jugar con más comodidad. Cada PS5 tiene su propio estado, reserva y temporizador.</p>
-        </section>
-
-        <!-- SNACKS Y PEDIDOS: catálogo compacto, selector por categoría y cola visible inspirada en la lista Karaoke de la guía. -->
-        <section class="view snack-view" id="view-snacks" aria-labelledby="snacksTitle" aria-hidden="true">
-          <div class="view-heading snack-view-heading">
-            <div class="snack-heading-copy">
-              <p class="eyebrow">CATÁLOGO LEVELUP</p>
-              <h1 id="snacksTitle">Snacks y <span style="color:var(--cyan)">pedidos.</span></h1>
-              <p>Elige un producto y agrégalo a tu pedido.</p>
-            </div>
-            <button class="snack-mobile-order-trigger btn-tactil" id="openSnackOrder" type="button" data-hidratado="false" disabled aria-label="Abrir tu pedido">
-              <span>🛒 Tu pedido</span><strong><span id="snackHeaderCount">0</span> · <span id="snackHeaderTotal">Bs 0</span></strong>
-            </button>
-          </div>
-          <div class="snack-workspace">
-            <section class="panel snack-catalog-panel" aria-label="Catálogo de productos">
-              <div class="snack-catalog-toolbar">
-                <div class="snack-category-tabs" role="group" aria-label="Categoría de productos">
-                  <button class="snack-category-tab active" type="button" data-snack-category="snacks" aria-pressed="true" data-hidratado="false" disabled>🍟 Snacks y bebidas</button>
-                  <button class="snack-category-tab" type="button" data-snack-category="accessories" aria-pressed="false" data-hidratado="false" disabled>🎧 Accesorios</button>
-                </div>
-                <div class="snack-carousel-tools">
-                  <span id="snackCarouselPosition">1–4 de 5</span>
-                  <button class="carousel-arrow btn-tactil" id="snackCarouselPrev" type="button" aria-label="Productos anteriores" data-hidratado="false" disabled>‹</button>
-                  <button class="carousel-arrow btn-tactil" id="snackCarouselNext" type="button" aria-label="Productos siguientes" data-hidratado="false" disabled>›</button>
-                </div>
-              </div>
-              <div class="snack-carousel" id="snackCarousel" tabindex="0" aria-label="Productos; desliza horizontalmente o usa las flechas">
-                <div class="snack-product-track" id="snackProductTrack">
-                  <article class="accessory-card snack-product-card" data-snack-item data-snack-group="snacks"><div class="accessory-art"><img src="./imagenes/snack-papas-georges.jpg" alt="Papas George's Chip" loading="lazy"></div><div class="accessory-copy"><h3 title="Papas George's Chip">Papas George's Chip</h3><p>Tocino y queso · 200 g.</p><strong>Bs 5 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="papas" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                  <article class="accessory-card snack-product-card" data-snack-item data-snack-group="snacks"><div class="accessory-art"><img src="./imagenes/snack-nachos-picantes.jpg" alt="Nachos de maíz picantes" loading="lazy"></div><div class="accessory-copy"><h3 title="Nachos picantes">Nachos picantes</h3><p>Nachos de maíz picantes.</p><strong>Bs 3 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="nachos" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                  <article class="accessory-card snack-product-card" data-snack-item data-snack-group="snacks"><div class="accessory-art"><img src="./imagenes/snack-chizitos-queso.jpg" alt="Chizitos sabor queso" loading="lazy"></div><div class="accessory-copy"><h3 title="Chizitos">Chizitos</h3><p>Snack de maíz sabor queso.</p><strong>Bs 2 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="chizitos" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                  <article class="accessory-card snack-product-card" data-snack-item data-snack-group="snacks"><div class="accessory-art"><img src="./imagenes/bebida-gaseosa-personal.jpg" alt="Gaseosas personales Coca-Cola, Sprite y Fanta" loading="lazy"></div><div class="accessory-copy"><h3 title="Gaseosa personal">Gaseosa personal</h3><p>Coca-Cola, Sprite o Fanta · 355 ml.</p><strong>Bs 3 <small>/ botella</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="drink" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                  <article class="accessory-card snack-product-card" data-snack-item data-snack-group="snacks"><div class="accessory-art"><img src="./imagenes/comida-maruchan-vaso.jpg" alt="Maruchan en vaso" loading="lazy"></div><div class="accessory-copy"><h3 title="Maruchan en vaso">Maruchan en vaso</h3><p>Sopa instantánea individual.</p><strong>Bs 17 <small>/ vaso</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="maruchan" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-
-                  <article class="accessory-card snack-product-card" data-snack-item data-snack-group="accessories" hidden><div class="accessory-art"><img src="./imagenes/accesorio-cascos-gamer.jpg" alt="Cascos gamer blancos con micrófono" loading="lazy"></div><div class="accessory-copy"><h3 title="Cascos gamer">Cascos gamer</h3><p>Audífonos con micrófono.</p><strong>Bs 10 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="headset" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                  <article class="accessory-card snack-product-card" data-snack-item data-snack-group="accessories" hidden><div class="accessory-art"><img src="./imagenes/accesorio-mousepad-gamer.jpg" alt="Mousepad gamer grande" loading="lazy"></div><div class="accessory-copy"><h3 title="Mousepad gamer">Mousepad gamer</h3><p>Superficie amplia para el mouse.</p><strong>Bs 5 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="mousepad" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                  <article class="accessory-card snack-product-card" data-snack-item data-snack-group="accessories" hidden><div class="accessory-art"><img src="./imagenes/mando-adicional-ps5.jpg" alt="Mando adicional DualSense para PlayStation 5" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Mando adicional para PlayStation">Mando adicional PS5</h3><p>Segundo mando opcional.</p><strong>Bs 6 <small>/ sesión</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="controller" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                </div>
-              </div>
-              <p class="snack-catalog-hint">Usa las flechas o desliza horizontalmente para ver los demás productos.</p>
-            </section>
-            <aside class="panel snack-order-panel" id="snackOrderPanel" aria-labelledby="accessoryOrderTitle" aria-hidden="false">
-              <div class="snack-order-heading">
-                <div><h2 id="accessoryOrderTitle">🛒 Tu pedido</h2><span id="accessoryQueueCount">0 artículos</span></div>
-                <button class="icon-btn snack-order-close" id="closeSnackOrder" type="button" aria-label="Cerrar pedido" data-hidratado="false" disabled>×</button>
-              </div>
-              <form id="quickOrderForm" class="quick-order-form" autocomplete="off" novalidate>
-                <div class="form-field"><label for="pedidoProductoInput">Escribe o busca un producto</label><input id="pedidoProductoInput" name="producto" type="search" list="snackProductOptions" placeholder="Ej. Papas George's Chip" data-hidratado="false" disabled></div>
-                <datalist id="snackProductOptions">
-                  <option value="Papas George's Chip"></option><option value="Nachos picantes"></option><option value="Chizitos"></option><option value="Gaseosa personal"></option><option value="Coca-Cola"></option><option value="Sprite"></option><option value="Fanta"></option><option value="Maruchan en vaso"></option><option value="Cascos gamer"></option><option value="Mousepad gamer"></option><option value="Mando adicional para PlayStation"></option>
-                </datalist>
-                <button class="primary-btn btn-tactil quick-order-add" type="submit" data-hidratado="false" disabled>＋ Agregar pedido</button>
-                <p class="quick-order-status" id="quickOrderStatus" role="status" aria-live="polite">Escribe el producto y pulsa Agregar.</p>
-              </form>
-              <div id="accessoryQueue" class="accessory-queue" aria-live="polite"><p class="accessory-empty">Tu pedido está vacío. Agrega productos del catálogo o escríbelos arriba.</p></div>
-              <div class="accessory-total" id="accessoryQueueTotal" aria-live="polite">Total: Bs 0</div>
-              <button class="secondary-btn btn-tactil clear-order-btn" id="clearAccessoryQueue" type="button" data-hidratado="false" disabled hidden>Vaciar pedido</button>
-              <p class="accessory-note">Pedido guardado en este navegador; no se envía ni cobra automáticamente.</p>
-            </aside>
-          </div>
-          <div class="snack-order-backdrop" id="snackOrderBackdrop" aria-hidden="true"></div>
         </section>
 
         <!-- CUENTA: registro, acceso, saldo e historial. -->
@@ -259,6 +194,31 @@
             </div><button class="primary-btn" style="margin-top:15px" type="button" data-view-target="computadoras" data-hidratado="false" disabled>Ver computadoras →</button></section>
           </div>
 
+          <section class="panel accessory-panel service-product-panel" aria-labelledby="accessoryTitle">
+            <div class="panel-heading">
+              <span class="feature-icon">🛍</span>
+              <div><h2 id="accessoryTitle">Snacks, bebidas y accesorios</h2><p>Agrega aquí los productos que quieras incluir en tu pedido.</p></div>
+            </div>
+            <div class="service-order-layout">
+              <div class="accessory-grid" id="accessoryCatalog">
+                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/snack-papas-georges.jpg" alt="Papas George's Chip" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Papas George's Chip">Papas George's Chip</h3><p>Tocino y queso.</p><strong>Bs 5 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="papas" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/snack-nachos-picantes.jpg" alt="Nachos picantes" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Nachos picantes">Nachos picantes</h3><p>Nachos de maíz picantes.</p><strong>Bs 3 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="nachos" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/snack-chizitos-queso.jpg" alt="Chizitos" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Chizitos">Chizitos</h3><p>Snack de maíz sabor queso.</p><strong>Bs 2 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="chizitos" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/bebida-gaseosa-personal.jpg" alt="Gaseosas personales Coca-Cola, Sprite y Fanta" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Gaseosa personal">Gaseosa personal</h3><p>Coca-Cola, Sprite o Fanta.</p><strong>Bs 3 <small>/ botella</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="drink" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/comida-maruchan-vaso.jpg" alt="Maruchan en vaso" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Maruchan en vaso">Maruchan en vaso</h3><p>Sopa instantánea individual.</p><strong>Bs 17 <small>/ vaso</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="maruchan" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/accesorio-cascos-gamer.jpg" alt="Cascos gamer con micrófono" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Cascos gamer">Cascos gamer</h3><p>Audífonos con micrófono.</p><strong>Bs 10 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="headset" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/accesorio-mousepad-gamer.jpg" alt="Mousepad gamer" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Mousepad gamer">Mousepad gamer</h3><p>Superficie amplia para el mouse.</p><strong>Bs 5 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="mousepad" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/mando-adicional-ps5.jpg" alt="Mando adicional DualSense para PlayStation 5" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Mando adicional para PlayStation">Mando adicional PS5</h3><p>Segundo mando opcional.</p><strong>Bs 6 <small>/ sesión</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="controller" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+              </div>
+              <aside class="service-order-summary" aria-labelledby="serviceOrderTitle">
+                <div class="accessory-queue-heading"><h3 id="serviceOrderTitle">Mi lista de pedidos</h3><span id="accessoryQueueCount">0 artículos</span></div>
+                <div id="accessoryQueue" class="accessory-queue" aria-live="polite"><p class="accessory-empty">Todavía no agregaste productos.</p></div>
+                <div class="accessory-total" id="accessoryQueueTotal" aria-live="polite">Total estimado: Bs 0</div>
+                <button class="secondary-btn btn-tactil clear-order-btn" id="clearAccessoryQueue" type="button" data-hidratado="false" disabled hidden>Vaciar pedido</button>
+                <p class="accessory-note">Se guarda en este navegador. No envía el pedido ni realiza cobros automáticamente.</p>
+              </aside>
+            </div>
+          </section>
           <section class="panel scheduled-reservation-panel" aria-labelledby="scheduledReservationTitle">
             <div class="panel-heading">
               <span class="feature-icon">◷</span>

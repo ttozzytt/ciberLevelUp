@@ -1,8 +1,8 @@
 'use strict';
 
 /* LevelUp: SPA ligera, hidratación controlada y delegación de eventos. */
-const LEVELUP_VIEWS = ['inicio', 'computadoras', 'consolas', 'snacks', 'cuenta', 'servicios', 'contacto'];
-const VIEW_LABELS = { inicio: 'Inicio', computadoras: 'Computadoras', consolas: 'PlayStation', snacks: 'Snacks y pedidos', cuenta: 'Mi cuenta', servicios: 'Servicios', contacto: 'Contacto' };
+const LEVELUP_VIEWS = ['inicio', 'computadoras', 'consolas', 'cuenta', 'servicios', 'contacto'];
+const VIEW_LABELS = { inicio: 'Inicio', computadoras: 'Computadoras', consolas: 'PlayStation', cuenta: 'Mi cuenta', servicios: 'Servicios', contacto: 'Contacto' };
 const STORAGE = {
   accounts: 'levelup_accounts_v1',
   activePhone: 'levelup_active_phone_v1',
@@ -97,9 +97,6 @@ function showView(name, updateHistory = true) {
   if (!LEVELUP_VIEWS.includes(name)) return;
   const target = document.getElementById(`view-${name}`);
   if (!target) return;
-  document.body.classList.toggle('snack-view-open', name === 'snacks');
-  document.body.classList.remove('snack-order-open');
-  document.getElementById('snackOrderPanel')?.setAttribute('aria-hidden', window.matchMedia('(max-width: 820px)').matches ? 'true' : 'false');
   const previousIndex = LEVELUP_VIEWS.indexOf(state.currentView);
   const nextIndex = LEVELUP_VIEWS.indexOf(name);
   const viewChanged = state.currentView !== name;
@@ -130,7 +127,6 @@ function showView(name, updateHistory = true) {
   }
   closeMobileMenu();
   if (name === 'computadoras') requestAnimationFrame(updateCarouselPosition);
-  if (name === 'snacks') requestAnimationFrame(updateSnackCarouselPosition);
   if (name === 'cuenta') renderAccount();
 }
 function closeMobileMenu() {
@@ -1394,61 +1390,6 @@ function markHydrated() {
   if (remaining.length) console.error('Quedaron controles sin hidratar:', [...remaining].map(item => item.id || item.textContent.trim()));
   else console.info(`Hidratación LevelUp completada: ${document.querySelectorAll('[data-hidratado="true"]').length} controles activados.`);
 }
-let currentSnackCategory = 'snacks';
-function updateSnackCarouselPosition() {
-  const carousel = document.getElementById('snackCarousel');
-  const track = document.getElementById('snackProductTrack');
-  if (!carousel || !track) return;
-  const cards = [...track.querySelectorAll('[data-snack-item]:not([hidden])')];
-  const first = cards[0];
-  if (!first) return;
-  const gap = Number.parseFloat(getComputedStyle(track).gap) || 0;
-  const step = first.getBoundingClientRect().width + gap;
-  const visible = Math.max(1, Math.floor((carousel.clientWidth + gap) / step));
-  const index = Math.min(cards.length - 1, Math.max(0, Math.round(carousel.scrollLeft / step)));
-  const end = Math.min(cards.length, index + visible);
-  const status = document.getElementById('snackCarouselPosition');
-  const previous = document.getElementById('snackCarouselPrev');
-  const next = document.getElementById('snackCarouselNext');
-  if (status) status.textContent = `${index + 1}–${end} de ${cards.length}`;
-  if (previous) previous.disabled = index === 0;
-  if (next) next.disabled = end >= cards.length;
-}
-function setSnackCategory(category) {
-  if (!['snacks', 'accessories'].includes(category)) return;
-  currentSnackCategory = category;
-  document.querySelectorAll('[data-snack-category]').forEach(button => {
-    const active = button.dataset.snackCategory === category;
-    button.classList.toggle('active', active);
-    button.setAttribute('aria-pressed', String(active));
-  });
-  document.querySelectorAll('[data-snack-item]').forEach(card => {
-    card.hidden = card.dataset.snackGroup !== category;
-  });
-  const carousel = document.getElementById('snackCarousel');
-  if (carousel) carousel.scrollLeft = 0;
-  requestAnimationFrame(updateSnackCarouselPosition);
-}
-function scrollSnackCarousel(direction) {
-  const carousel = document.getElementById('snackCarousel');
-  const track = document.getElementById('snackProductTrack');
-  const first = track?.querySelector('[data-snack-item]:not([hidden])');
-  if (!carousel || !track || !first) return;
-  const gap = Number.parseFloat(getComputedStyle(track).gap) || 0;
-  const step = first.getBoundingClientRect().width + gap;
-  const visible = Math.max(1, Math.floor((carousel.clientWidth + gap) / step));
-  carousel.scrollBy({ left: direction * step * visible, behavior: 'smooth' });
-}
-function openSnackOrder() {
-  document.body.classList.add('snack-order-open');
-  document.getElementById('snackOrderPanel')?.setAttribute('aria-hidden', 'false');
-  document.getElementById('closeSnackOrder')?.focus();
-}
-function closeSnackOrder() {
-  document.body.classList.remove('snack-order-open');
-  document.getElementById('snackOrderPanel')?.setAttribute('aria-hidden', 'true');
-}
-
 const ACCESSORY_ITEMS = {
   papas: { name: "Papas George's Chip", price: 5, priceLabel: 'Bs 5 / unidad' },
   nachos: { name: 'Nachos picantes', price: 3, priceLabel: 'Bs 3 / unidad' },
@@ -1506,10 +1447,6 @@ function renderAccessoryQueue() {
   const estimatedTotal = state.accessoryQueue.reduce((sum, item) => sum + (ACCESSORY_ITEMS[item.id].price * item.quantity), 0);
   const totalLabel = document.getElementById('accessoryQueueTotal');
   const clearButton = document.getElementById('clearAccessoryQueue');
-  const headerCount = document.getElementById('snackHeaderCount');
-  const headerTotal = document.getElementById('snackHeaderTotal');
-  if (headerCount) headerCount.textContent = String(total);
-  if (headerTotal) headerTotal.textContent = `Bs ${estimatedTotal}`;
   count.textContent = `${total} ${total === 1 ? 'artículo' : 'artículos'}`;
   if (totalLabel) totalLabel.textContent = `Total estimado: Bs ${estimatedTotal}`;
   if (clearButton) clearButton.hidden = state.accessoryQueue.length === 0;
@@ -1587,24 +1524,6 @@ function clearAccessoryQueue() {
   saveAccessoryQueue();
   renderAccessoryQueue();
   setQuickOrderStatus('El pedido está vacío. Agrega productos desde el catálogo.');
-}
-function handleQuickOrderSubmit(event) {
-  event.preventDefault();
-  const input = document.getElementById('pedidoProductoInput');
-  const value = input?.value.trim() || '';
-  if (!value) {
-    setQuickOrderStatus('Escribe o selecciona un producto antes de agregarlo.', true);
-    input?.focus();
-    return;
-  }
-  const id = findAccessoryIdByName(value);
-  if (!id) {
-    setQuickOrderStatus('No encontré ese producto. Elige uno de los nombres del catálogo.', true);
-    input?.focus();
-    return;
-  }
-  addAccessoryToQueue(id);
-  if (input) input.value = '';
 }
 
 function bindLevelUpEvents() {
@@ -1757,16 +1676,6 @@ function bindLevelUpEvents() {
     changeAccessoryQuantity(this.dataset.accessoryDecrease, -1);
   });
   $document.on('click.levelupAccessories', '#clearAccessoryQueue', clearAccessoryQueue);
-  $document.on('submit.levelupAccessories', '#quickOrderForm', handleQuickOrderSubmit);
-  $document.on('click.levelupAccessories', '[data-snack-category]', function () { setSnackCategory(this.dataset.snackCategory); });
-  $document.on('click.levelupAccessories', '#snackCarouselPrev', () => scrollSnackCarousel(-1));
-  $document.on('click.levelupAccessories', '#snackCarouselNext', () => scrollSnackCarousel(1));
-  $document.on('click.levelupAccessories', '#openSnackOrder', openSnackOrder);
-  $document.on('click.levelupAccessories', '#closeSnackOrder, #snackOrderBackdrop', closeSnackOrder);
-  $document.on('keydown.levelupAccessories', function (event) { if (event.key === 'Escape') closeSnackOrder(); });
-  const snackCarousel = document.getElementById('snackCarousel');
-  if (snackCarousel) $(snackCarousel).off('scroll.levelupSnackCarousel').on('scroll.levelupSnackCarousel', updateSnackCarouselPosition);
-  $(window).off('resize.levelupSnackCarousel').on('resize.levelupSnackCarousel', updateSnackCarouselPosition);
 
   /* Acordeones desplegables de información. */
   $document.on('click.levelupAccordion', '[data-accordion]', function () {
