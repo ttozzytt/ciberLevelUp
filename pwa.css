@@ -560,3 +560,6 @@ button:disabled { opacity: .48; cursor: not-allowed !important; transform: none 
   .service-product-panel .btn-tactil { min-height: 44px !important; }
   .service-product-panel .accessory-quantity-btn { width: 44px !important; min-width: 44px !important; height: 44px !important; }
 }
+
+/* Mensaje de conflicto entre una sesión inmediata y un turno futuro. */
+.booking-conflict-message { margin: 9px 0 0; padding: 9px 11px; border-radius: 9px; background: rgba(255,113,140,.08); border: 1px solid rgba(255,113,140,.24); font-size: 11px; line-height: 1.45; }

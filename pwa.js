@@ -14,6 +14,7 @@ const STORAGE = {
 };
 const state = {
   machines: [], consoles: [], accounts: [], scheduledReservations: [], accessoryQueue: [], activeUser: null, currentFilter: 'all',
+  activeScheduledSignature: '',
   selectedMachine: null, selectedResourceType: null, booking: null, pendingMachineId: null, pendingConsoleId: null,
   rechargeAmount: 20, rechargeMethod: 'QR',
   hydrationComplete: false, networkState: 'checking',
@@ -78,8 +79,38 @@ function parseElapsed(value) {
 }
 function getMachine(id) { return state.machines.find(machine => machine.id === Number(id)) || null; }
 function getConsole(id) { return state.consoles.find(consoleUnit => consoleUnit.id === Number(id)) || null; }
+function resourceKeyForEquipment(resource) {
+  if (!resource) return '';
+  const kind = resource.kind === 'console' || state.consoles.includes(resource) ? 'console' : 'pc';
+  return `${kind}:${Number(resource.id)}`;
+}
+function scheduledReservationEnd(item) {
+  const start = new Date(item?.startsAt || '').getTime();
+  const duration = Number(item?.durationHours);
+  return Number.isFinite(start) && Number.isFinite(duration) && duration > 0
+    ? start + duration * 60 * 60 * 1000 : NaN;
+}
+function getActiveScheduledReservation(resourceOrKey, now = Date.now()) {
+  const resourceKey = typeof resourceOrKey === 'string' ? resourceOrKey : resourceKeyForEquipment(resourceOrKey);
+  if (!resourceKey) return null;
+  return state.scheduledReservations.find(item => {
+    if (item.resourceKey !== resourceKey) return false;
+    const start = new Date(item.startsAt).getTime();
+    const end = scheduledReservationEnd(item);
+    return Number.isFinite(start) && Number.isFinite(end) && start <= now && now < end;
+  }) || null;
+}
+function getNextScheduledReservation(resourceOrKey, now = Date.now()) {
+  const resourceKey = typeof resourceOrKey === 'string' ? resourceOrKey : resourceKeyForEquipment(resourceOrKey);
+  if (!resourceKey) return null;
+  return state.scheduledReservations
+    .filter(item => item.resourceKey === resourceKey && new Date(item.startsAt).getTime() > now)
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0] || null;
+}
 function isReserved(machine) { return Boolean(machine.reservationExpiresAt && machine.reservationExpiresAt > Date.now()); }
-function isAvailable(machine) { return Boolean(machine.available && !isReserved(machine)); }
+function isAvailable(machine) {
+  return Boolean(machine.available && !isReserved(machine) && !getActiveScheduledReservation(machine));
+}
 
 /* Avisos: un solo temporizador, limpiado antes de mostrar el siguiente mensaje. */
 function showToast(message, type = 'success') {
@@ -354,6 +385,9 @@ function renderConsoles() {
     const action = createTextElement('div', 'console-card-action');
     if (isReserved(consoleUnit)) {
       action.append(createUsageTimer('Apartada', consoleUnit.id, 'data-hold-timer', formatHold(consoleUnit.reservationExpiresAt - Date.now())));
+    } else if (getActiveScheduledReservation(consoleUnit)) {
+      const scheduled = getActiveScheduledReservation(consoleUnit);
+      action.append(createTextElement('div', 'pc-usage', `Turno reservado hasta ${reservationDateLabel(new Date(scheduledReservationEnd(scheduled)).toISOString())}`));
     } else if (consoleUnit.sessionEndsAt) {
       action.append(createUsageTimer('Tiempo restante', consoleUnit.id, 'data-session-timer', formatClock(consoleUnit.sessionEndsAt - Date.now())));
     } else if (!consoleUnit.available) {
@@ -414,7 +448,8 @@ function getFilteredMachines() {
   });
 }
 function cardStatus(machine) {
-  if (isReserved(machine)) return { label: 'Reservada', className: 'reserved' };
+  if (isReserved(machine)) return { label: 'Apartada', className: 'reserved' };
+  if (getActiveScheduledReservation(machine)) return { label: 'Turno reservado', className: 'reserved' };
   if (isAvailable(machine)) return { label: 'Disponible', className: 'available' };
   return { label: 'Ocupada', className: 'occupied' };
 }
@@ -472,6 +507,9 @@ function renderMachines() {
       foot.append(select);
     } else if (isReserved(machine)) {
       foot.append(createUsageTimer('Apartada', machine.id, 'data-hold-timer', formatHold(machine.reservationExpiresAt - Date.now())));
+    } else if (getActiveScheduledReservation(machine)) {
+      const scheduled = getActiveScheduledReservation(machine);
+      foot.append(createTextElement('div', 'pc-usage', `Turno reservado hasta ${reservationDateLabel(new Date(scheduledReservationEnd(scheduled)).toISOString())}`));
     } else if (machine.sessionEndsAt) {
       foot.append(createUsageTimer('Tiempo restante', machine.id, 'data-session-timer', formatClock(machine.sessionEndsAt - Date.now())));
     } else {
@@ -605,6 +643,7 @@ async function initializeCatalog() {
   populateReservationResources();
   setReservationDateMinimum();
   renderScheduledReservations();
+  state.activeScheduledSignature = activeScheduledSignature();
   startSessionTicker();
 }
 
@@ -660,6 +699,20 @@ function getReservationResource(resourceKey) {
   const item = state.consoles.find(consoleUnit => consoleUnit.id === id);
   return item ? { key: `console:${id}`, item, label: `${item.label} · ${money(item.price)}/h` } : null;
 }
+function reservationResourceStateLabel(resource) {
+  const now = Date.now();
+  if (isReserved(resource)) return `Apartada hasta ${reservationDateLabel(new Date(resource.reservationExpiresAt).toISOString())}`;
+  const activeScheduled = getActiveScheduledReservation(resource, now);
+  if (activeScheduled) return `Turno reservado hasta ${reservationDateLabel(new Date(scheduledReservationEnd(activeScheduled)).toISOString())}`;
+  if (!resource.available) {
+    const busyUntil = Number(resource.sessionEndsAt || 0);
+    if (busyUntil > now) return `Ocupada · libre ${reservationDateLabel(new Date(busyUntil).toISOString())}`;
+    return 'Ocupada · sin hora de liberación';
+  }
+  const next = getNextScheduledReservation(resource, now);
+  if (next) return `Disponible · próximo turno ${reservationDateLabel(next.startsAt)}`;
+  return 'Disponible';
+}
 function populateReservationResources() {
   const select = document.getElementById('recursoSelect');
   if (!select) return;
@@ -669,19 +722,23 @@ function populateReservationResources() {
   const machinesGroup = document.createElement('optgroup');
   machinesGroup.label = 'Computadoras';
   state.machines.forEach(machine => {
-    const option = new Option(`PC #${pad(machine.id)} · ${machine.label} · ${money(machine.price)}/h`, `pc:${machine.id}`);
+    const option = new Option(`PC #${pad(machine.id)} · ${machine.label} · ${money(machine.price)}/h — ${reservationResourceStateLabel(machine)}`, `pc:${machine.id}`);
+    const busyUntil = Number(machine.sessionEndsAt || 0);
+    option.disabled = !machine.available && !isReserved(machine) && !(busyUntil > Date.now());
     machinesGroup.append(option);
   });
   const consolesGroup = document.createElement('optgroup');
   consolesGroup.label = 'PlayStation 5';
   state.consoles.forEach(consoleUnit => {
-    const option = new Option(`${consoleUnit.label} · ${money(consoleUnit.price)}/h`, `console:${consoleUnit.id}`);
+    const option = new Option(`${consoleUnit.label} · ${money(consoleUnit.price)}/h — ${reservationResourceStateLabel(consoleUnit)}`, `console:${consoleUnit.id}`);
+    const busyUntil = Number(consoleUnit.sessionEndsAt || 0);
+    option.disabled = !consoleUnit.available && !isReserved(consoleUnit) && !(busyUntil > Date.now());
     consolesGroup.append(option);
   });
   if (machinesGroup.children.length) select.append(machinesGroup);
   if (consolesGroup.children.length) select.append(consolesGroup);
   select.disabled = !machinesGroup.children.length && !consolesGroup.children.length;
-  if ([...select.options].some(option => option.value === previous)) select.value = previous;
+  if ([...select.options].some(option => option.value === previous && !option.disabled)) select.value = previous;
 }
 function localDateTimeInputValue(timestamp) {
   const date = new Date(timestamp - new Date(timestamp).getTimezoneOffset() * 60000);
@@ -780,13 +837,26 @@ function validateScheduledReservation() {
     ? Date.now() : startAt;
   return { valid: !(nameError || resourceError || dateError || durationError), name, resource, startAt: effectiveStartAt, duration };
 }
-function reservationOverlaps(resourceKey, startAt, endAt) {
-  return state.scheduledReservations.some(item => {
-    if (item.resourceKey !== resourceKey) return false;
+function findScheduledReservationOverlap(resourceKey, startAt, endAt, exceptId = '') {
+  return state.scheduledReservations.find(item => {
+    if (item.resourceKey !== resourceKey || item.id === exceptId) return false;
     const existingStart = new Date(item.startsAt).getTime();
-    const existingEnd = existingStart + Number(item.durationHours) * 60 * 60 * 1000;
-    return Number.isFinite(existingStart) && startAt < existingEnd && endAt > existingStart;
-  });
+    const existingEnd = scheduledReservationEnd(item);
+    return Number.isFinite(existingStart) && Number.isFinite(existingEnd)
+      && startAt < existingEnd && endAt > existingStart;
+  }) || null;
+}
+function reservationOverlaps(resourceKey, startAt, endAt) {
+  return Boolean(findScheduledReservationOverlap(resourceKey, startAt, endAt));
+}
+function activeScheduledSignature(now = Date.now()) {
+  return state.scheduledReservations
+    .filter(item => {
+      const start = new Date(item.startsAt).getTime();
+      const end = scheduledReservationEnd(item);
+      return Number.isFinite(start) && Number.isFinite(end) && start <= now && now < end;
+    })
+    .map(item => `${item.resourceKey}:${item.id}`).sort().join('|');
 }
 function submitScheduledReservation(event) {
   event.preventDefault();
@@ -846,6 +916,9 @@ function submitScheduledReservation(event) {
     return;
   }
   renderScheduledReservations();
+  populateReservationResources();
+  renderMachines();
+  renderConsoles();
   event.currentTarget.reset();
   document.querySelectorAll('#formReserva .form-field').forEach(field => field.classList.remove('invalid'));
   ['clienteNombreError', 'recursoSelectError', 'fechaTurnoError', 'duracionTurnoError'].forEach(id => $(`#${id}`).text(''));
@@ -862,6 +935,9 @@ function cancelScheduledReservation(id) {
     return;
   }
   renderScheduledReservations();
+  populateReservationResources();
+  renderMachines();
+  renderConsoles();
   $('#reservationFormStatus').text('La solicitud local fue cancelada.').attr('class', 'form-status success');
   showToast('Solicitud local cancelada.');
 }
@@ -1066,6 +1142,7 @@ function updateBookingCountdown() {
 function saveSelectedResource() {
   if (state.selectedResourceType === 'console') { saveConsoleStates(); renderConsoles(); }
   else { saveMachineStates(); renderMachines(); }
+  populateReservationResources();
 }
 function releaseReservation(showMessage = false) {
   const resource = state.selectedMachine;
@@ -1081,6 +1158,7 @@ function releaseReservation(showMessage = false) {
   state.booking = null;
   if (isConsole) { saveConsoleStates(); renderConsoles(); }
   else { saveMachineStates(); renderMachines(); }
+  populateReservationResources();
   if (showMessage) showToast(isConsole ? `Reserva de la PlayStation #${id - 100} cancelada. La consola vuelve a estar disponible.` : `Reserva cancelada. La estación #${pad(id)} vuelve a estar disponible.`);
 }
 function expireReservation() {
@@ -1124,6 +1202,7 @@ function prepareResourceBooking(resource, resourceType) {
   $('#customerName').val(state.activeUser.name);
   $('#customerPhone').val(state.activeUser.phone);
   $('#sessionHours').val('1');
+  $('#scheduledBookingConflict').text('').prop('hidden', true);
   $('#extraControllerField').prop('hidden', !isConsole);
   $('#extraController').prop('checked', false);
   $('#bookingCostBreakdown').prop('hidden', !isConsole);
@@ -1171,6 +1250,19 @@ function startPaymentStep() {
     return;
   }
   const hours = Number($('#sessionHours').val());
+  const resourceKey = resourceKeyForEquipment(state.selectedMachine);
+  const requestedStart = Date.now();
+  const requestedEnd = requestedStart + hours * 60 * 60 * 1000;
+  const conflict = findScheduledReservationOverlap(resourceKey, requestedStart, requestedEnd);
+  if (conflict) {
+    const startsLabel = reservationDateLabel(conflict.startsAt);
+    $('#scheduledBookingConflict')
+      .text(`Este equipo ya tiene un turno programado para ${startsLabel}. Reduce la duración o elige otro equipo.`)
+      .prop('hidden', false);
+    $('#sessionHours').trigger('focus');
+    return;
+  }
+  $('#scheduledBookingConflict').text('').prop('hidden', true);
   const isConsole = state.selectedResourceType === 'console';
   const hasExtraController = isConsole && $('#extraController').is(':checked');
   state.booking = { kind: state.selectedResourceType, name: $('#customerName').val().trim(), phone: $('#customerPhone').val(), hours, hasExtraController, controllerFee: hasExtraController ? Number(state.selectedMachine.extraControllerFee || 6) : 0, total: updateBookingTotal() };
@@ -1185,6 +1277,16 @@ function confirmSessionPayment() {
   const user = state.activeUser;
   if (!machine || !user || !state.booking || !machine.reservationExpiresAt || machine.reservationExpiresAt <= Date.now()) {
     expireReservation();
+    return;
+  }
+  const bookingStart = Date.now();
+  const bookingEnd = bookingStart + Number(state.booking.hours) * 60 * 60 * 1000;
+  const bookingConflict = findScheduledReservationOverlap(resourceKeyForEquipment(machine), bookingStart, bookingEnd);
+  if (bookingConflict) {
+    showBookingStep('booking');
+    $('#scheduledBookingConflict')
+      .text(`Este equipo ya tiene un turno programado para ${reservationDateLabel(bookingConflict.startsAt)}. Reduce la duración o elige otro equipo.`)
+      .prop('hidden', false);
     return;
   }
   if (Number(user.balance) < state.booking.total) { updatePaymentState(); return; }
@@ -1205,6 +1307,7 @@ function confirmSessionPayment() {
   if (state.networkState !== 'online') queueLocalAction(isConsole ? 'sesion-playstation-local' : 'sesion-pc-local', session);
   if (isConsole) { saveConsoleStates(); renderConsoles(); }
   else { saveMachineStates(); renderMachines(); }
+  populateReservationResources();
   const extra = isConsole && state.booking.hasExtraController ? ' Se añadió un segundo mando por Bs 6.' : '';
   const message = `${state.booking.name}, se asignó ${resourceName} durante ${state.booking.hours} ${state.booking.hours === 1 ? 'hora' : 'horas'}.${extra} Se descontaron ${money(state.booking.total)}. Saldo restante: ${money(user.balance)}.`;
   $('#successText').text(message);
@@ -1294,7 +1397,15 @@ function tickSessions() {
       showToast(`La reserva de ${label} venció y quedó libre.`, 'error');
     });
   }
-  if (changed) { saveMachineStates(); saveConsoleStates(); renderMachines(); renderConsoles(); }
+  const nextSignature = activeScheduledSignature(now);
+  const scheduleChanged = nextSignature !== state.activeScheduledSignature;
+  state.activeScheduledSignature = nextSignature;
+  if (changed || scheduleChanged) {
+    if (changed) { saveMachineStates(); saveConsoleStates(); }
+    renderMachines();
+    renderConsoles();
+    populateReservationResources();
+  }
   finishedSessions.forEach(item => showToast(`Terminó la sesión de ${item.kind === 'console' ? `PlayStation #${item.id - 100}` : `estación #${pad(item.id)}`}. Ya está disponible.`));
 }
 function startSessionTicker() {
@@ -1640,7 +1751,7 @@ function bindLevelUpEvents() {
 
   /* Reserva, pago y cancelación. */
   $document.on('submit.levelupBooking', '#bookingForm', function (event) { event.preventDefault(); startPaymentStep(); });
-  $document.on('change.levelupBooking', '#sessionHours', updateBookingTotal);
+  $document.on('change.levelupBooking', '#sessionHours', function () { updateBookingTotal(); $('#scheduledBookingConflict').text('').prop('hidden', true); });
   $document.on('change.levelupBooking', '#extraController', updateBookingTotal);
   $document.on('click.levelupBooking', '#confirmPayment', confirmSessionPayment);
   $document.on('click.levelupBooking', '#rechargeFromPayment', openRecharge);
@@ -1808,6 +1919,45 @@ function syncViewFromLocation() {
   const name = location.hash.slice(1);
   if (LEVELUP_VIEWS.includes(name)) showView(name, false);
 }
+
+window.addEventListener('storage', event => {
+  if (event.key === STORAGE.scheduledReservations) {
+    loadScheduledReservations();
+    renderScheduledReservations();
+    populateReservationResources();
+    renderMachines();
+    renderConsoles();
+    state.activeScheduledSignature = activeScheduledSignature();
+  }
+  if (event.key === STORAGE.machines && Array.isArray(state.machines)) {
+    try {
+      const saved = JSON.parse(event.newValue || '[]');
+      if (Array.isArray(saved)) saved.forEach(entry => {
+        const machine = getMachine(entry.id);
+        if (machine) ['available', 'sessionStartedAt', 'sessionEndsAt', 'reservationExpiresAt'].forEach(key => {
+          if (entry[key] !== undefined) machine[key] = entry[key];
+        });
+      });
+      renderMachines();
+      updateStats();
+      populateReservationResources();
+    } catch (error) { console.warn('No se pudieron sincronizar los estados de PC entre pestañas.', error); }
+  }
+  if (event.key === STORAGE.consoles && Array.isArray(state.consoles)) {
+    try {
+      const saved = JSON.parse(event.newValue || '[]');
+      if (Array.isArray(saved)) saved.forEach(entry => {
+        const consoleUnit = getConsole(entry.id);
+        if (consoleUnit) ['available', 'sessionStartedAt', 'sessionEndsAt', 'reservationExpiresAt'].forEach(key => {
+          if (entry[key] !== undefined) consoleUnit[key] = entry[key];
+        });
+      });
+      renderConsoles();
+      populateReservationResources();
+    } catch (error) { console.warn('No se pudieron sincronizar los estados de PlayStation entre pestañas.', error); }
+  }
+});
+
 window.addEventListener('popstate', syncViewFromLocation);
 window.addEventListener('hashchange', syncViewFromLocation);
 window.addEventListener('online', () => { if (state.hydrationComplete) refreshNetworkStatus(); });

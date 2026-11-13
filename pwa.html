@@ -327,6 +327,7 @@
             <div class="form-field full"><label for="sessionHours">Duración</label><select id="sessionHours" class="field-control" data-hidratado="false" disabled><option value="1">1 hora</option><option value="2">2 horas</option><option value="3">3 horas</option><option value="5">5 horas</option><option value="8">8 horas</option></select></div>
             <label class="console-extra-option form-field full" id="extraControllerField" hidden><span class="controller-option"><input id="extraController" type="checkbox" data-hidratado="false" disabled><span><strong>Agregar segundo mando</strong><small>Un mando incluido · segundo mando por Bs 6 adicionales, una sola vez por sesión.</small></span><b>+ Bs 6</b></span></label>
           </div>
+          <p class="form-status error booking-conflict-message" id="scheduledBookingConflict" role="alert" hidden></p>
           <div class="booking-cost-breakdown" id="bookingCostBreakdown" hidden><span>Tiempo de juego <b id="bookingBaseAmount">Bs 15</b></span><span>Segundo mando <b id="bookingControllerAmount">Bs 0</b></span></div>
           <div class="total-card"><span>Total de la sesión</span><strong id="bookingTotal">Bs 3</strong></div>
           <div class="modal-actions"><button class="secondary-btn" id="cancelBooking" type="button" data-hidratado="false" disabled>Cancelar</button><button class="primary-btn" type="submit" data-hidratado="false" disabled>Continuar al pago →</button></div>
