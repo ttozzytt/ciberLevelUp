@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v18-pedido-en-servicios';
+const CACHE_NAME = 'levelup-cibercafe-v19-botones-pedido-contraste';
 const APP_SHELL = [
   './',
   './index.html',
