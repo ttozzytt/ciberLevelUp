@@ -160,7 +160,11 @@
               <div class="panel-heading"><span class="feature-icon">👤</span><div><h2>Resumen de cuenta</h2><p>Tu información guardada en este dispositivo.</p></div></div>
               <div class="account-profile"><span class="avatar">👤</span><div><strong id="accountDisplayName">Usuario</strong><small id="accountDisplayPhone">Celular registrado</small></div></div>
               <div class="balance-card"><div><span>Saldo disponible</span><strong id="accountDisplayBalance">Bs 0</strong></div><button class="primary-btn" id="openRechargeButton" type="button" data-hidratado="false" disabled>＋ Recargar</button></div>
-              <div class="panel-heading" style="margin:5px 0 0"><div><h3>Actividad reciente</h3><p>Recargas y sesiones registradas.</p></div></div>
+              <section class="active-session-panel" id="activeSessionPanel" aria-labelledby="activeSessionTitle" hidden>
+                <div class="active-session-heading"><div><p class="eyebrow">EN JUEGO</p><h3 id="activeSessionTitle">Mi sesión actual</h3></div><span class="active-session-badge">ACTIVA</span></div>
+                <div id="activeSessionList" class="active-session-list" aria-live="polite"></div>
+              </section>
+              <div class="panel-heading" style="margin:5px 0 0"><div><h3>Actividad reciente</h3><p>Recargas, sesiones y pedidos.</p></div></div>
               <div class="history-list" id="accountHistory"><div class="history-empty">Todavía no hay movimientos.</div></div>
               <div class="account-actions"><button class="secondary-btn" id="logoutButton" type="button" data-hidratado="false" disabled>Cerrar sesión</button></div>
             </section>
@@ -213,7 +217,8 @@
               <aside class="service-order-summary" aria-labelledby="serviceOrderTitle">
                 <div class="accessory-queue-heading"><h3 id="serviceOrderTitle">Mi lista de pedidos</h3><span id="accessoryQueueCount">0 artículos</span></div>
                 <div id="accessoryQueue" class="accessory-queue" aria-live="polite"><p class="accessory-empty">Todavía no agregaste productos.</p></div>
-                <div class="accessory-total" id="accessoryQueueTotal" aria-live="polite">Total estimado: Bs 0</div>
+                <div class="accessory-total" id="accessoryQueueTotal" aria-live="polite">Total: Bs 0</div>
+                <button class="primary-btn btn-tactil send-order-btn" id="sendAccessoryOrder" type="button" data-hidratado="false" disabled hidden>Enviar pedido a mi sesión</button>
                 <button class="secondary-btn btn-tactil clear-order-btn" id="clearAccessoryQueue" type="button" data-hidratado="false" disabled hidden>Vaciar pedido</button>
               </aside>
             </div>
@@ -324,7 +329,8 @@
           <div class="booking-grid">
             <div class="form-field" id="fieldBookingName"><label for="customerName">Nombre completo</label><input id="customerName" type="text" autocomplete="name" maxlength="60" placeholder="Nombre y apellido" data-hidratado="false" disabled><small id="customerNameError"></small></div>
             <div class="form-field" id="fieldBookingPhone"><label for="customerPhone">Celular</label><input id="customerPhone" type="tel" inputmode="numeric" maxlength="8" placeholder="8 dígitos" data-hidratado="false" disabled><small id="customerPhoneError"></small></div>
-            <div class="form-field full"><label for="sessionHours">Duración</label><select id="sessionHours" class="field-control" data-hidratado="false" disabled><option value="1">1 hora</option><option value="2">2 horas</option><option value="3">3 horas</option><option value="5">5 horas</option><option value="8">8 horas</option></select></div>
+            <div class="form-field full" id="sessionModeField"><label for="sessionMode">Tiempo de uso</label><select id="sessionMode" class="field-control" data-hidratado="false" disabled><option value="fixed">Tiempo definido</option><option value="open">Sin límite de tiempo</option></select><small id="sessionModeHelp" class="field-hint">Puedes elegir media hora o más tiempo.</small></div>
+            <div class="form-field full"><label for="sessionHours">Duración</label><select id="sessionHours" class="field-control" data-hidratado="false" disabled><option value="30">30 minutos</option><option value="60">1 hora</option><option value="120">2 horas</option><option value="180">3 horas</option><option value="300">5 horas</option><option value="480">8 horas</option></select></div>
             <label class="console-extra-option form-field full" id="extraControllerField" hidden><span class="controller-option"><input id="extraController" type="checkbox" data-hidratado="false" disabled><span><strong>Agregar segundo mando</strong><small>Un mando incluido · segundo mando por Bs 6 adicionales, una sola vez por sesión.</small></span><b>+ Bs 6</b></span></label>
           </div>
           <p class="form-status error booking-conflict-message" id="scheduledBookingConflict" role="alert" hidden></p>

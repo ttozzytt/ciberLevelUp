@@ -576,3 +576,43 @@ button:disabled { opacity: .48; cursor: not-allowed !important; transform: none 
 .reservation-cancel:hover { background: #261725; border-color: rgba(255,113,140,.5); }
 .reservation-cancel:disabled { cursor: wait; opacity: .65; }
 @media (max-width: 680px) { .reservation-item { align-items: flex-start; flex-direction: column; } .reservation-actions { width: 100%; justify-content: flex-start; } }
+
+
+/* Mi sesión: reloj, consumo de tiempo y pedidos del cliente. */
+.balance-card > div { display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:0; }
+.balance-card span { display:block; }
+.active-session-panel { margin: 16px 0; padding: 15px; border: 1px solid rgba(77,231,238,.28); border-radius: 15px; background: linear-gradient(145deg,rgba(77,231,238,.07),rgba(116,66,229,.08)); }
+.active-session-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.active-session-heading .eyebrow { margin:0 0 3px; color:var(--cyan); font-size:9px; letter-spacing:.14em; }
+.active-session-heading h3 { margin:0; font-size:17px; }
+.active-session-badge,.active-session-mode { display:inline-flex; align-items:center; border:1px solid rgba(77,231,238,.28); border-radius:999px; padding:5px 9px; color:var(--cyan); font-size:9px; font-weight:850; letter-spacing:.06em; white-space:nowrap; }
+.active-session-list { display:grid; gap:12px; }
+.active-session-card { min-width:0; padding:12px; border:1px solid var(--line); border-radius:12px; background:rgba(7,10,21,.62); }
+.active-session-card-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+.active-session-card-head strong { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
+.active-session-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+.active-session-metric { min-width:0; display:flex; flex-direction:column; gap:5px; padding:9px; border-radius:9px; background:rgba(255,255,255,.045); }
+.active-session-metric span { color:var(--muted); font-size:10px; }
+.active-session-metric strong { color:#f4f7ff; font-size:16px; font-variant-numeric:tabular-nums; }
+.active-session-grand-total { border:1px solid rgba(77,231,238,.22); background:rgba(77,231,238,.07); }
+.active-session-grand-total strong { color:var(--cyan); }
+.active-session-orders { display:grid; gap:7px; margin-top:11px; }
+.active-session-orders>strong { font-size:11px; }
+.active-session-order-list { display:grid; gap:5px; }
+.active-session-order { display:flex; align-items:flex-start; justify-content:space-between; gap:9px; padding:6px 0; border-top:1px solid var(--line); font-size:10px; }
+.active-session-order span { min-width:0; overflow-wrap:anywhere; color:var(--muted); }
+.active-session-order strong { flex:0 0 auto; font-size:10px; }
+.active-session-order-empty { color:var(--muted); font-size:10px; }
+.active-session-finish { min-height:44px; margin-top:10px; padding:8px 12px; }
+.send-order-btn { width:100%; min-height:44px; margin-top:9px; }
+.send-order-btn:disabled { opacity:.55; cursor:not-allowed; }
+@media(max-width:820px) {
+ .active-session-panel { padding:11px; }
+ .active-session-card { padding:9px; }
+ .active-session-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .active-session-metric strong { font-size:14px; }
+}
+@media(orientation:landscape) and (max-height:500px) {
+ .active-session-panel { margin:10px 0; padding:9px; }
+ .active-session-metric { padding:6px; }
+}

@@ -10,10 +10,11 @@ const STORAGE = {
   consoles: 'levelup_console_states_v1',
   pending: 'levelup_pending_actions_v1',
   scheduledReservations: 'levelup_scheduled_reservations_v1',
-  accessoryQueue: 'levelup_accessory_queue_v1'
+  accessoryQueue: 'levelup_accessory_queue_v1',
+  activeSessions: 'levelup_active_sessions_v1'
 };
 const state = {
-  machines: [], consoles: [], accounts: [], scheduledReservations: [], accessoryQueue: [], activeUser: null, currentFilter: 'all',
+  machines: [], consoles: [], accounts: [], scheduledReservations: [], accessoryQueue: [], activeSessions: [], activeUser: null, currentFilter: 'all',
   activeScheduledSignature: '', activeScheduledReservationId: '', pendingScheduledReservationId: null,
   selectedMachine: null, selectedResourceType: null, booking: null, pendingMachineId: null, pendingConsoleId: null,
   rechargeAmount: 20, rechargeMethod: 'QR',
@@ -70,6 +71,31 @@ function formatClock(milliseconds) {
 function formatHold(milliseconds) {
   const seconds = Math.max(0, Math.ceil(milliseconds / 1000));
   return `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`;
+}
+function durationLabel(minutes) {
+  const value = Number(minutes);
+  if (value === 30) return '30 minutos';
+  if (value === 60) return '1 hora';
+  if (Number.isInteger(value) && value > 60 && value % 60 === 0) return `${value / 60} horas`;
+  if (Number.isFinite(value) && value > 0) return `${Math.floor(value / 60)} h ${value % 60} min`;
+  return 'Sin límite de tiempo';
+}
+function halfHourPrice(resource) {
+  const rate = Number(resource?.price || 0);
+  if (rate === 3) return 2;
+  if (rate === 6) return 3;
+  if (rate === 10) return 5;
+  return Math.round((rate / 2) * 100) / 100;
+}
+function sessionTimePrice(resource, minutes) {
+  return Number(minutes) === 30
+    ? halfHourPrice(resource)
+    : Math.round((Number(resource?.price || 0) * Number(minutes) / 60) * 100) / 100;
+}
+function resourceLabelForSession(resource, resourceType) {
+  return resourceType === 'console'
+    ? `PlayStation 5 · Consola #${Number(resource.id) - 100}`
+    : `PC #${pad(resource.id)} · ${resource.label}`;
 }
 function parseElapsed(value) {
   const parts = String(value || '0').split(':').map(Number);
@@ -859,12 +885,14 @@ function normalizeReservationName(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLocaleLowerCase('es-BO').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 }
-function configureSessionDurationOptions(maxHours = null, selectedHours = 1) {
+const SESSION_DURATIONS_MINUTES = [30, 60, 120, 180, 300, 480];
+function configureSessionDurationOptions(maxMinutes = null, selectedMinutes = 60) {
   const select = document.getElementById('sessionHours');
   if (!select) return;
-  const options = RESERVATION_DURATIONS.filter(hours => maxHours === null || hours <= maxHours);
-  select.replaceChildren(...options.map(hours => new Option(`${hours} ${hours === 1 ? 'hora' : 'horas'}`, String(hours))));
-  select.value = options.includes(Number(selectedHours)) ? String(selectedHours) : String(options[0] || 1);
+  const options = SESSION_DURATIONS_MINUTES.filter(minutes => maxMinutes === null || minutes <= maxMinutes);
+  select.replaceChildren(...options.map(minutes => new Option(durationLabel(minutes), String(minutes))));
+  const preferred = Number(selectedMinutes);
+  select.value = options.includes(preferred) ? String(preferred) : String(options.at(-1) || 60);
 }
 function beginScheduledReservation(id) {
   const item = state.scheduledReservations.find(entry => entry.id === id);
@@ -925,7 +953,10 @@ function beginScheduledReservation(id) {
   $('#selectedMachineRate').text(`${money(resource.item.price)}/h`);
   $('#customerName').val(state.activeUser.name);
   $('#customerPhone').val(state.activeUser.phone);
-  configureSessionDurationOptions(item.durationHours, item.durationHours);
+  configureSessionDurationOptions(item.durationHours * 60, item.durationHours * 60);
+  $('#sessionMode').val('fixed').prop('disabled', true);
+  $('#sessionModeField').prop('hidden', true);
+  $('#sessionModeHelp').text('El horario reservado tiene una duración definida.');
   $('#scheduledBookingConflict').text('').prop('hidden', true);
   $('#extraControllerField').prop('hidden', !isConsole);
   $('#extraController').prop('checked', false);
@@ -1076,6 +1107,173 @@ function saveActiveUser() {
   saveAccounts();
   renderAccount();
 }
+function loadActiveSessions() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE.activeSessions) || '[]');
+    state.activeSessions = Array.isArray(saved) ? saved.filter(item => item && typeof item.id === 'string'
+      && typeof item.resourceKey === 'string' && typeof item.ownerPhone === 'string'
+      && Number.isFinite(Number(item.startedAt)) && ['fixed', 'open'].includes(item.billingMode)
+      && Number.isFinite(Number(item.timeAmount)) && Number.isFinite(Number(item.snacksTotal)))
+      .slice(0, 30).map(item => ({
+        ...item,
+        durationMinutes: item.billingMode === 'open' ? null : Number(item.durationMinutes),
+        halfHourRate: Math.max(0, Number(item.halfHourRate || 0)),
+        timeAmount: Math.max(0, Number(item.timeAmount || 0)),
+        snacksTotal: Math.max(0, Number(item.snacksTotal || 0)),
+        orders: Array.isArray(item.orders) ? item.orders.slice(-30) : []
+      })) : [];
+  } catch (_) { state.activeSessions = []; }
+}
+function saveActiveSessions() {
+  try { localStorage.setItem(STORAGE.activeSessions, JSON.stringify(state.activeSessions)); }
+  catch (_) { showToast('No se pudo guardar la sesión en este navegador.', 'error'); }
+}
+function activeSessionsForPhone(phone) {
+  return state.activeSessions.filter(item => item.ownerPhone === phone)
+    .sort((a, b) => Number(b.startedAt) - Number(a.startedAt));
+}
+function getLatestActiveSessionForUser() {
+  return state.activeUser ? activeSessionsForPhone(state.activeUser.phone)[0] || null : null;
+}
+function renderActiveSessionPanel() {
+  const panel = document.getElementById('activeSessionPanel');
+  const list = document.getElementById('activeSessionList');
+  if (!panel || !list) return;
+  const sessions = state.activeUser ? activeSessionsForPhone(state.activeUser.phone) : [];
+  panel.hidden = sessions.length === 0;
+  if (!sessions.length) { list.replaceChildren(); return; }
+  const fragment = document.createDocumentFragment();
+  sessions.forEach(session => {
+    const card = createTextElement('article', 'active-session-card');
+    const title = createTextElement('div', 'active-session-card-head');
+    const equipment = createTextElement('strong', '', session.resourceLabel || `Equipo ${session.machine}`);
+    const mode = createTextElement('span', 'active-session-mode', session.billingMode === 'open' ? 'SIN LÍMITE' : 'TIEMPO DEFINIDO');
+    title.append(equipment, mode);
+    const metrics = createTextElement('div', 'active-session-metrics');
+    const timeMetric = createTextElement('div', 'active-session-metric');
+    const clockLabel = session.billingMode === 'open' ? 'Tiempo transcurrido' : 'Tiempo restante';
+    timeMetric.append(createTextElement('span', '', clockLabel), createTextElement('strong', '', '--:--:--'));
+    timeMetric.lastElementChild.dataset.sessionClock = session.id;
+    const timeCost = createTextElement('div', 'active-session-metric');
+    timeCost.append(createTextElement('span', '', 'Costo del tiempo'), createTextElement('strong', '', money(session.timeAmount)));
+    timeCost.lastElementChild.dataset.sessionTimeCost = session.id;
+    const snackCost = createTextElement('div', 'active-session-metric');
+    snackCost.append(createTextElement('span', '', 'Snacks y extras'), createTextElement('strong', '', money(session.snacksTotal)));
+    snackCost.lastElementChild.dataset.sessionSnackCost = session.id;
+    const totalCost = createTextElement('div', 'active-session-metric active-session-grand-total');
+    totalCost.append(createTextElement('span', '', 'Total actual'), createTextElement('strong', '', money(session.timeAmount + session.snacksTotal)));
+    totalCost.lastElementChild.dataset.sessionGrandTotal = session.id;
+    metrics.append(timeMetric, timeCost, snackCost, totalCost);
+    const orderBlock = createTextElement('div', 'active-session-orders');
+    orderBlock.append(createTextElement('strong', '', 'Pedidos de esta sesión'));
+    const orders = createTextElement('div', 'active-session-order-list');
+    if (!session.orders.length) {
+      orders.append(createTextElement('span', 'active-session-order-empty', 'Todavía no hay pedidos.'));
+    } else {
+      session.orders.forEach(order => {
+        const row = createTextElement('div', 'active-session-order');
+        const label = (order.items || []).map(item => `${item.quantity} × ${item.name}`).join(', ') || 'Pedido';
+        row.append(createTextElement('span', '', label), createTextElement('strong', '', money(order.total)));
+        orders.append(row);
+      });
+    }
+    orderBlock.append(orders);
+    card.append(title, metrics, orderBlock);
+    if (session.billingMode === 'open') {
+      const finish = createTextElement('button', 'secondary-btn btn-tactil active-session-finish', 'Finalizar sesión');
+      finish.type = 'button';
+      finish.dataset.sessionFinish = session.id;
+      finish.dataset.hidratado = 'true';
+      card.append(finish);
+    }
+    fragment.append(card);
+  });
+  list.replaceChildren(fragment);
+  updateActiveSessionPanel();
+}
+function updateActiveSessionPanel() {
+  if (!state.activeUser) return;
+  $('#accountDisplayBalance').text(money(state.activeUser.balance));
+  const now = Date.now();
+  activeSessionsForPhone(state.activeUser.phone).forEach(session => {
+    const clock = document.querySelector(`[data-session-clock="${CSS.escape(session.id)}"]`);
+    if (clock) {
+      const value = session.billingMode === 'open'
+        ? now - Number(session.startedAt)
+        : Number(session.endsAt || 0) - now;
+      clock.textContent = formatClock(Math.max(0, value));
+    }
+    const timeCost = document.querySelector(`[data-session-time-cost="${CSS.escape(session.id)}"]`);
+    const snackCost = document.querySelector(`[data-session-snack-cost="${CSS.escape(session.id)}"]`);
+    const grandTotal = document.querySelector(`[data-session-grand-total="${CSS.escape(session.id)}"]`);
+    if (timeCost) timeCost.textContent = money(session.timeAmount);
+    if (snackCost) snackCost.textContent = money(session.snacksTotal);
+    if (grandTotal) grandTotal.textContent = money(session.timeAmount + session.snacksTotal);
+  });
+}
+function finishOpenSession(sessionId, reason = 'manual') {
+  const session = state.activeSessions.find(item => item.id === sessionId && item.billingMode === 'open');
+  if (!session) return;
+  const resource = getReservationResource(session.resourceKey)?.item;
+  if (resource) {
+    resource.available = true;
+    resource.reservationExpiresAt = null;
+    resource.sessionStartedAt = null;
+    resource.sessionEndsAt = null;
+    if (session.resourceType === 'console') saveConsoleStates(); else saveMachineStates();
+  }
+  state.activeSessions = state.activeSessions.filter(item => item.id !== sessionId);
+  saveActiveSessions();
+  renderMachines();
+  renderConsoles();
+  populateReservationResources();
+  renderAccount();
+  showToast(reason === 'insufficient'
+    ? 'El saldo no alcanzó para el siguiente bloque. La sesión terminó.'
+    : 'Sesión finalizada.');
+}
+function processOpenSessionCharges(now) {
+  let accountsChanged = false;
+  const ended = [];
+  state.activeSessions.forEach(session => {
+    if (session.billingMode !== 'open') return;
+    const user = state.accounts.find(account => account.phone === session.ownerPhone);
+    if (!user) { ended.push({ id: session.id, reason: 'insufficient' }); return; }
+    while (Number(session.nextChargeAt || Infinity) <= now) {
+      const charge = Number(session.halfHourRate || 0);
+      if (!(charge > 0) || Number(user.balance || 0) < charge) {
+        ended.push({ id: session.id, reason: 'insufficient' });
+        break;
+      }
+      user.balance = Number(user.balance) - charge;
+      user.history = Array.isArray(user.history) ? user.history : [];
+      user.history.push({ type: 'Tiempo sin límite · bloque de 30 min', machine: session.machine, minutes: 30, amount: -charge, date: new Date(session.nextChargeAt).toISOString() });
+      session.timeAmount = Number(session.timeAmount || 0) + charge;
+      session.nextChargeAt += 30 * 60000;
+      session.paidUntil = session.nextChargeAt;
+      accountsChanged = true;
+    }
+  });
+  if (ended.length) {
+    const endingIds = new Set(ended.map(item => item.id));
+    ended.forEach(item => {
+      const session = state.activeSessions.find(entry => entry.id === item.id);
+      if (!session) return;
+      const resource = getReservationResource(session.resourceKey)?.item;
+      if (resource) {
+        resource.available = true;
+        resource.reservationExpiresAt = null;
+        resource.sessionStartedAt = null;
+        resource.sessionEndsAt = null;
+      }
+    });
+    state.activeSessions = state.activeSessions.filter(item => !endingIds.has(item.id));
+  }
+  if (accountsChanged) saveAccounts();
+  if (accountsChanged || ended.length) saveActiveSessions();
+  return ended;
+}
+
 function renderAccount() {
   renderPendingActions();
   const loggedIn = Boolean(state.activeUser);
@@ -1086,6 +1284,7 @@ function renderAccount() {
   $('#accountDisplayName').text(user.name);
   $('#accountDisplayPhone').text(`Celular · ${user.phone}`);
   $('#accountDisplayBalance').text(money(user.balance));
+  renderActiveSessionPanel();
   const history = Array.isArray(user.history) ? [...user.history].reverse().slice(0, 8) : [];
   const historyContainer = document.getElementById('accountHistory');
   if (historyContainer) {
@@ -1103,7 +1302,9 @@ function renderAccount() {
           : 'Fecha no disponible';
         const amountValue = Number(entry.amount || 0);
         const amount = Number.isFinite(amountValue) ? amountValue : 0;
-        const details = entry.machine ? `Estación #${pad(entry.machine)} · ${entry.hours || 1} h` : (entry.method || 'Movimiento local');
+        const resourceLabel = entry.resource === 'console' ? `PlayStation #${Number(entry.machine) - 100}` : `Estación #${pad(entry.machine)}`;
+        const sessionLabel = entry.durationLabel || (entry.type && entry.type.startsWith('Pedido') ? 'Pedido' : (entry.minutes ? durationLabel(entry.minutes) : `${entry.hours || 1} h`));
+        const details = entry.machine ? `${resourceLabel} · ${sessionLabel}` : (entry.method || entry.details || 'Movimiento local');
         const entryType = entry.type === 'Recarga simulada' ? 'Recarga de saldo' : (entry.type || 'Movimiento');
         detailsBox.append(
           createTextElement('strong', '', entryType),
@@ -1280,7 +1481,9 @@ function expireReservation() {
 }
 function prepareResourceBooking(resource, resourceType) {
   state.activeScheduledReservationId = '';
-  configureSessionDurationOptions(null, 1);
+  configureSessionDurationOptions(null, 60);
+  $('#sessionMode').val('fixed').prop('disabled', false);
+  $('#sessionModeField').prop('hidden', false);
   $('#bookingHoldNotice').prop('hidden', false);
   if (!resource || !isAvailable(resource)) {
     showToast('Ese puesto ya no está disponible. Actualizamos el estado.', 'error');
@@ -1311,8 +1514,10 @@ function prepareResourceBooking(resource, resourceType) {
   $('#selectedMachineRate').text(`${money(resource.price)}/h`);
   $('#customerName').val(state.activeUser.name);
   $('#customerPhone').val(state.activeUser.phone);
-  configureSessionDurationOptions(null, 1);
-  $('#sessionHours').val('1');
+  configureSessionDurationOptions(null, 60);
+  $('#sessionMode').val('fixed').prop('disabled', false);
+  $('#sessionModeField').prop('hidden', false);
+  $('#sessionHours').val('60').prop('disabled', false);
   $('#scheduledBookingConflict').text('').prop('hidden', true);
   $('#extraControllerField').prop('hidden', !isConsole);
   $('#extraController').prop('checked', false);
@@ -1330,9 +1535,18 @@ function prepareResourceBooking(resource, resourceType) {
 }
 function openBooking(machineId) { prepareResourceBooking(getMachine(machineId), 'pc'); }
 function openConsoleBooking(consoleId) { prepareResourceBooking(getConsole(consoleId), 'console'); }
+function updateBookingModeFields() {
+  const openMode = $('#sessionMode').val() === 'open' && !state.activeScheduledReservationId;
+  $('#sessionHours').prop('disabled', openMode);
+  $('#sessionModeHelp').text(openMode
+    ? 'No se fija una hora de salida. Se cobra por bloques de 30 minutos desde el saldo.'
+    : 'Elige 30 minutos, 1 hora o el tiempo que necesites.');
+  return openMode;
+}
 function updateBookingTotal() {
-  const hours = Number($('#sessionHours').val() || 1);
-  const base = state.selectedMachine ? state.selectedMachine.price * hours : 0;
+  const openMode = updateBookingModeFields();
+  const minutes = openMode ? 30 : Number($('#sessionHours').val() || 60);
+  const base = state.selectedMachine ? sessionTimePrice(state.selectedMachine, minutes) : 0;
   const controllerFee = state.selectedResourceType === 'console' && $('#extraController').is(':checked') ? Number(state.selectedMachine?.extraControllerFee || 6) : 0;
   const amount = base + controllerFee;
   $('#bookingBaseAmount').text(money(base));
@@ -1364,15 +1578,23 @@ function startPaymentStep() {
     document.querySelector(!nameValid ? '#customerName' : '#customerPhone').focus();
     return;
   }
-  const hours = Number($('#sessionHours').val());
+  const scheduledMode = Boolean(state.activeScheduledReservationId);
+  const billingMode = !scheduledMode && $('#sessionMode').val() === 'open' ? 'open' : 'fixed';
+  const durationMinutes = billingMode === 'open' ? 30 : Number($('#sessionHours').val());
+  if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+    $('#scheduledBookingConflict').text('Selecciona una duración válida.').prop('hidden', false);
+    return;
+  }
   const resourceKey = resourceKeyForEquipment(state.selectedMachine);
   const requestedStart = Date.now();
-  const requestedEnd = requestedStart + hours * 60 * 60 * 1000;
+  const requestedEnd = billingMode === 'open' ? Number.MAX_SAFE_INTEGER : requestedStart + durationMinutes * 60000;
   const conflict = findScheduledReservationOverlap(resourceKey, requestedStart, requestedEnd, state.activeScheduledReservationId);
   if (conflict) {
     const startsLabel = reservationDateLabel(conflict.startsAt);
     $('#scheduledBookingConflict')
-      .text(`Este equipo ya tiene un turno programado para ${startsLabel}. Reduce la duración o elige otro equipo.`)
+      .text(billingMode === 'open'
+        ? `No puedes iniciar una sesión sin límite porque ya existe un turno para este equipo: ${startsLabel}.`
+        : `Este equipo ya tiene un turno programado para ${startsLabel}. Reduce la duración o elige otro equipo.`)
       .prop('hidden', false);
     $('#sessionHours').trigger('focus');
     return;
@@ -1380,9 +1602,13 @@ function startPaymentStep() {
   $('#scheduledBookingConflict').text('').prop('hidden', true);
   const isConsole = state.selectedResourceType === 'console';
   const hasExtraController = isConsole && $('#extraController').is(':checked');
-  state.booking = { kind: state.selectedResourceType, name: $('#customerName').val().trim(), phone: $('#customerPhone').val(), hours, hasExtraController, controllerFee: hasExtraController ? Number(state.selectedMachine.extraControllerFee || 6) : 0, total: updateBookingTotal(), scheduledReservationId: state.activeScheduledReservationId || '' };
-  $('#paymentMachine').text(isConsole ? `PlayStation 5 · Consola #${state.selectedMachine.id - 100}` : `Estación #${pad(state.selectedMachine.id)} · ${state.selectedMachine.label}`);
-  $('#paymentSummary').text(`${hours} ${hours === 1 ? 'hora' : 'horas'}${hasExtraController ? ' · incluye segundo mando (+ Bs 6)' : ''} · la sesión comienza al confirmar`);
+  const controllerFee = hasExtraController ? Number(state.selectedMachine.extraControllerFee || 6) : 0;
+  const baseAmount = sessionTimePrice(state.selectedMachine, durationMinutes);
+  const total = baseAmount + controllerFee;
+  state.booking = { kind: state.selectedResourceType, name: $('#customerName').val().trim(), phone: $('#customerPhone').val(), billingMode, durationMinutes: billingMode === 'open' ? null : durationMinutes, baseAmount, hasExtraController, controllerFee, total, scheduledReservationId: state.activeScheduledReservationId || '' };
+  $('#paymentMachine').text(resourceLabelForSession(state.selectedMachine, state.selectedResourceType));
+  const timeLabel = billingMode === 'open' ? 'Sin límite · primer bloque de 30 min' : durationLabel(durationMinutes);
+  $('#paymentSummary').text(`${timeLabel}${hasExtraController ? ' · segundo mando (+ Bs 6)' : ''} · comienza al confirmar`);
   $('#paymentTotal').text(money(state.booking.total));
   showBookingStep('payment');
   updatePaymentState();
@@ -1399,7 +1625,9 @@ function confirmSessionPayment() {
     return;
   }
   const bookingStart = Date.now();
-  const bookingEnd = bookingStart + Number(state.booking.hours) * 60 * 60 * 1000;
+  const openMode = state.booking.billingMode === 'open';
+  const durationMinutes = openMode ? null : Number(state.booking.durationMinutes);
+  const bookingEnd = openMode ? Number.MAX_SAFE_INTEGER : bookingStart + durationMinutes * 60000;
   const bookingConflict = findScheduledReservationOverlap(resourceKeyForEquipment(machine), bookingStart, bookingEnd, scheduledId);
   if (bookingConflict) {
     showBookingStep('booking');
@@ -1427,20 +1655,46 @@ function confirmSessionPayment() {
   // La fecha de contratación se asigna automáticamente al confirmar el servicio.
   const contractedAt = new Date();
   const contractedAtMs = contractedAt.getTime();
-  const session = { type: isConsole ? 'Sesión PlayStation' : 'Sesión PC', resource: isConsole ? 'console' : 'pc', machine: machine.id, hours: state.booking.hours, scheduledReservation: Boolean(scheduledId), extraController: Boolean(state.booking.hasExtraController), controllerFee: Number(state.booking.controllerFee || 0), amount: -state.booking.total, date: contractedAt.toISOString() };
+  const resourceKey = resourceKeyForEquipment(machine);
+  const durationText = openMode ? 'Sin límite de tiempo' : durationLabel(durationMinutes);
+  const session = { type: isConsole ? 'Sesión PlayStation' : 'Sesión PC', resource: isConsole ? 'console' : 'pc', machine: machine.id, hours: openMode ? null : durationMinutes / 60, minutes: durationMinutes, billingMode: state.booking.billingMode, durationLabel: durationText, scheduledReservation: Boolean(scheduledId), extraController: Boolean(state.booking.hasExtraController), controllerFee: Number(state.booking.controllerFee || 0), amount: -state.booking.total, date: contractedAt.toISOString() };
   user.history.push(session);
-  saveActiveUser();
   machine.available = false;
   machine.reservationExpiresAt = null;
   machine.sessionStartedAt = contractedAtMs;
-  machine.sessionEndsAt = contractedAtMs + state.booking.hours * 3600000;
+  machine.sessionEndsAt = openMode ? null : contractedAtMs + durationMinutes * 60000;
+  const activeSession = {
+    id: `${resourceKey}-${contractedAtMs}`,
+    resourceKey,
+    resourceType: isConsole ? 'console' : 'pc',
+    machine: machine.id,
+    resourceLabel: resourceLabelForSession(machine, isConsole ? 'console' : 'pc'),
+    ownerPhone: user.phone,
+    ownerName: user.name,
+    billingMode: state.booking.billingMode,
+    startedAt: contractedAtMs,
+    endsAt: openMode ? null : machine.sessionEndsAt,
+    durationMinutes,
+    ratePerHour: Number(machine.price),
+    halfHourRate: halfHourPrice(machine),
+    timeAmount: Number(state.booking.baseAmount),
+    snacksTotal: Number(state.booking.controllerFee || 0),
+    extraController: Boolean(state.booking.hasExtraController),
+    orders: state.booking.hasExtraController ? [{ id: `controller-${contractedAtMs}`, date: contractedAt.toISOString(), total: Number(state.booking.controllerFee || 0), items: [{ id: 'controller', name: 'Mando adicional PS5', quantity: 1, price: Number(state.booking.controllerFee || 0) }] }] : [],
+    paidUntil: openMode ? contractedAtMs + 30 * 60000 : machine.sessionEndsAt,
+    nextChargeAt: openMode ? contractedAtMs + 30 * 60000 : null
+  };
+  state.activeSessions = state.activeSessions.filter(item => item.resourceKey !== resourceKey);
+  state.activeSessions.push(activeSession);
+  saveActiveSessions();
+  saveActiveUser();
   if (state.networkState !== 'online') queueLocalAction(isConsole ? 'sesion-playstation-local' : 'sesion-pc-local', session);
   if (isConsole) { saveConsoleStates(); renderConsoles(); }
   else { saveMachineStates(); renderMachines(); }
   state.activeScheduledReservationId = '';
   populateReservationResources();
   const extra = isConsole && state.booking.hasExtraController ? ' Se añadió un segundo mando por Bs 6.' : '';
-  const message = `${state.booking.name}, se asignó ${resourceName} durante ${state.booking.hours} ${state.booking.hours === 1 ? 'hora' : 'horas'}.${extra} Se descontaron ${money(state.booking.total)}. Saldo restante: ${money(user.balance)}.`;
+  const message = `${state.booking.name}, se asignó ${resourceName} ${openMode ? 'sin límite de tiempo, con cobro por bloques de 30 minutos' : `durante ${durationLabel(durationMinutes)}`}.${extra} Se descontaron ${money(state.booking.total)}. Saldo restante: ${money(user.balance)}.`;
   $('#successText').text(message);
   $('#contractedAtLabel').text(`Contratado el ${contractedAt.toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short' })}`);
   $('#syncNote').text(state.networkState === 'online'
@@ -1457,7 +1711,9 @@ function closeBooking(release = true) {
   state.selectedResourceType = null;
   state.booking = null;
   state.activeScheduledReservationId = '';
-  configureSessionDurationOptions(null, 1);
+  configureSessionDurationOptions(null, 60);
+  $('#sessionMode').val('fixed').prop('disabled', false);
+  $('#sessionModeField').prop('hidden', false);
   $('#bookingHoldNotice').prop('hidden', false);
   if (wasScheduledTurn) renderScheduledReservations();
 }
@@ -1490,6 +1746,8 @@ function confirmRecharge() {
 function tickSessions() {
   const now = Date.now();
   let changed = false;
+  const openSessionEnded = processOpenSessionCharges(now);
+  if (openSessionEnded.length) changed = true;
   const expiredReservations = [];
   const finishedSessions = [];
   [...state.machines, ...state.consoles].forEach(machine => {
@@ -1552,6 +1810,14 @@ function tickSessions() {
     populateReservationResources();
     if (scheduleChanged) renderScheduledReservations();
   }
+  if (finishedSessions.length) {
+    const finishedKeys = new Set(finishedSessions.map(item => `${item.kind === 'console' ? 'console' : 'pc'}:${item.id}`));
+    const before = state.activeSessions.length;
+    state.activeSessions = state.activeSessions.filter(session => !finishedKeys.has(session.resourceKey));
+    if (state.activeSessions.length !== before) saveActiveSessions();
+  }
+  if (finishedSessions.length || openSessionEnded.length) renderAccount();
+  updateActiveSessionPanel();
   finishedSessions.forEach(item => showToast(`Terminó la sesión de ${item.kind === 'console' ? `PlayStation #${item.id - 100}` : `estación #${pad(item.id)}`}. Ya está disponible.`));
 }
 function startSessionTicker() {
@@ -1704,9 +1970,16 @@ function renderAccessoryQueue() {
   const estimatedTotal = state.accessoryQueue.reduce((sum, item) => sum + (ACCESSORY_ITEMS[item.id].price * item.quantity), 0);
   const totalLabel = document.getElementById('accessoryQueueTotal');
   const clearButton = document.getElementById('clearAccessoryQueue');
+  const sendButton = document.getElementById('sendAccessoryOrder');
+  const activeSession = getLatestActiveSessionForUser();
   count.textContent = `${total} ${total === 1 ? 'artículo' : 'artículos'}`;
-  if (totalLabel) totalLabel.textContent = `Total estimado: Bs ${estimatedTotal}`;
+  if (totalLabel) totalLabel.textContent = `Total: ${money(estimatedTotal)}`;
   if (clearButton) clearButton.hidden = state.accessoryQueue.length === 0;
+  if (sendButton) {
+    sendButton.hidden = state.accessoryQueue.length === 0;
+    sendButton.disabled = state.accessoryQueue.length === 0 || !activeSession;
+    sendButton.textContent = activeSession ? `Enviar pedido a ${activeSession.resourceLabel}` : 'Inicia una sesión para pedir';
+  }
   if (!state.accessoryQueue.length) {
     list.replaceChildren(createTextElement('p', 'accessory-empty', 'Todavía no agregaste productos. Pulsa «Agregar al pedido» en un producto.'));
     return;
@@ -1775,6 +2048,60 @@ function removeAccessoryFromQueue(id) {
   saveAccessoryQueue();
   renderAccessoryQueue();
   setQuickOrderStatus(`${ACCESSORY_ITEMS[id]?.name || 'Producto'} quitado del pedido.`);
+}
+function sendAccessoryOrder() {
+  if (!state.accessoryQueue.length) return;
+  if (!state.activeUser) {
+    showToast('Inicia sesión para registrar tu pedido.', 'error');
+    showView('cuenta');
+    return;
+  }
+  const session = getLatestActiveSessionForUser();
+  if (!session) {
+    showToast('Primero inicia una sesión para pedir productos.', 'error');
+    return;
+  }
+  const controllerItem = state.accessoryQueue.find(item => item.id === 'controller');
+  if (controllerItem && (session.resourceType !== 'console' || session.extraController)) {
+    showToast(session.resourceType !== 'console'
+      ? 'El mando adicional solo se puede pedir durante una sesión de PlayStation.'
+      : 'Esta sesión ya tiene un mando adicional.', 'error');
+    return;
+  }
+  const items = state.accessoryQueue.map(item => {
+    const product = ACCESSORY_ITEMS[item.id];
+    return { id: item.id, name: product.name, quantity: item.quantity, price: product.price, lineTotal: product.price * item.quantity };
+  });
+  const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
+  if (Number(state.activeUser.balance || 0) < total) {
+    showToast(`Saldo insuficiente. Tu pedido cuesta ${money(total)}.`, 'error');
+    return;
+  }
+  const createdAt = new Date();
+  const order = {
+    id: `order-${createdAt.getTime()}-${Math.random().toString(36).slice(2, 7)}`,
+    date: createdAt.toISOString(), items, total, status: 'Registrado'
+  };
+  session.orders = Array.isArray(session.orders) ? session.orders : [];
+  session.orders.push(order);
+  session.snacksTotal = Number(session.snacksTotal || 0) + total;
+  if (controllerItem) session.extraController = true;
+  state.activeUser.balance = Number(state.activeUser.balance) - total;
+  state.activeUser.history = Array.isArray(state.activeUser.history) ? state.activeUser.history : [];
+  state.activeUser.history.push({
+    type: 'Pedido de snacks y accesorios',
+    machine: session.machine,
+    resource: session.resourceType,
+    details: items.map(item => `${item.quantity} × ${item.name}`).join(', '),
+    amount: -total,
+    date: createdAt.toISOString()
+  });
+  state.accessoryQueue = [];
+  saveAccessoryQueue();
+  saveActiveSessions();
+  saveActiveUser();
+  renderAccessoryQueue();
+  showToast(`Pedido registrado para ${session.resourceLabel}. Se descontaron ${money(total)}.`);
 }
 function clearAccessoryQueue() {
   state.accessoryQueue = [];
@@ -1897,8 +2224,9 @@ function bindLevelUpEvents() {
 
   /* Reserva, pago y cancelación. */
   $document.on('submit.levelupBooking', '#bookingForm', function (event) { event.preventDefault(); startPaymentStep(); });
-  $document.on('change.levelupBooking', '#sessionHours', function () { updateBookingTotal(); $('#scheduledBookingConflict').text('').prop('hidden', true); });
+  $document.on('change.levelupBooking', '#sessionHours, #sessionMode', function () { updateBookingTotal(); $('#scheduledBookingConflict').text('').prop('hidden', true); });
   $document.on('change.levelupBooking', '#extraController', updateBookingTotal);
+  $document.on('click.levelupAccount', '[data-session-finish]', function () { finishOpenSession(this.dataset.sessionFinish, 'manual'); });
   $document.on('click.levelupBooking', '#confirmPayment', confirmSessionPayment);
   $document.on('click.levelupBooking', '#rechargeFromPayment', openRecharge);
   $document.on('click.levelupBooking', '#backToBooking', () => showBookingStep('booking'));
@@ -1933,6 +2261,7 @@ function bindLevelUpEvents() {
     changeAccessoryQuantity(this.dataset.accessoryDecrease, -1);
   });
   $document.on('click.levelupAccessories', '#clearAccessoryQueue', clearAccessoryQueue);
+  $document.on('click.levelupAccessories', '#sendAccessoryOrder', sendAccessoryOrder);
 
   /* Acordeones desplegables de información. */
   $document.on('click.levelupAccordion', '[data-accordion]', function () {
@@ -2055,6 +2384,7 @@ function hydrateLevelUp() {
   markHydrated();
   state.hydrationComplete = true;
   loadAccounts();
+  loadActiveSessions();
   loadScheduledReservations();
   renderScheduledReservations();
   loadAccessoryQueue();
@@ -2075,6 +2405,16 @@ function syncViewFromLocation() {
 }
 
 window.addEventListener('storage', event => {
+  if (event.key === STORAGE.activeSessions) {
+    loadActiveSessions();
+    renderAccount();
+    renderAccessoryQueue();
+  }
+  if (event.key === STORAGE.accounts) {
+    loadAccounts();
+    renderAccount();
+    renderAccessoryQueue();
+  }
   if (event.key === STORAGE.scheduledReservations) {
     loadScheduledReservations();
     renderScheduledReservations();
