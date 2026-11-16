@@ -11,7 +11,7 @@ $(function () {
         card.className = 'item';
         card.dataset.id = String(item.id);
         const img = document.createElement('img');
-        img.src = item.portada || 'assets/item-demo.svg';
+        img.src = item.portada || 'assets/producto-ejemplo.svg';
         img.alt = `Portada de ${item.titulo}`;
         img.loading = 'lazy';
         img.width = 160; img.height = 110;
