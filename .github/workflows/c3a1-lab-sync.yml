@@ -1,0 +1,28 @@
+name: Sincronizar laboratorio C3-A1
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".c3a1-lab-sync.yml"
+      - ".github/workflows/c3a1-lab-sync.yml"
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Copiar laboratorio limpio
+        run: |
+          set -e
+          git clone --depth 1 https://github.com/ttozzytt/Eventix.git /tmp/eventix
+          rm -rf lab-jquery
+          cp -a /tmp/eventix/lab-jquery ./lab-jquery
+          rm -f .c3a1-lab-sync.yml .github/workflows/c3a1-lab-sync.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Incorporar laboratorio jQuery C3-A1"
+          git push origin HEAD:main
