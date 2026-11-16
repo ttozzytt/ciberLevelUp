@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v23-sesion-snacks-sin-tiempo';
+const CACHE_NAME = 'levelup-cibercafe-v24-foto-pexels';
 const APP_SHELL = [
   './',
   './index.html',
@@ -52,6 +52,22 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
+  const isPexelsPhoto = request.destination === 'image' && url.hostname === 'images.pexels.com';
+  if (isPexelsPhoto) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const saved = await cache.match(request);
+      if (saved) return saved;
+      try {
+        const live = await fetch(request);
+        if (live.ok || live.type === 'opaque') await cache.put(request, live.clone());
+        return live;
+      } catch (_) {
+        return (await caches.match(new URL('./imagenes/pc-gamer.webp', self.location.href).href)) || Response.error();
+      }
+    })());
+    return;
+  }
   if (url.origin !== self.location.origin) return;
 
   // El health-check debe salir a la red: nunca se responde desde Cache Storage.
