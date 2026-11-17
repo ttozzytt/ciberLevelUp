@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./pwa.css?v=c3-a2-2">
-  <link rel="stylesheet" href="./theme.css?v=c3-a2-4">
+  <link rel="stylesheet" href="./pwa.css?v=snacks-tab-20261117-r1">
+  <link rel="stylesheet" href="./theme.css?v=snacks-tab-20261117-r1">
 </head>
 <body>
   <div class="app-shell" id="appShell" data-hidratado="false">
@@ -28,6 +28,7 @@
         <button class="nav-item active" id="navInicio" type="button" data-view-target="inicio" data-hidratado="false" disabled><span class="nav-icon">⌂</span>Inicio</button>
         <button class="nav-item" id="navComputadoras" type="button" data-view-target="computadoras" data-hidratado="false" disabled><span class="nav-icon">▣</span>Computadoras</button>
         <button class="nav-item" id="navConsolas" type="button" data-view-target="consolas" data-hidratado="false" disabled><span class="nav-icon">🎮</span>PlayStation</button>
+        <button class="nav-item" id="navSnacks" type="button" data-view-target="snacks" data-hidratado="false" disabled><span class="nav-icon">🛍</span>Snacks</button>
         <button class="nav-item" id="navCuenta" type="button" data-view-target="cuenta" data-hidratado="false" disabled><span class="nav-icon">◉</span>Mi cuenta</button>
         <button class="nav-item" id="navServicios" type="button" data-view-target="servicios" data-hidratado="false" disabled><span class="nav-icon">✦</span>Servicios</button>
         <button class="nav-item" id="navContacto" type="button" data-view-target="contacto" data-hidratado="false" disabled><span class="nav-icon">✉</span>Contacto</button>
@@ -52,6 +53,7 @@
           <button class="nav-item active" type="button" data-view-target="inicio" data-close-mobile="true" data-hidratado="false" disabled>⌂ Inicio</button>
           <button class="nav-item" type="button" data-view-target="computadoras" data-close-mobile="true" data-hidratado="false" disabled>▣ Computadoras</button>
           <button class="nav-item" type="button" data-view-target="consolas" data-close-mobile="true" data-hidratado="false" disabled>🎮 PlayStation</button>
+          <button class="nav-item" type="button" data-view-target="snacks" data-close-mobile="true" data-hidratado="false" disabled>🛍 Snacks</button>
           <button class="nav-item" type="button" data-view-target="cuenta" data-close-mobile="true" data-hidratado="false" disabled>◉ Mi cuenta</button>
           <button class="nav-item" type="button" data-view-target="servicios" data-close-mobile="true" data-hidratado="false" disabled>✦ Servicios</button>
           <button class="nav-item" type="button" data-view-target="contacto" data-close-mobile="true" data-hidratado="false" disabled>✉ Contacto</button>
@@ -184,15 +186,15 @@
         <section class="view" id="view-servicios" aria-labelledby="servicesTitle" aria-hidden="true">
           <div class="view-heading"><div><p class="eyebrow">ELIGE SEGÚN TU PARTIDA</p><h1 id="servicesTitle">Servicios y <span style="color:var(--cyan)">tarifas.</span></h1><p>Consulta las categorías y cómo funciona una sesión antes de reservar.</p></div></div>
           <div class="service-selection" id="serviceSelectionInfo" aria-live="polite"><strong class="service-selection__title">Elige una categoría para reservar</strong><p class="service-selection__description">Desde cada tarifa puedes iniciar la reserva sin salir de este apartado.</p></div>
-          <div class="price-grid">
+          <div class="price-grid service-price-grid">
             <article class="price-card"><small>GAMING DE ENTRADA</small><h3>Básica</h3><p>Intel Core i3-10100 (4 núcleos / 8 hilos) · GTX 1050 Ti 4 GB · 8 GB DDR4 · SSD 480 GB. Silla estándar acolchada.</p><strong>Bs 3 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="basic" data-hidratado="false" disabled>Reservar esta categoría →</button></article>
             <article class="price-card featured"><small>MEJOR EQUILIBRIO</small><h3>Estándar</h3><p>AMD Ryzen 5 5600 (6 núcleos / 12 hilos) · RTX 3050 8 GB · 16 GB DDR4 · NVMe 512 GB. Silla ergonómica con apoyo lumbar.</p><strong>Bs 6 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="standard" data-hidratado="false" disabled>Reservar esta categoría →</button></article>
             <article class="price-card"><small>GAMING & STREAMING</small><h3>Premium</h3><p>AMD Ryzen 9 9950X3D2 Dual Edition (16 núcleos / 32 hilos) · RTX 5090 con 32 GB GDDR7 · 32 GB DDR5 · NVMe 2 TB. Dos monitores para juego y streaming, micrófono y silla gamer premium con soporte lumbar y cervical.</p><strong>Bs 10 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="premium" data-hidratado="false" disabled>Reservar esta categoría →</button></article>
-          </div>
-          <div class="price-grid console-price-grid">
+          
             <article class="price-card console-price-card"><small>ZONA CONSOLE</small><h3>PlayStation 5</h3><p>Cuatro PS5. Incluye un mando DualSense por consola. Segundo mando opcional: Bs 6 por sesión; no se cobra por hora.</p><strong>Bs 15 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="console" data-hidratado="false" disabled>Reservar PS5 →</button></article>
           </div>
-          <details class="service-more__details"><summary class="service-more__summary">Más información, pedidos y turnos programados</summary>
+          
+          <details class="service-more__details"><summary class="service-more__summary">Más información y turnos programados</summary>
           <div class="services-layout">
             <section class="panel info-panel"><h3>¿Cómo funciona?</h3>
               <div class="accordion-item"><button class="accordion-trigger" type="button" data-accordion="step1" aria-expanded="false" data-hidratado="false" disabled>01 · Elige tu experiencia <span>＋</span></button><div class="accordion-content" id="step1" hidden>Entra en Computadoras para elegir una PC o en PlayStation para elegir una de las cuatro consolas. Solo los equipos libres permiten reservar.</div></div>
@@ -209,31 +211,7 @@
             </div><button class="primary-btn" style="margin-top:15px" type="button" data-view-target="computadoras" data-hidratado="false" disabled>Ver computadoras →</button></section>
           </div>
 
-          <section class="panel accessory-panel service-product-panel" aria-labelledby="accessoryTitle">
-            <div class="panel-heading">
-              <span class="feature-icon">🛍</span>
-              <div><h2 id="accessoryTitle">Snacks, bebidas y accesorios</h2><p>Agrega aquí los productos que quieras incluir en tu pedido.</p></div>
-            </div>
-            <div class="service-order-layout">
-              <div class="accessory-grid" id="accessoryCatalog">
-                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/snack-papas-georges.jpg" alt="Papas George's Chip" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Papas George's Chip">Papas George's Chip</h3><p>Tocino y queso.</p><strong>Bs 5 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="papas" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/snack-nachos-picantes.jpg" alt="Nachos picantes" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Nachos picantes">Nachos picantes</h3><p>Nachos de maíz picantes.</p><strong>Bs 3 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="nachos" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/snack-chizitos-queso.jpg" alt="Chizitos" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Chizitos">Chizitos</h3><p>Snack de maíz sabor queso.</p><strong>Bs 2 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="chizitos" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/bebida-gaseosa-personal.jpg" alt="Gaseosas personales Coca-Cola, Sprite y Fanta" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Gaseosa personal">Gaseosa personal</h3><p>Coca-Cola, Sprite o Fanta.</p><strong>Bs 3 <small>/ botella</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="drink" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/comida-maruchan-vaso.jpg" alt="Maruchan en vaso" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Maruchan en vaso">Maruchan en vaso</h3><p>Sopa instantánea individual.</p><strong>Bs 17 <small>/ vaso</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="maruchan" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/accesorio-cascos-gamer.jpg" alt="Cascos gamer con micrófono" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Cascos gamer">Cascos gamer</h3><p>Audífonos con micrófono.</p><strong>Bs 10 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="headset" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/accesorio-mousepad-gamer.jpg" alt="Mousepad gamer" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Mousepad gamer">Mousepad gamer</h3><p>Superficie amplia para el mouse.</p><strong>Bs 5 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="mousepad" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/mando-adicional-ps5.jpg" alt="Mando adicional DualSense para PlayStation 5" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Mando adicional para PlayStation">Mando adicional PS5</h3><p>Segundo mando opcional.</p><strong>Bs 6 <small>/ sesión</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="controller" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-              </div>
-              <aside class="service-order-summary" aria-labelledby="serviceOrderTitle">
-                <div class="accessory-queue-heading"><h3 id="serviceOrderTitle">Mi lista de pedidos</h3><span id="accessoryQueueCount">0 artículos</span></div>
-                <div id="accessoryQueue" class="accessory-queue" aria-live="polite"><p class="accessory-empty">Todavía no agregaste productos.</p></div>
-                <div class="accessory-total" id="accessoryQueueTotal" aria-live="polite">Total: Bs 0</div>
-                <button class="primary-btn btn-tactil send-order-btn" id="sendAccessoryOrder" type="button" data-hidratado="false" disabled hidden>Enviar pedido a mi sesión</button>
-                <button class="secondary-btn btn-tactil clear-order-btn" id="clearAccessoryQueue" type="button" data-hidratado="false" disabled hidden>Vaciar pedido</button>
-              </aside>
-            </div>
-          </section>
+          
           <section class="panel scheduled-reservation-panel" aria-labelledby="scheduledReservationTitle">
             <div class="panel-heading">
               <span class="feature-icon">◷</span>
@@ -295,6 +273,43 @@
           </details>
         </section>
 
+
+        <section class="view snacks-view" id="view-snacks" aria-labelledby="snacksTitle" aria-hidden="true">
+          <div class="view-heading snacks-view__heading">
+            <div>
+              <p class="eyebrow">PEDIDOS PARA TU SESIÓN</p>
+              <h1 id="snacksTitle">Snacks y <span style="color:var(--cyan)">accesorios.</span></h1>
+              <p>Elige tus productos y consulta el total de tu pedido.</p>
+            </div>
+            <div class="view-count"><span>8</span><small>PRODUCTOS</small></div>
+          </div>
+          <section class="panel accessory-panel snacks-panel" aria-labelledby="accessoryTitle">
+            <div class="panel-heading">
+              <span class="feature-icon">🛍</span>
+              <div><h2 id="accessoryTitle">Catálogo de snacks y accesorios</h2><p>Agrega productos y revisa el pedido de tu sesión.</p></div>
+            </div>
+            <div class="service-order-layout">
+              <div class="accessory-grid" id="accessoryCatalog">
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/snack-papas-georges.jpg" alt="Papas George's Chip" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Papas George's Chip">Papas George's Chip</h3><p>Tocino y queso.</p><strong>Bs 5 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="papas" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/snack-nachos-picantes.jpg" alt="Nachos picantes" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Nachos picantes">Nachos picantes</h3><p>Nachos de maíz picantes.</p><strong>Bs 3 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="nachos" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/snack-chizitos-queso.jpg" alt="Chizitos" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Chizitos">Chizitos</h3><p>Snack de maíz sabor queso.</p><strong>Bs 2 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="chizitos" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/bebida-gaseosa-personal.jpg" alt="Gaseosas personales Coca-Cola, Sprite y Fanta" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Gaseosa personal">Gaseosa personal</h3><p>Coca-Cola, Sprite o Fanta.</p><strong>Bs 3 <small>/ botella</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="drink" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/comida-maruchan-vaso.jpg" alt="Maruchan en vaso" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Maruchan en vaso">Maruchan en vaso</h3><p>Sopa instantánea individual.</p><strong>Bs 17 <small>/ vaso</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="maruchan" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/accesorio-cascos-gamer.jpg" alt="Cascos gamer con micrófono" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Cascos gamer">Cascos gamer</h3><p>Audífonos con micrófono.</p><strong>Bs 10 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="headset" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/accesorio-mousepad-gamer.jpg" alt="Mousepad gamer" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Mousepad gamer">Mousepad gamer</h3><p>Superficie amplia para el mouse.</p><strong>Bs 5 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="mousepad" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/mando-adicional-ps5.jpg" alt="Mando adicional DualSense para PlayStation 5" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Mando adicional para PlayStation">Mando adicional PS5</h3><p>Segundo mando opcional.</p><strong>Bs 6 <small>/ sesión</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="controller" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+              </div>
+              <aside class="service-order-summary" aria-labelledby="serviceOrderTitle">
+                <div class="accessory-queue-heading"><h3 id="serviceOrderTitle">Mi lista de pedidos</h3><span id="accessoryQueueCount">0 artículos</span></div>
+                <div id="accessoryQueue" class="accessory-queue" aria-live="polite"><p class="accessory-empty">Todavía no agregaste productos.</p></div>
+                <div class="accessory-total" id="accessoryQueueTotal" aria-live="polite">Total: Bs 0</div>
+                <button class="primary-btn btn-tactil send-order-btn" id="sendAccessoryOrder" type="button" data-hidratado="false" disabled hidden>Enviar pedido a mi sesión</button>
+                <button class="secondary-btn btn-tactil clear-order-btn" id="clearAccessoryQueue" type="button" data-hidratado="false" disabled hidden>Vaciar pedido</button>
+              </aside>
+            </div>
+          </section>
+        </section>
+
         <!-- CONTACTO: datos del negocio y formulario que prepara un WhatsApp. -->
         <section class="view" id="view-contacto" aria-labelledby="contactTitle" aria-hidden="true">
           <div class="view-heading"><div><p class="eyebrow">HABLEMOS</p><h1 id="contactTitle">Contacto <span style="color:var(--cyan)">LevelUp.</span></h1><p>Consulta por horarios, equipos o disponibilidad.</p></div></div>
@@ -325,6 +340,7 @@
     <button class="bottom-item active" type="button" data-view-target="inicio" data-hidratado="false" disabled><span>⌂</span>Inicio</button>
     <button class="bottom-item" type="button" data-view-target="computadoras" data-hidratado="false" disabled><span>▣</span>Equipos</button>
     <button class="bottom-item" type="button" data-view-target="consolas" data-hidratado="false" disabled><span>🎮</span>PS5</button>
+    <button class="bottom-item" type="button" data-view-target="snacks" data-hidratado="false" disabled><span>🛍</span>Snacks</button>
     <button class="bottom-item" type="button" data-view-target="cuenta" data-hidratado="false" disabled><span>◉</span>Cuenta</button>
     <button class="bottom-item" type="button" data-view-target="servicios" data-hidratado="false" disabled><span>✦</span>Servicios</button>
     <button class="bottom-item" type="button" data-view-target="contacto" data-hidratado="false" disabled><span>✉</span>Contacto</button>
@@ -389,6 +405,6 @@
 
   </script>
   <script src="./js/security-and-vitals.js" defer></script>
-  <script src="./pwa.js?v=20261117-c3-a2-2" defer></script>
+  <script src="./pwa.js?v=snacks-tab-20261117-r1" defer></script>
 </body>
 </html>
