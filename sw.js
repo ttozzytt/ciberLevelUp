@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v24-foto-pexels';
+const CACHE_NAME = 'levelup-cibercafe-v25-c3-a2-foto-pexels';
 const APP_SHELL = [
   './',
   './index.html',
@@ -9,6 +9,8 @@ const APP_SHELL = [
   './pwa.css',
   './index.js',
   './pwa.js',
+  './theme.css',
+  './js/security-and-vitals.js',
   './manifest.json',
   './data/computadoras.json?v=16',
   './data/consolas.json?v=16',

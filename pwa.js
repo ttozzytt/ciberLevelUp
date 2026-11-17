@@ -864,7 +864,8 @@ function validateScheduledReservation() {
   const start = dateValue ? new Date(dateValue) : null;
   const startAt = start && !Number.isNaN(start.getTime()) ? start.getTime() : NaN;
   const nameError = !name ? 'Escribe el nombre de la persona que solicita el turno.'
-    : name.length < 2 ? 'El nombre debe tener al menos 2 caracteres.' : '';
+    : name.length < 2 ? 'El nombre debe tener al menos 2 caracteres.'
+    : containsBlacklistedTerms(name) ? 'Evita palabras ofensivas o insultos.' : '';
   const resource = getReservationResource(resourceKey);
   const resourceError = !resource ? 'Selecciona un equipo válido del catálogo.' : '';
   const currentMinute = getCurrentMinuteStart().getTime();
@@ -1341,7 +1342,7 @@ function setFieldError(fieldId, errorId, message) {
 }
 function validateAccountName() {
   const value = $('#accountName').val().trim();
-  return setFieldError('accountName', 'accountNameError', !value ? 'Escribe tu nombre.' : value.length < 3 ? 'Debe tener al menos 3 caracteres.' : '');
+  return setFieldError('accountName', 'accountNameError', !value ? 'Escribe tu nombre.' : value.length < 3 ? 'Debe tener al menos 3 caracteres.' : containsBlacklistedTerms(value) ? 'Evita palabras ofensivas o insultos.' : '');
 }
 function validateAccountPhone() {
   const value = $('#accountPhone').val();
@@ -1353,7 +1354,7 @@ function validateLoginPhone() {
 }
 function validateBookingName() {
   const value = $('#customerName').val().trim();
-  return setFieldError('customerName', 'customerNameError', !value ? 'Escribe tu nombre.' : value.length < 3 ? 'Debe tener al menos 3 caracteres.' : '');
+  return setFieldError('customerName', 'customerNameError', !value ? 'Escribe tu nombre.' : value.length < 3 ? 'Debe tener al menos 3 caracteres.' : containsBlacklistedTerms(value) ? 'Evita palabras ofensivas o insultos.' : '');
 }
 function validateBookingPhone() {
   const value = $('#customerPhone').val();
@@ -1361,7 +1362,7 @@ function validateBookingPhone() {
 }
 function validateContactName() {
   const name = $('#contactName').val().trim();
-  return setFieldError('contactName', 'contactNameError', name.length >= 3 ? '' : 'Escribe al menos 3 caracteres.');
+  return setFieldError('contactName', 'contactNameError', name.length < 3 ? 'Escribe al menos 3 caracteres.' : containsBlacklistedTerms(name) ? 'Evita palabras ofensivas o insultos.' : '');
 }
 function validateContactPhone() {
   const phone = $('#contactPhone').val();
@@ -1369,7 +1370,7 @@ function validateContactPhone() {
 }
 function validateContactMessage() {
   const message = $('#contactMessage').val().trim();
-  return setFieldError('contactMessage', 'contactMessageError', message.length >= 8 ? '' : 'Escribe una consulta de al menos 8 caracteres.');
+  return setFieldError('contactMessage', 'contactMessageError', message.length < 8 ? 'Escribe una consulta de al menos 8 caracteres.' : containsBlacklistedTerms(message) ? 'Evita palabras ofensivas o insultos.' : '');
 }
 function validateContactForm() {
   const validName = validateContactName();
@@ -2110,6 +2111,15 @@ function clearAccessoryQueue() {
   setQuickOrderStatus('El pedido está vacío. Agrega productos desde el catálogo.');
 }
 
+const LEVELUP_BLACKLIST=new Set(['puta','putas','puto','putos','mierda','mierdas','pendejo','pendeja','pendejos','pendejas','idiota','idiotas','imbecil','imbeciles','estupido','estupida','estupidos','estupidas','cabron','cabrona','cabrones','hijueputa','malparido','malparida','maricon','maricones','verga','vergas','coño','concha','boludo','boluda','fuck','fucking','shit','bitch','asshole']);
+function normalizeModerationText(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es-BO').replace(/[@4]/g,'a').replace(/[0]/g,'o').replace(/[1!]/g,'i').replace(/[3]/g,'e').replace(/[5$]/g,'s').replace(/[7]/g,'t').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim()}
+function containsBlacklistedTerms(v){return normalizeModerationText(v).split(' ').some(w=>LEVELUP_BLACKLIST.has(w))}
+const LEVELUP_THEME_KEY='levelup-pwa-theme-v1';
+function applyLevelUpTheme(t){const light=t==='light';document.documentElement.dataset.theme=light?'light':'dark';try{localStorage.setItem(LEVELUP_THEME_KEY,light?'light':'dark')}catch(_){}const m=document.getElementById('themeColorMeta');if(m)m.content=light?'#f5f7fb':'#0b0c16';const b=document.getElementById('themeToggle');if(b){b.querySelector('.theme-toggle__icon').textContent=light?'☾':'☀';b.querySelector('.theme-toggle__label').textContent=light?'Modo oscuro':'Modo claro';b.setAttribute('aria-label',light?'Activar modo oscuro':'Activar modo claro');b.setAttribute('aria-pressed',String(light))}}
+function setupLevelUpTheme(){applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'light':'dark');const b=document.getElementById('themeToggle');if(b&&b.dataset.themeReady!=='true'){b.addEventListener('click',()=>applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));b.dataset.themeReady='true'}}
+const SERVICE_DETAILS={basic:{title:'PC Básica · Bs 3 por hora',copy:'Selecciona una PC Básica libre. El precio se calcula según la duración.'},standard:{title:'PC Estándar · Bs 6 por hora',copy:'Selecciona una PC Estándar libre. El precio se calcula según la duración.'},premium:{title:'PC Premium · Bs 10 por hora',copy:'Selecciona una PC Premium libre. El precio se calcula según la duración.'},console:{title:'PlayStation 5 · Bs 15 por hora',copy:'Una PS5 libre con un mando incluido. Segundo mando opcional: Bs 6 por sesión.'}};
+function renderServiceSelectionSafe(type){const target=document.getElementById('serviceSelectionInfo'),d=SERVICE_DETAILS[type];if(!target||!d)return;const markup='<strong class="service-selection__title">'+d.title+'</strong><p class="service-selection__description">'+d.copy+'</p>';if(window.DOMPurify&&typeof window.DOMPurify.sanitize==='function')target.innerHTML=window.DOMPurify.sanitize(markup,{USE_PROFILES:{html:true}});else{const title=document.createElement('strong');title.className='service-selection__title';title.textContent=d.title;const p=document.createElement('p');p.className='service-selection__description';p.textContent=d.copy;target.replaceChildren(title,p)}}
+function reserveServiceDirect(type){renderServiceSelectionSafe(type);if(type==='console'){const item=state.consoles.find(x=>isAvailable(x));if(!item){showToast('No hay una PlayStation disponible en este momento.','error');return}openConsoleBooking(item.id);return}if(!['basic','standard','premium'].includes(type))return;const item=state.machines.find(x=>x.type===type&&isAvailable(x));if(!item){showToast('No hay equipos disponibles de esa categoría.','error');return}openBooking(item.id)}
 function bindLevelUpEvents() {
   /* Limpieza previa: evita duplicar escuchadores si se ejecuta una segunda hidratación. */
   $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupAccordion .levelupValidation .levelupReservation .levelupAccessories');
@@ -2128,6 +2138,7 @@ function bindLevelUpEvents() {
     $(this).attr({ 'aria-expanded': String(isOpen), 'aria-label': isOpen ? 'Cerrar menú' : 'Abrir menú' }).text(isOpen ? '×' : '☰');
   });
   $document.on('click.levelupNavigation', '#brandHome', function (event) { event.preventDefault(); showView('inicio'); });
+  $document.on('click.levelupServices', '[data-service-reserve]', function () { reserveServiceDirect(this.dataset.serviceReserve); });
 
   /* Filtros y navegación del carrusel. */
   $document.on('click.levelupFilters', '[data-filter]', function () {
@@ -2380,6 +2391,7 @@ function continuePendingBooking() {
 function hydrateLevelUp() {
   const shell = document.getElementById('appShell');
   if (!shell || shell.dataset.hidratado === 'true') return;
+  setupLevelUpTheme();
   bindLevelUpEvents();
   markHydrated();
   state.hydrationComplete = true;

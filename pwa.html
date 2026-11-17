@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b0c16">
+  <meta name="theme-color" content="#0b0c16" id="themeColorMeta">
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem("levelup-pwa-theme-v1")==="light"?"light":"dark"}catch(_){document.documentElement.dataset.theme="dark"}</script>
   <meta name="description" content="Aplicación LevelUp Cibercafé: catálogo de equipos, cuentas locales y reservas de sesión.">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,6 +14,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <link rel="stylesheet" href="./pwa.css">
+  <link rel="stylesheet" href="./theme.css?v=c3-a2-1">
 </head>
 <body>
   <div class="app-shell" id="appShell" data-hidratado="false">
@@ -42,6 +44,7 @@
         <div class="mobile-brand"><span class="brand-mark" style="width:34px;height:34px;font-size:16px">🎮</span><span>LEVELUP</span></div>
         <div class="breadcrumb"><span>MI ESPACIO</span><b>/</b><strong id="pageName">Inicio</strong></div>
         <div class="top-actions">
+          <button class="theme-toggle" id="themeToggle" type="button" data-hidratado="false" disabled aria-label="Activar modo claro" title="Cambiar tema"><span class="theme-toggle__icon" aria-hidden="true">☀</span><span class="theme-toggle__label">Modo claro</span></button>
           <span class="network-status" id="networkStatus" data-state="checking"><span class="status-dot"></span><span id="networkStatusText">Comprobando…</span></span>
           <button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-label="Abrir menú" aria-expanded="false" data-hidratado="false" disabled>☰</button>
         </div>
@@ -181,13 +184,14 @@
         <section class="view" id="view-servicios" aria-labelledby="servicesTitle" aria-hidden="true">
           <div class="view-heading"><div><p class="eyebrow">ELIGE SEGÚN TU PARTIDA</p><h1 id="servicesTitle">Servicios y <span style="color:var(--cyan)">tarifas.</span></h1><p>Consulta las categorías y cómo funciona una sesión antes de reservar.</p></div></div>
           <div class="price-grid">
-            <article class="price-card"><small>GAMING DE ENTRADA</small><h3>Básica</h3><p>Intel Core i3-10100 (4 núcleos / 8 hilos) · GTX 1050 Ti 4 GB · 8 GB DDR4 · SSD 480 GB. Silla estándar acolchada.</p><strong>Bs 3 <span>/ hora</span></strong></article>
-            <article class="price-card featured"><small>MEJOR EQUILIBRIO</small><h3>Estándar</h3><p>AMD Ryzen 5 5600 (6 núcleos / 12 hilos) · RTX 3050 8 GB · 16 GB DDR4 · NVMe 512 GB. Silla ergonómica con apoyo lumbar.</p><strong>Bs 6 <span>/ hora</span></strong></article>
-            <article class="price-card"><small>GAMING & STREAMING</small><h3>Premium</h3><p>AMD Ryzen 9 9950X3D2 Dual Edition (16 núcleos / 32 hilos) · RTX 5090 con 32 GB GDDR7 · 32 GB DDR5 · NVMe 2 TB. Dos monitores para juego y streaming, micrófono y silla gamer premium con soporte lumbar y cervical.</p><strong>Bs 10 <span>/ hora</span></strong></article>
+            <article class="price-card"><small>GAMING DE ENTRADA</small><h3>Básica</h3><p>Intel Core i3-10100 (4 núcleos / 8 hilos) · GTX 1050 Ti 4 GB · 8 GB DDR4 · SSD 480 GB. Silla estándar acolchada.</p><strong>Bs 3 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="basic" data-hidratado="false" disabled>Reservar esta categoría →</button></article>
+            <article class="price-card featured"><small>MEJOR EQUILIBRIO</small><h3>Estándar</h3><p>AMD Ryzen 5 5600 (6 núcleos / 12 hilos) · RTX 3050 8 GB · 16 GB DDR4 · NVMe 512 GB. Silla ergonómica con apoyo lumbar.</p><strong>Bs 6 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="standard" data-hidratado="false" disabled>Reservar esta categoría →</button></article>
+            <article class="price-card"><small>GAMING & STREAMING</small><h3>Premium</h3><p>AMD Ryzen 9 9950X3D2 Dual Edition (16 núcleos / 32 hilos) · RTX 5090 con 32 GB GDDR7 · 32 GB DDR5 · NVMe 2 TB. Dos monitores para juego y streaming, micrófono y silla gamer premium con soporte lumbar y cervical.</p><strong>Bs 10 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="premium" data-hidratado="false" disabled>Reservar esta categoría →</button></article>
           </div>
           <div class="price-grid console-price-grid">
-            <article class="price-card console-price-card"><small>ZONA CONSOLE</small><h3>PlayStation 5</h3><p>Cuatro PS5. Incluye un mando DualSense por consola. Segundo mando opcional: Bs 6 por sesión; no se cobra por hora.</p><strong>Bs 15 <span>/ hora</span></strong></article>
+            <article class="price-card console-price-card"><small>ZONA CONSOLE</small><h3>PlayStation 5</h3><p>Cuatro PS5. Incluye un mando DualSense por consola. Segundo mando opcional: Bs 6 por sesión; no se cobra por hora.</p><strong>Bs 15 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="console" data-hidratado="false" disabled>Reservar PS5 →</button></article>
           </div>
+          <details class="service-more__details"><summary class="service-more__summary">Más información, pedidos y turnos programados</summary>
           <div class="services-layout">
             <section class="panel info-panel"><h3>¿Cómo funciona?</h3>
               <div class="accordion-item"><button class="accordion-trigger" type="button" data-accordion="step1" aria-expanded="false" data-hidratado="false" disabled>01 · Elige tu experiencia <span>＋</span></button><div class="accordion-content" id="step1" hidden>Entra en Computadoras para elegir una PC o en PlayStation para elegir una de las cuatro consolas. Solo los equipos libres permiten reservar.</div></div>
@@ -287,6 +291,7 @@
             </div>
             <p class="occupancy-note">El gráfico muestra cantidades generales; para consultar un equipo concreto entra en Computadoras.</p>
           </section>
+          </details>
         </section>
 
         <!-- CONTACTO: datos del negocio y formulario que prepara un WhatsApp. -->
@@ -382,6 +387,7 @@
 
 
   </script>
-  <script src="./pwa.js" defer></script>
+  <script src="./js/security-and-vitals.js" defer></script>
+  <script src="./pwa.js?v=20261117-c3-a2-1" defer></script>
 </body>
 </html>
