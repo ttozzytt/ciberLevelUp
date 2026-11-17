@@ -47,3 +47,18 @@ body{height:100dvh;min-height:0}.app-shell{width:100%;height:100dvh;min-height:0
 :root[data-theme="light"] .entry-shell{background:#fff}:root[data-theme="light"] .entry-copy h1,:root[data-theme="light"] .entry-brand{color:#17243a}
 :root[data-theme="light"] .entry-lead{color:#536176}:root[data-theme="light"] .entry-visual{background:#e8eef6}
 :root[data-theme="light"] .service-card__reserve{color:#fff;background:#087d8b;border-color:#087d8b}
+/* El desplazamiento general permanece bloqueado; solo el panel de información ampliada puede desplazarse al abrirse. */
+.view.active > .service-more__details[open] {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: calc(100dvh - 210px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.service-more__details[open] > .service-more__summary {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--panel);
+}
