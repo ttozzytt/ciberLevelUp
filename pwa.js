@@ -1,8 +1,8 @@
 'use strict';
 
 /* LevelUp: SPA ligera, hidratación controlada y delegación de eventos. */
-const LEVELUP_VIEWS = ['inicio', 'computadoras', 'consolas', 'snacks', 'cuenta', 'servicios', 'contacto'];
-const VIEW_LABELS = { inicio: 'Inicio', computadoras: 'Computadoras', consolas: 'PlayStation', snacks: 'Snacks', cuenta: 'Mi cuenta', servicios: 'Servicios', contacto: 'Contacto' };
+const LEVELUP_VIEWS = ['inicio', 'computadoras', 'consolas', 'cuenta', 'servicios', 'snacks', 'turnos', 'reservas', 'informacion', 'contacto'];
+const VIEW_LABELS = { inicio: 'Inicio', computadoras: 'Computadoras', consolas: 'PlayStation', cuenta: 'Mi cuenta', servicios: 'Servicios', snacks: 'Snacks', turnos: 'Turnos', reservas: 'Reservas', informacion: 'Información', contacto: 'Contacto' };
 const STORAGE = {
   accounts: 'levelup_accounts_v1',
   activePhone: 'levelup_active_phone_v1',
@@ -194,6 +194,14 @@ function showView(name, updateHistory = true) {
   if (name === 'computadoras') requestAnimationFrame(updateCarouselPosition);
   if (name === 'cuenta') renderAccount();
   if (name === 'snacks') renderAccessoryQueue();
+  if (name === 'turnos') {
+    populateReservationResources();
+    setReservationDateMinimum();
+  }
+  if (name === 'reservas') {
+    renderScheduledReservations();
+    renderOccupancyChart();
+  }
 }
 function closeMobileMenu() {
   $('#mobileMenu').removeClass('open');
@@ -2136,7 +2144,7 @@ function renderServiceSelectionSafe(type){const target=document.getElementById('
 function reserveServiceDirect(type){renderServiceSelectionSafe(type);if(type==='console'){const item=state.consoles.find(x=>isAvailable(x));if(!item){showToast('No hay una PlayStation disponible en este momento.','error');return}openConsoleBooking(item.id);return}if(!['basic','standard','premium'].includes(type))return;const item=state.machines.find(x=>x.type===type&&isAvailable(x));if(!item){showToast('No hay equipos disponibles de esa categoría.','error');return}openBooking(item.id)}
 function bindLevelUpEvents() {
   /* Limpieza previa: evita duplicar escuchadores si se ejecuta una segunda hidratación. */
-  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupAccordion .levelupValidation .levelupReservation .levelupAccessories');
+  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupValidation .levelupReservation .levelupAccessories');
   $(window).off('.levelupRuntime .levelupCarousel');
 
   $document.on('click.levelupNavigation', '[data-view-target]', function (event) {
@@ -2288,16 +2296,6 @@ function bindLevelUpEvents() {
   $document.on('click.levelupAccessories', '#clearAccessoryQueue', clearAccessoryQueue);
   $document.on('click.levelupAccessories', '#sendAccessoryOrder', sendAccessoryOrder);
 
-  /* Acordeones desplegables de información. */
-  $document.on('click.levelupAccordion', '[data-accordion]', function () {
-    const panel = document.getElementById(this.dataset.accordion);
-    if (!panel) return;
-    const expanded = this.getAttribute('aria-expanded') === 'true';
-    this.setAttribute('aria-expanded', String(!expanded));
-    panel.hidden = expanded;
-    this.querySelector('span')?.replaceChildren(document.createTextNode(expanded ? '＋' : '−'));
-  });
-
   /* Galería: evento delegado para fotos de la portada y para las tarjetas JSON que se generan después. */
   $document.on('click.levelupViewer', '[data-photo-open]', function () { handlePhotoOpen(this); });
   $document.on('click.levelupViewer', '#closePhotoViewer', closePhotoViewer);
@@ -2402,22 +2400,10 @@ function continuePendingBooking() {
     window.setTimeout(() => openConsoleBooking(id), 80);
   }
 }
-function setupServicePageViewport() {
-  const details = document.querySelector('#view-servicios .service-more__details');
-  const main = document.getElementById('mainContent');
-  if (!details || !main || details.dataset.viewportBound === 'true') return;
-  details.addEventListener('toggle', () => {
-    main.classList.toggle('is-service-expanded', details.open);
-    if (details.open) main.scrollTop = 0;
-  });
-  details.dataset.viewportBound = 'true';
-}
-
 function hydrateLevelUp() {
   const shell = document.getElementById('appShell');
   if (!shell || shell.dataset.hidratado === 'true') return;
   setupLevelUpTheme();
-  setupServicePageViewport();
   bindLevelUpEvents();
   markHydrated();
   state.hydrationComplete = true;
