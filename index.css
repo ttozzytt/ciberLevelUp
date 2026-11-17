@@ -24,7 +24,7 @@ button, input, select, textarea {font: inherit;}
 button, a {-webkit-tap-highlight-color: transparent;}
 button {color: inherit;}
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {outline: 2px solid var(--cyan); outline-offset: 3px;}
-[hidden] {display: none !important;}
+[hidden][hidden] {display: none;}
 .entry-body {min-height: 100dvh; display: grid; place-items: center; padding: 28px; overflow-x: hidden;}
 .entry-shell {width: min(1160px, 100%); min-height: min(720px, calc(100dvh - 56px)); display: grid; grid-template-columns: 1.02fr .98fr; overflow: hidden; border: 1px solid var(--line); border-radius: 30px; background: linear-gradient(135deg, rgba(26,28,51,.97), rgba(12,14,27,.98)); box-shadow: var(--shadow);}
 .entry-copy {display: flex; flex-direction: column; justify-content: center; padding: clamp(28px, 5vw, 66px);}
@@ -68,7 +68,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .home-actions .primary-btn, .home-actions .secondary-btn {flex: 1; min-height: 42px; padding: 9px 10px; font-size: 10px;}
 }
 @media (prefers-reduced-motion: reduce) {
-  * {scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important;}
+  .entry-body *, .entry-body *::before, .entry-body *::after {scroll-behavior: auto; animation-duration: .01ms; transition-duration: .01ms;}
 }
 .entry-network-status {display: inline-flex; align-items: center; gap: 7px; margin-left: auto; padding: 7px 10px; border: 1px solid rgba(255,209,109,.28); border-radius: 999px; color: var(--gold); background: rgba(255,209,109,.06); font-size: 9px; font-weight: 900; letter-spacing: .3px; white-space: nowrap;}
 .entry-network-status i {width: 7px; height: 7px; border-radius: 50%; background: var(--gold);}
@@ -79,4 +79,34 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (max-width: 560px) {
   .entry-brand {flex-wrap: wrap; gap: 9px;}
   .entry-network-status {margin-left: auto; font-size: 8px; padding: 6px 8px;}
+}
+
+
+/* Tema persistente de la portada, compartido con la PWA LevelUp. */
+.theme-toggle { display:inline-flex; min-width:44px; min-height:44px; align-items:center; justify-content:center; gap:7px; margin-left:auto; padding:7px 10px; border:1px solid var(--line); border-radius:10px; color:var(--text); background:rgba(255,255,255,.06); font:800 10px/1.2 Inter,system-ui,sans-serif; cursor:pointer; }
+.theme-toggle__icon { display:inline-grid; place-items:center; font-size:16px; }
+.theme-toggle__label { white-space:nowrap; }
+.theme-toggle:focus-visible { outline:2px solid var(--cyan); outline-offset:3px; }
+:root[data-theme="light"] {
+  color-scheme:light; --bg:#f3f6fc; --bg-soft:#eaf0f7; --panel:#fff; --panel-2:#f3f6fb;
+  --line:rgba(22,34,60,.15); --text:#18243a; --muted:#536176; --soft:#6b7890;
+  --cyan:#087d8b; --purple:#7047bd; --purple-2:#5f38a9; --green:#167b4c; --red:#b32647;
+  --gold:#8a5b00; --shadow:0 14px 38px rgba(27,44,75,.10);
+}
+:root[data-theme="light"] body { color:var(--text); background:radial-gradient(ellipse at 75% -10%,rgba(8,125,139,.09),transparent 39%),var(--bg); }
+:root[data-theme="light"] .entry-shell { background:linear-gradient(135deg,#fff,#f5f8fc); border-color:var(--line); box-shadow:var(--shadow); }
+:root[data-theme="light"] .entry-brand { color:var(--text); }
+:root[data-theme="light"] .entry-brand small { color:var(--muted); }
+:root[data-theme="light"] .entry-copy h1 { color:var(--text); }
+:root[data-theme="light"] .entry-copy h1 span, :root[data-theme="light"] .eyebrow { color:var(--cyan); }
+:root[data-theme="light"] .entry-lead, :root[data-theme="light"] .entry-note { color:var(--muted); }
+:root[data-theme="light"] .entry-visual { background:radial-gradient(circle at 50% 42%,rgba(112,71,189,.12),transparent 56%),linear-gradient(145deg,#eaf0f7,#dfe9f2); }
+:root[data-theme="light"] .entry-visual::before { color:rgba(24,36,58,.055); }
+:root[data-theme="light"] .entry-visual-caption { color:#26364d; background:rgba(255,255,255,.91); border-color:var(--line); }
+:root[data-theme="light"] .entry-photo-small { background:#fff; }
+:root[data-theme="light"] .theme-toggle { color:#25384b; background:#fff; border-color:var(--line); }
+@media (max-width:560px) {
+  .theme-toggle { width:44px; min-width:44px; height:44px; padding:0; }
+  .theme-toggle__label { display:none; }
+  .entry-brand { gap:8px; }
 }

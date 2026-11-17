@@ -41,3 +41,26 @@
         entryNetworkTimer = window.setInterval(updateEntryNetworkStatus, 25000);
       }
     });
+
+
+/* Tema claro/oscuro de la portada; comparte preferencia con la aplicación PWA. */
+(function hydrateEntryTheme(){
+  const button=document.getElementById('entryThemeToggle');
+  const meta=document.getElementById('themeColorMeta');
+  if(!button||button.dataset.hidratado==='true')return;
+  const key='levelup-pwa-theme-v1';
+  function apply(theme){
+    const light=theme==='light';
+    document.documentElement.dataset.theme=light?'light':'dark';
+    try{localStorage.setItem(key,light?'light':'dark')}catch(_){}
+    if(meta)meta.content=light?'#f3f6fc':'#0b0c16';
+    button.querySelector('.theme-toggle__icon').textContent=light?'☾':'☀';
+    button.querySelector('.theme-toggle__label').textContent=light?'Modo oscuro':'Modo claro';
+    button.setAttribute('aria-label',light?'Activar modo oscuro':'Activar modo claro');
+    button.setAttribute('aria-pressed',String(light));
+  }
+  apply(document.documentElement.dataset.theme==='light'?'light':'dark');
+  button.addEventListener('click',()=>apply(document.documentElement.dataset.theme==='light'?'dark':'light'));
+  button.disabled=false;
+  button.dataset.hidratado='true';
+})();
