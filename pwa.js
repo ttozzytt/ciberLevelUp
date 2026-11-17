@@ -52,6 +52,7 @@ function createPhotoButton({ className, path, fallback, caption, alt, width, hei
   button.setAttribute('aria-label', String(label || 'Ampliar fotografía'));
   button.dataset.hidratado = 'true';
   const image = document.createElement('img');
+  image.className = `${className}__image`;
   image.src = button.dataset.photo;
   image.alt = String(alt || 'Imagen representativa de LevelUp');
   image.width = width;
@@ -1426,7 +1427,13 @@ function closeModal(selector) {
 function openPhotoViewer(button) {
   const photo = button.dataset.photo;
   if (!photo) return;
-  $('#photoViewerImage').attr({ src: photo, alt: button.querySelector('img')?.alt || 'Imagen de LevelUp' });
+  const thumbnail = button.querySelector('img');
+  $('#photoViewerImage').attr({
+    src: photo,
+    alt: thumbnail?.alt || 'Imagen de LevelUp',
+    width: Number(thumbnail?.getAttribute('width')) || 1200,
+    height: Number(thumbnail?.getAttribute('height')) || 800
+  });
   $('#photoViewerCaption').text(button.dataset.caption || 'LevelUp Cibercafé');
   openModal('#photoViewer');
 }

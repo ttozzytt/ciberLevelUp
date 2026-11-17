@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./pwa.css">
-  <link rel="stylesheet" href="./theme.css?v=c3-a2-2">
+  <link rel="stylesheet" href="./pwa.css?v=c3-a2-1">
+  <link rel="stylesheet" href="./theme.css?v=c3-a2-3">
 </head>
 <body>
   <div class="app-shell" id="appShell" data-hidratado="false">
@@ -74,16 +74,16 @@
             </div>
             <div class="home-visual" aria-label="Imágenes de referencia gamer">
               <button class="visual-photo" type="button" data-photo-open data-photo="./imagenes/pc-gamer.webp" data-caption="Gabinete gamer RGB · Imagen representativa del equipamiento LevelUp" data-hidratado="false" disabled>
-                <img src="./imagenes/pc-gamer.webp" alt="Gabinete gamer con iluminación RGB" width="225" height="225">
+                <img class="visual-photo__image" src="./imagenes/pc-gamer.webp" alt="Gabinete gamer con iluminación RGB" width="225" height="225">
                 <span>SETUP GAMER</span>
               </button>
               <button class="visual-photo" type="button" data-photo-open data-photo="./imagenes/playstation.webp" data-caption="Consola PlayStation · Espacio de entretenimiento" data-hidratado="false" disabled>
 
-                <img src="./imagenes/playstation.webp" alt="Consola PlayStation" width="225" height="225">
+                <img class="visual-photo__image" src="./imagenes/playstation.webp" alt="Consola PlayStation" width="225" height="225">
                 <span>GAMING & MÁS</span>
               </button>
               <button class="visual-photo" type="button" data-photo-open data-photo="https://images.pexels.com/photos/33888375/pexels-photo-33888375.jpeg?cs=srgb&dl=pexels-atahandemir-33888375.jpg&fm=jpg" data-caption="Setup gamer con doble monitor e iluminación RGB · Foto de Atahan Demir / Pexels" data-hidratado="false" disabled>
-                <img src="https://images.pexels.com/photos/33888375/pexels-photo-33888375.jpeg?cs=srgb&dl=pexels-atahandemir-33888375.jpg&fm=jpg" alt="Setup gamer con doble monitor, PC e iluminación RGB; foto de Atahan Demir" width="225" height="225" loading="lazy" decoding="async">
+                <img class="visual-photo__image" src="https://images.pexels.com/photos/33888375/pexels-photo-33888375.jpeg?cs=srgb&dl=pexels-atahandemir-33888375.jpg&fm=jpg" alt="Setup gamer con doble monitor, PC e iluminación RGB; foto de Atahan Demir" width="225" height="225" loading="lazy" decoding="async">
                 <span>SETUP RGB · PEXELS</span>
               </button>
 
@@ -216,14 +216,14 @@
             </div>
             <div class="service-order-layout">
               <div class="accessory-grid" id="accessoryCatalog">
-                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/snack-papas-georges.jpg" alt="Papas George's Chip" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Papas George's Chip">Papas George's Chip</h3><p>Tocino y queso.</p><strong>Bs 5 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="papas" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/snack-nachos-picantes.jpg" alt="Nachos picantes" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Nachos picantes">Nachos picantes</h3><p>Nachos de maíz picantes.</p><strong>Bs 3 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="nachos" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/snack-chizitos-queso.jpg" alt="Chizitos" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Chizitos">Chizitos</h3><p>Snack de maíz sabor queso.</p><strong>Bs 2 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="chizitos" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/bebida-gaseosa-personal.jpg" alt="Gaseosas personales Coca-Cola, Sprite y Fanta" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Gaseosa personal">Gaseosa personal</h3><p>Coca-Cola, Sprite o Fanta.</p><strong>Bs 3 <small>/ botella</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="drink" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/comida-maruchan-vaso.jpg" alt="Maruchan en vaso" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Maruchan en vaso">Maruchan en vaso</h3><p>Sopa instantánea individual.</p><strong>Bs 17 <small>/ vaso</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="maruchan" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/accesorio-cascos-gamer.jpg" alt="Cascos gamer con micrófono" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Cascos gamer">Cascos gamer</h3><p>Audífonos con micrófono.</p><strong>Bs 10 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="headset" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/accesorio-mousepad-gamer.jpg" alt="Mousepad gamer" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Mousepad gamer">Mousepad gamer</h3><p>Superficie amplia para el mouse.</p><strong>Bs 5 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="mousepad" data-hidratado="false" disabled>＋ Agregar</button></div></article>
-                <article class="accessory-card"><div class="accessory-art"><img src="./imagenes/mando-adicional-ps5.jpg" alt="Mando adicional DualSense para PlayStation 5" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Mando adicional para PlayStation">Mando adicional PS5</h3><p>Segundo mando opcional.</p><strong>Bs 6 <small>/ sesión</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="controller" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/snack-papas-georges.jpg" alt="Papas George's Chip" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Papas George's Chip">Papas George's Chip</h3><p>Tocino y queso.</p><strong>Bs 5 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="papas" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/snack-nachos-picantes.jpg" alt="Nachos picantes" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Nachos picantes">Nachos picantes</h3><p>Nachos de maíz picantes.</p><strong>Bs 3 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="nachos" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/snack-chizitos-queso.jpg" alt="Chizitos" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Chizitos">Chizitos</h3><p>Snack de maíz sabor queso.</p><strong>Bs 2 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="chizitos" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/bebida-gaseosa-personal.jpg" alt="Gaseosas personales Coca-Cola, Sprite y Fanta" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Gaseosa personal">Gaseosa personal</h3><p>Coca-Cola, Sprite o Fanta.</p><strong>Bs 3 <small>/ botella</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="drink" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/comida-maruchan-vaso.jpg" alt="Maruchan en vaso" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Maruchan en vaso">Maruchan en vaso</h3><p>Sopa instantánea individual.</p><strong>Bs 17 <small>/ vaso</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="maruchan" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/accesorio-cascos-gamer.jpg" alt="Cascos gamer con micrófono" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Cascos gamer">Cascos gamer</h3><p>Audífonos con micrófono.</p><strong>Bs 10 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="headset" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/accesorio-mousepad-gamer.jpg" alt="Mousepad gamer" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Mousepad gamer">Mousepad gamer</h3><p>Superficie amplia para el mouse.</p><strong>Bs 5 <small>/ unidad</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="mousepad" data-hidratado="false" disabled>＋ Agregar</button></div></article>
+                <article class="accessory-card"><div class="accessory-art"><img height="360" width="480" class="accessory-art__image" src="./imagenes/mando-adicional-ps5.jpg" alt="Mando adicional DualSense para PlayStation 5" loading="lazy" decoding="async"></div><div class="accessory-copy"><h3 title="Mando adicional para PlayStation">Mando adicional PS5</h3><p>Segundo mando opcional.</p><strong>Bs 6 <small>/ sesión</small></strong><button class="btn-tactil accessory-add" type="button" data-accessory-add="controller" data-hidratado="false" disabled>＋ Agregar</button></div></article>
               </div>
               <aside class="service-order-summary" aria-labelledby="serviceOrderTitle">
                 <div class="accessory-queue-heading"><h3 id="serviceOrderTitle">Mi lista de pedidos</h3><span id="accessoryQueueCount">0 artículos</span></div>
@@ -376,7 +376,7 @@
 
   <!-- Visor reutilizable de fotografías, con cierre por Escape y clic en el fondo. -->
   <div class="photo-viewer" id="photoViewer" aria-hidden="true" role="presentation">
-    <figure><button class="icon-btn" id="closePhotoViewer" type="button" aria-label="Cerrar imagen" data-hidratado="false" disabled>×</button><img id="photoViewerImage" src="" alt=""><figcaption id="photoViewerCaption"></figcaption></figure>
+    <figure><button class="icon-btn" id="closePhotoViewer" type="button" aria-label="Cerrar imagen" data-hidratado="false" disabled>×</button><img height="800" width="1200" class="photo-viewer__image" id="photoViewerImage" src="" alt=""><figcaption id="photoViewerCaption"></figcaption></figure>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -389,6 +389,6 @@
 
   </script>
   <script src="./js/security-and-vitals.js" defer></script>
-  <script src="./pwa.js?v=20261117-c3-a2-1" defer></script>
+  <script src="./pwa.js?v=20261117-c3-a2-2" defer></script>
 </body>
 </html>

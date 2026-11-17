@@ -3,5 +3,29 @@
 //# sourceMappingURL=purify.min.js.map
 ;
 ;
-/* Medición local Core Web Vitals C3-A2: LCP y CLS sin telemetría. */
-(()=>{'use strict';let l=null,c=0,o=[],r=false;const w=(t,f)=>{if(!('PerformanceObserver'in window))return;try{const x=new PerformanceObserver(z=>f(z.getEntries()));x.observe({type:t,buffered:true});o.push(x)}catch(_){}};w('largest-contentful-paint',e=>e.forEach(x=>l=x.startTime));w('layout-shift',e=>e.forEach(x=>{if(!x.hadRecentInput)c+=x.value}));function report(){if(r)return;r=true;o.forEach(x=>x.disconnect());console.info('[Core Web Vitals · C3-A2]',{LCP_ms:l===null?'no disponible':Math.round(l),CLS:Number(c.toFixed(4)),objetivos:{LCP_ms:2500,CLS:0.1}})}window.addEventListener('pagehide',report,{once:true});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')report()},{once:true})})();
+/* Core Web Vitals C3-A2: LCP y CLS por ventana de sesión; sin telemetría. */
+(()=>{'use strict';
+let lcp=null,sessionValue=0,sessionStart=0,lastShift=0,maxCls=0,reported=false;
+const observers=[];
+function observe(type,callback){
+ if(!('PerformanceObserver'in window))return;
+ try{const observer=new PerformanceObserver(list=>callback(list.getEntries()));observer.observe({type,buffered:true});observers.push(observer);}catch(_){}
+}
+observe('largest-contentful-paint',entries=>{for(const entry of entries)lcp=entry.startTime;});
+observe('layout-shift',entries=>{
+ for(const entry of entries){
+  if(entry.hadRecentInput)continue;
+  const time=entry.startTime;
+  if(!sessionStart||time-lastShift>1000||time-sessionStart>5000){sessionStart=time;sessionValue=entry.value;}
+  else sessionValue+=entry.value;
+  lastShift=time;
+  maxCls=Math.max(maxCls,sessionValue);
+ }
+});
+function report(){
+ if(reported)return;reported=true;observers.forEach(observer=>observer.disconnect());
+ console.info('[Core Web Vitals · C3-A2]',{LCP_ms:lcp===null?'no disponible':Math.round(lcp),CLS:Number(maxCls.toFixed(4)),objetivos:{LCP_ms:2500,CLS:0.1},cumple:{LCP:lcp!==null&&lcp<=2500,CLS:maxCls<=0.1}});
+}
+window.addEventListener('pagehide',report,{once:true});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')report();},{once:true});
+})();
