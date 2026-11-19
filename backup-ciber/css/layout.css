@@ -298,3 +298,15 @@
 @media (max-width: 420px) {
   .main-content { padding-right: 9px; padding-left: 9px; }
 }
+
+
+/* Ajuste final de la demostración Mobile-First: mantiene una sola columna
+   también al simular móvil en el catálogo de computadoras y consolas. */
+.catalogo-grid.sim-movil {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100%;
+  max-width: 380px;
+  margin-inline: auto;
+}
+.catalogo-grid.sim-movil > * { min-width: 0; }
