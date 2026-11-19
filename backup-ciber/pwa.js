@@ -22,14 +22,14 @@ document.addEventListener('error', event => {
 const LEVELUP_VIEWS = ['inicio', 'computadoras', 'consolas', 'cuenta', 'servicios', 'snacks', 'turnos', 'reservas', 'informacion', 'simulacion', 'contacto'];
 const VIEW_LABELS = { inicio: 'Inicio', computadoras: 'Computadoras', consolas: 'PlayStation', cuenta: 'Mi cuenta', servicios: 'Servicios', snacks: 'Snacks', turnos: 'Turnos', reservas: 'Reservas', informacion: 'Información', simulacion: 'Simulación', contacto: 'Contacto' };
 const STORAGE = {
-  accounts: 'levelup_accounts_v1',
-  activePhone: 'levelup_active_phone_v1',
-  machines: 'levelup_machine_states_v3',
-  consoles: 'levelup_console_states_v1',
-  pending: 'levelup_pending_actions_v1',
-  scheduledReservations: 'levelup_scheduled_reservations_v1',
-  accessoryQueue: 'levelup_accessory_queue_v1',
-  activeSessions: 'levelup_active_sessions_v1'
+  accounts: 'levelup_backup_ciber_accounts_v1',
+  activePhone: 'levelup_backup_ciber_active_phone_v1',
+  machines: 'levelup_backup_ciber_machine_states_v3',
+  consoles: 'levelup_backup_ciber_console_states_v1',
+  pending: 'levelup_backup_ciber_pending_actions_v1',
+  scheduledReservations: 'levelup_backup_ciber_scheduled_reservations_v1',
+  accessoryQueue: 'levelup_backup_ciber_accessory_queue_v1',
+  activeSessions: 'levelup_backup_ciber_active_sessions_v1'
 };
 const state = {
   machines: [], consoles: [], accounts: [], scheduledReservations: [], accessoryQueue: [], activeSessions: [], activeUser: null, currentFilter: 'all',
@@ -2157,7 +2157,7 @@ function clearAccessoryQueue() {
 const LEVELUP_BLACKLIST=new Set(['puta','putas','puto','putos','mierda','mierdas','pendejo','pendeja','pendejos','pendejas','idiota','idiotas','imbecil','imbeciles','estupido','estupida','estupidos','estupidas','cabron','cabrona','cabrones','hijueputa','malparido','malparida','maricon','maricones','verga','vergas','coño','concha','boludo','boluda','fuck','fucking','shit','bitch','asshole']);
 function normalizeModerationText(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es-BO').replace(/[@4]/g,'a').replace(/[0]/g,'o').replace(/[1!]/g,'i').replace(/[3]/g,'e').replace(/[5$]/g,'s').replace(/[7]/g,'t').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim()}
 function containsBlacklistedTerms(v){return normalizeModerationText(v).split(' ').some(w=>LEVELUP_BLACKLIST.has(w))}
-const LEVELUP_THEME_KEY='levelup-pwa-theme-v1';
+const LEVELUP_THEME_KEY='levelup-backup-ciber-theme-v1';
 function applyLevelUpTheme(t){const light=t==='light';document.documentElement.dataset.theme=light?'light':'dark';try{localStorage.setItem(LEVELUP_THEME_KEY,light?'light':'dark')}catch(_){}const m=document.getElementById('themeColorMeta');if(m)m.content=light?'#f5f7fb':'#0b0c16';const b=document.getElementById('themeToggle');if(b){b.querySelector('.theme-toggle__icon').textContent=light?'☾':'☀';b.querySelector('.theme-toggle__label').textContent=light?'Modo oscuro':'Modo claro';b.setAttribute('aria-label',light?'Activar modo oscuro':'Activar modo claro');b.setAttribute('aria-pressed',String(light))}}
 function setupLevelUpTheme(){applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'light':'dark');const b=document.getElementById('themeToggle');if(b&&b.dataset.themeReady!=='true'){b.addEventListener('click',()=>applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));b.dataset.themeReady='true'}}
 const SERVICE_DETAILS={basic:{title:'PC Básica · Bs 3 por hora',copy:'Selecciona una PC Básica libre. El precio se calcula según la duración.'},standard:{title:'PC Estándar · Bs 6 por hora',copy:'Selecciona una PC Estándar libre. El precio se calcula según la duración.'},premium:{title:'PC Premium · Bs 10 por hora',copy:'Selecciona una PC Premium libre. El precio se calcula según la duración.'},console:{title:'PlayStation 5 · Bs 15 por hora',copy:'Una PS5 libre con un mando incluido. Segundo mando opcional: Bs 6 por sesión.'}};

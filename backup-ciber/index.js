@@ -60,7 +60,7 @@ document.addEventListener('error', event => {
   const button=document.getElementById('entryThemeToggle');
   const meta=document.getElementById('themeColorMeta');
   if(!button||button.dataset.hidratado==='true')return;
-  const key='levelup-pwa-theme-v1';
+  const key='levelup-backup-ciber-theme-v1';
   function apply(theme){
     const light=theme==='light';
     document.documentElement.dataset.theme=light?'light':'dark';
