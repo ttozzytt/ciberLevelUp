@@ -1,0 +1,163 @@
+
+/* Tarjetas de simulación */
+.card-simulation-module {
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  min-width:0;
+  min-height:0;
+  padding:clamp(14px,2vw,22px);
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:var(--panel);
+}
+.card-simulation-module__header {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+}
+.card-simulation-module__header h2 {
+  margin:6px 0 4px;
+  color:var(--text);
+  font-size:clamp(17px,1.7vw,22px);
+}
+.card-simulation-module__header p:not(.eyebrow) {
+  margin:0;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.5;
+}
+.card-simulation-module__tag {
+  flex:0 0 auto;
+  padding:7px 9px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  color:var(--cyan);
+  background:var(--panel-2);
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:1px;
+}
+.card-simulation-grid {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  min-width:0;
+}
+.card-item {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:8px;
+  min-width:0;
+  padding:14px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--panel-2);
+  transition:border-color .18s ease,background .18s ease,box-shadow .18s ease;
+}
+/* Estado seleccionado */
+.card-item--activo {
+  border-color:var(--cyan);
+  background:rgba(77,231,238,.08);
+  box-shadow:0 0 0 2px rgba(77,231,238,.11);
+}
+.card-item__categoria {
+  color:var(--soft);
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:1.1px;
+  line-height:1.4;
+}
+.card-item__titulo {
+  margin:0;
+  color:var(--text);
+  font-size:clamp(13px,1.1vw,16px);
+  line-height:1.3;
+}
+.card-item__descripcion {
+  flex:1 1 auto;
+  min-height:42px;
+  margin:0;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.5;
+}
+.card-item__estado {
+  width:100%;
+  margin:0;
+  padding:8px 9px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:var(--green);
+  background:rgba(92,230,165,.06);
+  font-size:9px;
+  font-weight:800;
+  line-height:1.4;
+}
+.card-item--activo .card-item__estado {
+  color:var(--cyan);
+  background:rgba(77,231,238,.09);
+}
+.btn-simular {
+  display:inline-flex;
+  width:100%;
+  min-height:44px;
+  align-items:center;
+  justify-content:center;
+  padding:9px 10px;
+  border:1px solid var(--cyan);
+  border-radius:9px;
+  color:#08131b;
+  background:var(--cyan);
+  font-size:10px;
+  font-weight:900;
+  cursor:pointer;
+}
+.btn-simular:hover { filter:brightness(1.07); }
+.btn-simular[aria-pressed="true"] {
+  color:var(--text);
+  background:transparent;
+}
+.card-simulation-module__note {
+  margin:0;
+  padding-top:10px;
+  border-top:1px solid var(--line);
+  color:var(--soft);
+  font-size:9px;
+  line-height:1.5;
+}
+:root[data-theme="light"] .card-simulation-module,
+:root[data-theme="light"] .card-item {
+  border-color:var(--line);
+  background:#fff;
+}
+:root[data-theme="light"] .card-item--activo {
+  border-color:var(--cyan);
+  background:rgba(8,125,139,.07);
+}
+:root[data-theme="light"] .card-item__titulo { color:var(--text); }
+:root[data-theme="light"] .btn-simular[aria-pressed="true"] { color:var(--cyan); }
+@media (max-width:1100px) {
+  .card-simulation-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+/* Ajustes para celular */
+@media (max-width:560px) {
+  #view-simulacion .view-heading { align-items:flex-start; }
+  #view-simulacion .view-heading h1 { font-size:clamp(25px,7vw,34px); }
+  .card-simulation-module { gap:10px; padding:12px; }
+  .card-simulation-module__header { flex-direction:column; gap:8px; }
+  .card-simulation-grid { grid-template-columns:minmax(0,1fr); gap:9px; }
+  .card-item { padding:11px; gap:7px; }
+  .card-item__descripcion { min-height:0; }
+}
+@media (max-height:620px) {
+  #view-simulacion.view.active { gap:8px; }
+  #view-simulacion .view-heading h1 { margin:5px 0 3px; font-size:clamp(24px,3vw,32px); }
+  .card-simulation-module { gap:8px; padding:10px; }
+  .card-simulation-grid { gap:8px; }
+  .card-item { gap:5px; padding:9px; }
+  .card-item__descripcion { min-height:28px; }
+  .card-simulation-module__note { padding-top:6px; }
+}
