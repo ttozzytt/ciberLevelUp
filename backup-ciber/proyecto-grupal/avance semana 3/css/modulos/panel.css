@@ -1,0 +1,7 @@
+/* Módulo Panel — resumen y estado de la integración. */
+.lcg-summary__list { display: grid; gap: 9px; margin: 13px 0; }
+.lcg-summary__list div { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--lcg-line); }
+.lcg-summary__list dt { color: var(--lcg-muted); font-size: 9px; }
+.lcg-summary__list dd { max-width: 58%; margin: 0; color: var(--lcg-cyan); font-size: 10px; font-weight: 850; text-align: right; overflow-wrap: anywhere; }
+.lcg-full-app { display: inline-flex; width: 100%; min-height: 42px; align-items: center; justify-content: center; padding: 9px; border: 1px solid rgba(102,229,232,.32); border-radius: 10px; color: var(--lcg-cyan); background: rgba(102,229,232,.07); font-size: 10px; font-weight: 800; text-align: center; text-decoration: none; }
+.lcg-full-app:hover { background: rgba(102,229,232,.13); }
