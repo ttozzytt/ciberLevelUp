@@ -8,7 +8,7 @@ const APP_SHELL = [
   './pwa.html',
   './index.css',
   './pwa.css',
-  './css/layout.css',
+  './css/layout.css?v=parte2-mobile-first-r1',
   './index.js',
   './pwa.js',
   './theme.css',
