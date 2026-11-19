@@ -1,0 +1,46 @@
+[
+  {
+    "id": "pc-basica",
+    "category": "pc",
+    "kind": "Computadora",
+    "name": "PC Básica",
+    "description": "Intel Core i3-10100, GTX 1050 Ti, 8 GB RAM y SSD de 480 GB. Ideal para estudio, navegación y eSports ligeros.",
+    "price": "Bs 3",
+    "unit": "por hora",
+    "image": "../../imagenes/pc-basica.webp",
+    "alt": "Equipo LevelUp categoría básica con gabinete gamer negro"
+  },
+  {
+    "id": "pc-estandar",
+    "category": "pc",
+    "kind": "Computadora",
+    "name": "PC Estándar",
+    "description": "Ryzen 5 5600, GeForce RTX 3050, 16 GB RAM y SSD NVMe. Pensada para gaming fluido en 1080p.",
+    "price": "Bs 6",
+    "unit": "por hora",
+    "image": "../../imagenes/pc-estandar.webp",
+    "alt": "Equipo LevelUp categoría estándar con iluminación RGB"
+  },
+  {
+    "id": "pc-premium",
+    "category": "pc",
+    "kind": "Computadora",
+    "name": "PC Premium",
+    "description": "Ryzen 9, GeForce RTX 5090, 32 GB RAM y NVMe de 2 TB. Experiencia de alto rendimiento y streaming.",
+    "price": "Bs 10",
+    "unit": "por hora",
+    "image": "../../imagenes/pc-premium.webp",
+    "alt": "Equipo LevelUp categoría premium de alto rendimiento"
+  },
+  {
+    "id": "ps5",
+    "category": "console",
+    "kind": "Consola",
+    "name": "PlayStation 5",
+    "description": "Consola para jugar en sofá gamer. Incluye un mando; el mando adicional tiene tarifa de Bs 6 por sesión.",
+    "price": "Bs 15",
+    "unit": "por hora",
+    "image": "../../imagenes/playstation.webp",
+    "alt": "Consola PlayStation 5 disponible en LevelUp"
+  }
+]
