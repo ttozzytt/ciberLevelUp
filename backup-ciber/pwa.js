@@ -2178,6 +2178,27 @@ function bindLevelUpEvents() {
   $document.on('change.levelupFilters', '#filterGPU', () => applyMachineFilters(true));
   $document.on('click.levelupCatalog', '#pcScrollPrev', () => scrollCarousel(-1));
   $document.on('click.levelupCatalog', '#pcScrollNext', () => scrollCarousel(1));
+  $document.off('click.levelupLayoutSimulation', '#btnSimularVista')
+    .on('click.levelupLayoutSimulation', '#btnSimularVista', function () {
+      const grids = Array.from(document.querySelectorAll('.catalogo-grid'));
+      if (!grids.length) return;
+
+      const simulateMobile = !grids.every(grid => grid.classList.contains('sim-movil'));
+      grids.forEach(grid => grid.classList.toggle('sim-movil', simulateMobile));
+
+      this.setAttribute('aria-pressed', String(simulateMobile));
+      this.textContent = simulateMobile
+        ? 'Restaurar grilla automática'
+        : 'Simular vista móvil (1 columna)';
+
+      const status = document.getElementById('catalogSimulationStatus');
+      if (status) {
+        status.textContent = simulateMobile
+          ? 'Simulación activa: catálogo en una columna.'
+          : 'Vista automática según el ancho de pantalla.';
+      }
+      requestAnimationFrame(updateCarouselPosition);
+    });
   $document.on('click.levelupCatalog', '[data-select-machine]', function () { openBooking(Number(this.dataset.selectMachine)); });
   $document.on('click.levelupConsoles', '[data-select-console]', function () { openConsoleBooking(Number(this.dataset.selectConsole)); });
   $document.on('click.levelupCatalog', '#retryCatalogButton', initializeCatalog);

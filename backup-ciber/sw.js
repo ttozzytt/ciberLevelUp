@@ -1,13 +1,14 @@
 'use strict';
 
 // Caché exclusiva de la copia para no afectar al Cibercafé principal.
-const CACHE_NAME = 'levelup-backup-cibercafe-v1-20261119';
+const CACHE_NAME = 'levelup-backup-cibercafe-v2-parte2-20261119';
 const APP_SHELL = [
   './',
   './index.html',
   './pwa.html',
   './index.css',
   './pwa.css',
+  './css/layout.css',
   './index.js',
   './pwa.js',
   './theme.css',

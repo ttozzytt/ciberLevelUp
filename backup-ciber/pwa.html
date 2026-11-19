@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="./pwa.css?v=parte1-componentes-r1">
   <link rel="stylesheet" href="./theme.css?v=backup-ciber-20261119-r1">
   <link rel="stylesheet" href="./card-simulation.css?v=backup-ciber-20261119-r1">
+  <link rel="stylesheet" href="./css/layout.css?v=parte2-mobile-first-r1">
 </head>
 <body>
   <div class="app-shell" id="appShell" data-hidratado="false">
@@ -121,7 +122,7 @@
           <div class="view-heading"><div><p class="eyebrow">CATÁLOGO DE ESTACIONES</p><h1 id="computersTitle">Encuentra tu <span style="color:var(--cyan)">computadora.</span></h1><p>Compara las tres gamas: Básica, Estándar y Premium. Cada una tiene equipo y asiento diferentes.</p></div><div class="view-count"><span id="resultCount">15</span><small> EQUIPOS</small></div></div>
           <section class="panel catalog-panel" aria-label="Catálogo de computadoras LevelUp">
             <div class="catalog-toolbar">
-              <div class="catalog-heading"><h2>Estaciones PC LevelUp</h2><p>Desliza para comparar las 15 estaciones por precio, hardware y comodidad.</p></div>
+              <div class="catalog-heading"><h2>Estaciones PC LevelUp</h2><p>Compara las 15 estaciones por precio, hardware y comodidad en una grilla responsiva.</p></div>
               <div class="filter-chips" role="group" aria-label="Filtro rápido de equipos">
                 <button class="filter-chip active" type="button" data-filter="all" aria-pressed="true" data-hidratado="false" disabled>Todas</button>
                 <button class="filter-chip" type="button" data-filter="available" aria-pressed="false" data-hidratado="false" disabled>Disponibles</button>
@@ -137,11 +138,11 @@
               <label class="form-field"><span class="side-caption">PROCESADOR</span><select id="filterCPU" class="field-control" data-hidratado="false" disabled><option value="">Primero elige categoría</option></select></label>
               <label class="form-field"><span class="side-caption">GRÁFICA</span><select id="filterGPU" class="field-control" data-hidratado="false" disabled><option value="">Primero elige procesador</option></select></label>
             </div>
-            <div class="carousel-heading"><strong id="catalogStatus">Cargando catálogo desde los datos de LevelUp…</strong><div class="carousel-tools"><span id="pcCarouselPosition">—</span><button class="carousel-arrow" id="pcScrollPrev" type="button" aria-label="Ver equipos anteriores" data-hidratado="false" disabled>‹</button><button class="carousel-arrow" id="pcScrollNext" type="button" aria-label="Ver equipos siguientes" data-hidratado="false" disabled>›</button></div></div>
-            <div class="pc-carousel" id="pcCarousel" tabindex="0" aria-label="Carrusel horizontal de computadoras"><div class="pc-track" id="pcGrid"><div class="catalog-state"><strong>Preparando catálogo…</strong>Las estaciones aparecerán aquí.</div></div></div>
+            <div class="carousel-heading layout-catalog-controls"><strong id="catalogStatus" aria-live="polite">Cargando catálogo desde los datos de LevelUp…</strong><div class="catalog-simulation-actions"><span id="catalogSimulationStatus" class="catalog-simulation-status" aria-live="polite">Vista automática según el ancho de pantalla.</span><button class="secondary-btn view-simulation-btn" id="btnSimularVista" type="button" aria-pressed="false" aria-controls="pcGrid consoleGrid">Simular vista móvil (1 columna)</button></div></div>
+            <div class="pc-carousel" id="pcCarousel" aria-label="Grilla responsiva de computadoras"><div class="pc-track catalogo-grid" id="pcGrid"><div class="catalog-state"><strong>Preparando catálogo…</strong>Las estaciones aparecerán aquí.</div></div></div>
             <div class="catalog-empty" id="emptyState" hidden><strong>No encontramos equipos</strong>Prueba con otro término o cambia los filtros.</div>
             <div class="catalog-state catalog-state-error" id="catalogError" hidden><strong>No se pudo cargar el catálogo.</strong><span id="catalogErrorText"></span><button class="secondary-btn" id="retryCatalogButton" type="button" data-hidratado="false" disabled>Reintentar carga</button></div>
-            <div class="catalog-foot"><span>15 estaciones · Las fotos ilustran cada categoría; las especificaciones se detallan en cada tarjeta.</span><div class="catalog-progress"><span id="carouselProgress"></span></div></div>
+            <div class="catalog-foot"><span>15 estaciones · Las fotos ilustran cada categoría; las especificaciones se detallan en cada tarjeta.</span></div>
           </section>
         </section>
 
@@ -153,7 +154,7 @@
             <div><span class="console-rate-icon">①</span><div><strong>1 mando incluido</strong><span>DualSense por consola</span></div></div>
             <div><span class="console-rate-icon">＋</span><div><strong>Bs 6 extra</strong><span>Segundo mando · pago único por sesión</span></div></div>
           </section>
-          <div class="console-grid" id="consoleGrid" aria-live="polite"><div class="catalog-state"><strong>Preparando las consolas…</strong>Las PS5 aparecerán aquí.</div></div>
+          <div class="console-grid catalogo-grid" id="consoleGrid" aria-live="polite"><div class="catalog-state"><strong>Preparando las consolas…</strong>Las PS5 aparecerán aquí.</div></div>
           <div class="catalog-state catalog-state-error" id="consoleCatalogError" hidden role="alert"><strong>No se pudieron cargar las consolas.</strong><span id="consoleCatalogErrorText"></span><button class="secondary-btn" type="button" data-retry-catalog data-hidratado="false" disabled>Reintentar carga</button></div>
           <p class="console-seat-note">La zona PlayStation cuenta con sofá gamer para jugar con más comodidad. Cada PS5 tiene su propio estado, reserva y temporizador.</p>
         </section>
