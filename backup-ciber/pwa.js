@@ -1,5 +1,23 @@
 'use strict';
 
+/* Respaldo visual local: evita iconos rotos si una imagen falla al cargar. */
+document.addEventListener('error', event => {
+  const image = event.target;
+  if (!(image instanceof HTMLImageElement)) return;
+
+  if (image.dataset.imageFallbackApplied === 'true') {
+    image.hidden = true;
+    return;
+  }
+
+  const fallback = image.dataset.fallbackSrc || './imagenes/imagen-respaldo.svg';
+  image.dataset.imageFallbackApplied = 'true';
+  image.src = fallback;
+
+  const photoButton = image.closest('[data-photo-open]');
+  if (photoButton) photoButton.dataset.photo = fallback;
+}, true);
+
 /* LevelUp: SPA ligera, hidratación controlada y delegación de eventos. */
 const LEVELUP_VIEWS = ['inicio', 'computadoras', 'consolas', 'cuenta', 'servicios', 'snacks', 'turnos', 'reservas', 'informacion', 'simulacion', 'contacto'];
 const VIEW_LABELS = { inicio: 'Inicio', computadoras: 'Computadoras', consolas: 'PlayStation', cuenta: 'Mi cuenta', servicios: 'Servicios', snacks: 'Snacks', turnos: 'Turnos', reservas: 'Reservas', informacion: 'Información', simulacion: 'Simulación', contacto: 'Contacto' };
@@ -34,7 +52,7 @@ function createTextElement(tag, className = '', text = '') {
 }
 function safeCatalogImage(path, fallback) {
   const value = String(path || '');
-  return /^\.\/imagenes\/[a-z0-9._-]+\.(?:webp|png|jpe?g)$/i.test(value) ? value : fallback;
+  return /^\.\/imagenes\/[a-z0-9._-]+\.(?:webp|png|jpe?g|svg)$/i.test(value) ? value : fallback;
 }
 function createUsageTimer(label, id, attribute, value) {
   const wrapper = createTextElement('div', 'pc-usage');
@@ -45,19 +63,22 @@ function createUsageTimer(label, id, attribute, value) {
 }
 function createPhotoButton({ className, path, fallback, caption, alt, width, height, label }) {
   const button = createTextElement('button', className);
+  const safeFallback = safeCatalogImage(fallback, './imagenes/imagen-respaldo.svg');
   button.type = 'button';
   button.dataset.photoOpen = '';
-  button.dataset.photo = safeCatalogImage(path, fallback);
+  button.dataset.photo = safeCatalogImage(path, safeFallback);
   button.dataset.caption = String(caption || 'Fotografía LevelUp');
   button.setAttribute('aria-label', String(label || 'Ampliar fotografía'));
   button.dataset.hidratado = 'true';
+
   const image = document.createElement('img');
   image.className = `${className}__image`;
   image.src = button.dataset.photo;
+  image.dataset.fallbackSrc = image.src === safeFallback ? './imagenes/imagen-respaldo.svg' : safeFallback;
   image.alt = String(alt || 'Imagen representativa de LevelUp');
   image.width = width;
   image.height = height;
-  image.loading = 'lazy';
+  image.loading = 'eager';
   image.decoding = 'async';
   button.append(image);
   return button;

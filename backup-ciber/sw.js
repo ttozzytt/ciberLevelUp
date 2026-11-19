@@ -1,7 +1,7 @@
 'use strict';
 
 // Caché exclusiva de la copia para no afectar al Cibercafé principal.
-const CACHE_NAME = 'levelup-backup-cibercafe-v2-parte2-20261119';
+const CACHE_NAME = 'levelup-backup-cibercafe-v3-imagenes-20261119';
 const APP_SHELL = [
   './',
   './index.html',
@@ -32,7 +32,8 @@ const APP_SHELL = [
   './imagenes/comida-maruchan-vaso.jpg',
   './imagenes/accesorio-cascos-gamer.jpg',
   './imagenes/accesorio-mousepad-gamer.jpg',
-  './imagenes/mando-adicional-ps5.jpg'
+  './imagenes/mando-adicional-ps5.jpg',
+  './imagenes/imagen-respaldo.svg'
 ];
 
 self.addEventListener('install', event => {

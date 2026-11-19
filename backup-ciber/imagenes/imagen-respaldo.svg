@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" role="img" aria-labelledby="title desc">
+  <title id="title">Imagen de respaldo LevelUp</title>
+  <desc id="desc">Gráfico gamer local mostrado cuando una fotografía no está disponible.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#171a2f"/><stop offset="1" stop-color="#090d18"/></linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4de7ee"/><stop offset="1" stop-color="#a477ff"/></linearGradient>
+  </defs>
+  <rect width="640" height="480" rx="28" fill="url(#bg)"/>
+  <circle cx="320" cy="196" r="126" fill="#4de7ee" opacity=".07"/>
+  <path d="M190 205c7-30 28-48 58-48h144c30 0 51 18 58 48l17 74c7 31-17 54-47 48l-54-11c-20-4-37-17-46-34-9 17-26 30-46 34l-54 11c-30 6-54-17-47-48z" fill="#151e34" stroke="url(#glow)" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M250 214v52m-26-26h52" stroke="#4de7ee" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="397" cy="218" r="10" fill="#a477ff"/><circle cx="424" cy="244" r="10" fill="#4de7ee"/>
+  <text x="320" y="382" fill="#f5f4ff" font-family="Arial,sans-serif" font-size="34" font-weight="700" text-anchor="middle" letter-spacing="5">LEVELUP</text>
+  <text x="320" y="415" fill="#a5a5bd" font-family="Arial,sans-serif" font-size="16" text-anchor="middle" letter-spacing="2">IMAGEN DE RESPALDO</text>
+</svg>

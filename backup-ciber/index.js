@@ -1,3 +1,15 @@
+// Respaldo visual local para las imágenes de la portada del backup.
+document.addEventListener('error', event => {
+  const image = event.target;
+  if (!(image instanceof HTMLImageElement)) return;
+  if (image.dataset.imageFallbackApplied === 'true') {
+    image.hidden = true;
+    return;
+  }
+  image.dataset.imageFallbackApplied = 'true';
+  image.src = './imagenes/imagen-respaldo.svg';
+}, true);
+
 // El indicador comprueba si este sitio responde por Internet; no se basa solo en navigator.onLine.
     const entryStatus = document.getElementById('entryNetworkStatus');
     let entryNetworkTimer = null;
