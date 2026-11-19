@@ -1,0 +1,30 @@
+/* Parte 1 — componente de tarjeta encapsulado con clases propias. */
+.pwc-app .card-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 11px;
+  min-width: 0;
+  min-height: 100%;
+  padding: 13px;
+  border: 1px solid rgba(155,183,220,.18);
+  border-radius: 15px;
+  background: linear-gradient(155deg,#1a2a42,#111d30);
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+.pwc-app .card-item:hover { transform: translateY(-2px); border-color: rgba(102,229,232,.42); }
+.pwc-app .card-item--activo { border-color: var(--pwc-cyan); background: linear-gradient(155deg,rgba(102,229,232,.13),#132239); box-shadow: 0 0 0 2px rgba(102,229,232,.1); }
+.pwc-app .card-item__imagen { display: block; width: 100%; height: 150px; object-fit: cover; border-radius: 10px; background: #09111e; }
+.pwc-app .card-item__categoria { color: var(--pwc-cyan); font-size: 9px; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
+.pwc-app .card-item__titulo { margin: 0; color: var(--pwc-text); font-size: 17px; line-height: 1.25; }
+.pwc-app .card-item__descripcion { flex: 1 1 auto; margin: 0; color: var(--pwc-muted); font-size: 11px; line-height: 1.55; }
+.pwc-app .card-item__estado { margin: 0; padding: 8px 9px; border: 1px solid rgba(92,230,165,.2); border-radius: 9px; color: #8cf0c0; background: rgba(92,230,165,.07); font-size: 10px; font-weight: 750; }
+.pwc-app .card-item--activo .card-item__estado { color: var(--pwc-cyan); border-color: rgba(102,229,232,.35); background: rgba(102,229,232,.08); }
+.pwc-app .card-item__pie { display: flex; flex-direction: column; align-items: stretch; gap: 10px; margin-top: auto; padding-top: 11px; border-top: 1px solid var(--pwc-line); }
+.pwc-app .card-item__precio { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.pwc-app .card-item__precio strong { color: var(--pwc-text); font-size: 22px; }
+.pwc-app .card-item__precio span { color: var(--pwc-muted); font-size: 10px; }
+.pwc-app .btn-simular { display: inline-flex; width: 100%; min-height: 44px; align-items: center; justify-content: center; padding: 9px 12px; border: 1px solid var(--pwc-cyan); border-radius: 10px; color: #07131c; background: var(--pwc-cyan); font-size: 11px; font-weight: 850; cursor: pointer; }
+.pwc-app .btn-simular[aria-pressed="true"] { color: var(--pwc-cyan); background: transparent; }
+.pwc-app .btn-simular:focus-visible { outline: 3px solid white; outline-offset: 2px; }
+@media (max-width: 520px) { .pwc-app .card-item { padding: 11px; } .pwc-app .card-item__imagen { height: 175px; } }
