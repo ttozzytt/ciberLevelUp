@@ -2185,6 +2185,13 @@ function bindLevelUpEvents() {
 
 
 
+  /* Accesibilidad: simulación reversible de contraste alto. */
+  $document.on('click.levelupA11y', '#btnSimularContraste', function () {
+    const active = document.body.classList.toggle('alto-contraste');
+    this.setAttribute('aria-pressed', String(active));
+    this.textContent = active ? 'Restaurar contraste normal' : 'Simular alto contraste';
+  });
+
   /* Filtros y navegación del carrusel. */
   $document.on('click.levelupFilters', '[data-filter]', function () {
     setQuickFilter(this.dataset.filter);
