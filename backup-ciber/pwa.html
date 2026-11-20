@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="./pwa.css?v=parte1-componentes-r1">
   <link rel="stylesheet" href="./theme.css?v=backup-ciber-20261119-r1">
   <link rel="stylesheet" href="./card-simulation.css?v=backup-ciber-20261119-r1">
-  <link rel="stylesheet" href="./css/layout.css?v=parte2-flexbox-sidebar-hamburger-only-20261120-r12">
+  <link rel="stylesheet" href="./css/layout.css?v=parte2-flexbox-sidebar-hamburger-only-20261120-r13">
 </head>
 <body>
   <div class="app-shell contenedor-app" id="appShell" data-hidratado="false">
@@ -66,7 +66,7 @@
           <button class="nav-item" type="button" data-view-target="reservas" data-close-mobile="true" data-hidratado="false" disabled>▤ Reservas</button>
           <button class="nav-item" type="button" data-view-target="informacion" data-close-mobile="true" data-hidratado="false" disabled>ⓘ Información</button>
           <button class="nav-item" type="button" data-view-target="contacto" data-close-mobile="true" data-hidratado="false" disabled>✉ Contacto</button>
-        <section class="panel panel-auditoria smoke-menu-panel" aria-labelledby="smokeTestTitle"><div class="panel-heading"><span class="feature-icon" aria-hidden="true">✓</span><div><h2 id="smokeTestTitle">Smoke Test del DOM</h2><p>Auditoría rápida de botones, imágenes sin alt y enlaces vacíos.</p></div></div><button class="secondary-btn" id="btnSmokeTest" type="button" data-hidratado="false" disabled>Ejecutar Smoke Test DOM</button><p id="salidaAudit" class="smoke-test-output" role="status" aria-live="polite">Estado: Listo para verificar.</p></section>
+        <section class="panel panel-auditoria smoke-menu-panel" aria-labelledby="auditDemoTitle"><div class="panel-heading"><span class="feature-icon" aria-hidden="true">✓</span><div><h2 id="auditDemoTitle">Auditoría (demo)</h2><p>Pruebas rápidas de calidad y estructura HTML5.</p></div></div><div class="audit-action"><button class="secondary-btn" id="btnSmokeTest" type="button" data-hidratado="false" disabled>Smoke Test DOM</button><p id="salidaAudit" class="smoke-test-output" role="status" aria-live="polite">Estado: Listo para verificar.</p></div><div class="audit-action"><button class="a11y-audit-btn" id="btnAuditarA11Y" type="button" data-hidratado="false" disabled>Verificar Semántica HTML5</button><p id="reporteA11Y" class="a11y-audit-output" role="status" aria-live="polite">Estado: Listo para auditar.</p></div></section>
         </nav>
       </header>
 
@@ -419,7 +419,7 @@
 
   </script>
   <script src="./js/security-and-vitals.js" defer></script>
-  <script src="./pwa.js?v=backup-ciber-20261120-smoke-menu-r5" defer></script>
+  <script src="./pwa.js?v=backup-ciber-20261120-smoke-a11y-menu-r6" defer></script>
 <!-- Hidratación de las tarjetas -->
 <script src="./card-simulation.js?v=backup-ciber-20261119-r1" defer></script>
 </body>
