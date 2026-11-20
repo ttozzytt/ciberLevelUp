@@ -310,3 +310,46 @@
   margin-inline: auto;
 }
 .catalogo-grid.sim-movil > * { min-width: 0; }
+
+
+/* Accesibilidad: simulación de contraste alto y foco visible. */
+:focus-visible{outline:3px solid #facc15!important;outline-offset:3px!important}
+body.alto-contraste{background:#000!important;color:#fff!important}
+body.alto-contraste .panel,body.alto-contraste .pc-card,body.alto-contraste .console-card,
+body.alto-contraste .card-item,body.alto-contraste .catalog-state,body.alto-contraste .modal{
+ background:#111!important;color:#fff!important;border:2px solid #facc15!important}
+body.alto-contraste p,body.alto-contraste small,body.alto-contraste .muted,body.alto-contraste .catalog-simulation-status{color:#fff!important}
+body.alto-contraste button,body.alto-contraste a{outline-color:#facc15}
+body.alto-contraste input,body.alto-contraste select,body.alto-contraste textarea{background:#000!important;color:#fff!important;border:2px solid #facc15!important}
+
+/* Horizontal móvil: reduce header y navegación, pero mantiene scroll del contenido.
+   Se evita fijar alturas internas de vistas, para que formularios no queden cortados. */
+@media(orientation:landscape) and (max-height:600px) and (max-width:900px){
+ .app-shell,.app-column{height:100dvh;min-height:0;overflow:hidden}
+ .topbar{min-height:48px;padding-block:5px}
+ .main-content{min-height:0;overflow-y:auto;overscroll-behavior-y:contain;padding:8px 10px calc(62px + env(safe-area-inset-bottom))}
+ .view.active{min-height:0;height:auto;overflow:visible;gap:10px}
+ .view-heading{margin-bottom:8px}
+ .view-heading h1{font-size:clamp(22px,4vw,32px);margin:4px 0}
+ .view-heading p{font-size:11px}
+ .bottom-nav{min-height:48px;padding-block:4px}
+ .bottom-item{min-height:42px}
+ .catalog-toolbar,.layout-catalog-controls{gap:7px}
+ .catalog-simulation-actions{width:auto;flex-wrap:nowrap}
+ .view-simulation-btn{min-height:40px;padding:7px 10px}
+ .catalogo-grid{gap:9px}
+ .pc-card,.console-card{min-width:0}
+ #view-simulacion .card-simulation-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #view-simulacion .card-item{padding:8px;gap:6px}
+ #view-simulacion .card-item__descripcion{min-height:0}
+ #view-simulacion .btn-simular{min-height:40px}
+ .modal{max-height:calc(100dvh - 16px);overflow-y:auto}
+}
+@media(orientation:landscape) and (max-height:420px) and (max-width:900px){
+ .main-content{padding-top:5px;padding-bottom:calc(54px + env(safe-area-inset-bottom))}
+ .view-heading .eyebrow{font-size:8px}
+ .view-heading h1{font-size:22px}
+ .view-heading p{margin:4px 0}
+ .catalog-toolbar .catalog-simulation-actions{flex-wrap:wrap}
+ .bottom-nav{position:fixed;bottom:0;left:0;right:0}
+}
