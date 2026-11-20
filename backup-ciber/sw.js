@@ -1,14 +1,14 @@
 'use strict';
 
 // Caché exclusiva de la copia para no afectar al Cibercafé principal.
-const CACHE_NAME = 'levelup-backup-cibercafe-v7-mobile-landscape-menu-20261120';
+const CACHE_NAME = 'levelup-backup-cibercafe-v8-menu-scroll-20261120';
 const APP_SHELL = [
   './',
   './index.html',
   './pwa.html',
   './index.css',
   './pwa.css',
-  './css/layout.css?v=parte2-mobile-landscape-menu-r5',
+  './css/layout.css?v=parte2-menu-scroll-r6',
   './index.js',
   './pwa.js',
   './theme.css',
