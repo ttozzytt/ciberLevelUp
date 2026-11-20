@@ -2574,3 +2574,6 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', updateKeyboardViewport);
   window.visualViewport.addEventListener('scroll', updateKeyboardViewport);
 }
+
+/* Accesibilidad: flechas ↑ ↓ ← → recorren las opciones del dock. */
+(()=>{const dock=document.getElementById('bottomNav');if(!dock)return;dock.addEventListener('keydown',event=>{if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key))return;const buttons=Array.from(dock.querySelectorAll('button[data-view-target]:not(:disabled)'));const index=buttons.indexOf(document.activeElement);if(index<0||!buttons.length)return;event.preventDefault();const offset=event.key==='ArrowUp'||event.key==='ArrowLeft'?-1:1;const next=(index+offset+buttons.length)%buttons.length;buttons[next].focus({preventScroll:true});buttons[next].scrollIntoView({block:'nearest',inline:'nearest'});});})();
