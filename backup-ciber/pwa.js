@@ -2158,14 +2158,16 @@ const LEVELUP_BLACKLIST=new Set(['puta','putas','puto','putos','mierda','mierdas
 function normalizeModerationText(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es-BO').replace(/[@4]/g,'a').replace(/[0]/g,'o').replace(/[1!]/g,'i').replace(/[3]/g,'e').replace(/[5$]/g,'s').replace(/[7]/g,'t').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim()}
 function containsBlacklistedTerms(v){return normalizeModerationText(v).split(' ').some(w=>LEVELUP_BLACKLIST.has(w))}
 const LEVELUP_THEME_KEY='levelup-backup-ciber-theme-v1';
-function applyLevelUpTheme(t){const light=t==='light';document.documentElement.dataset.theme=light?'light':'dark';try{localStorage.setItem(LEVELUP_THEME_KEY,light?'light':'dark')}catch(_){}const m=document.getElementById('themeColorMeta');if(m)m.content=light?'#f5f7fb':'#0b0c16';const b=document.getElementById('themeToggle');if(b){b.querySelector('.theme-toggle__icon').textContent=light?'☾':'☀';b.querySelector('.theme-toggle__label').textContent=light?'Modo oscuro':'Modo claro';b.setAttribute('aria-label',light?'Activar modo oscuro':'Activar modo claro');b.setAttribute('aria-pressed',String(light))}}
-function setupLevelUpTheme(){applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'light':'dark');const b=document.getElementById('themeToggle');if(b&&b.dataset.themeReady!=='true'){b.addEventListener('click',()=>applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));b.dataset.themeReady='true'}}
+const LEVELUP_CONTRAST_KEY='levelup-backup-ciber-contrast-v1';
+function applyLevelUpTheme(t){const light=t==='light';document.documentElement.dataset.theme=light?'light':'dark';try{localStorage.setItem(LEVELUP_THEME_KEY,light?'light':'dark')}catch(_){}const m=document.getElementById('themeColorMeta');if(m)m.content=light?'#f5f7fb':'#0b0c16';const b=document.getElementById('themeToggle');if(b){const icon=b.querySelector('.theme-toggle__icon');const label=b.querySelector('.theme-toggle__label');if(icon)icon.textContent=light?'☾':'☀';if(label)label.textContent=light?'Modo oscuro':'Modo claro';b.setAttribute('aria-label',light?'Activar modo oscuro':'Activar modo claro');b.setAttribute('aria-pressed',String(light))}}
+function applyLevelUpContrast(active){const enabled=Boolean(active);document.body.classList.toggle('alto-contraste',enabled);try{localStorage.setItem(LEVELUP_CONTRAST_KEY,enabled?'on':'off')}catch(_){}const b=document.getElementById('btnContraste');if(b){const icon=b.querySelector('.contrast-toggle__icon');const label=b.querySelector('.contrast-toggle__label');if(icon)icon.textContent=enabled?'◑':'◐';if(label)label.textContent=enabled?'Contraste normal':'Contraste alto';b.setAttribute('aria-pressed',String(enabled));b.setAttribute('aria-label',enabled?'Desactivar alto contraste':'Activar alto contraste');b.title=enabled?'Desactivar alto contraste':'Activar alto contraste'}}
+function setupLevelUpTheme(){applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'light':'dark');const b=document.getElementById('themeToggle');if(b&&b.dataset.themeReady!=='true'){b.addEventListener('click',()=>applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));b.dataset.themeReady='true'}let highContrast=false;try{highContrast=localStorage.getItem(LEVELUP_CONTRAST_KEY)==='on'}catch(_){}applyLevelUpContrast(highContrast);const contrastButton=document.getElementById('btnContraste');if(contrastButton&&contrastButton.dataset.contrastReady!=='true'){contrastButton.addEventListener('click',()=>applyLevelUpContrast(!document.body.classList.contains('alto-contraste')));contrastButton.dataset.contrastReady='true'}}
 const SERVICE_DETAILS={basic:{title:'PC Básica · Bs 3 por hora',copy:'Selecciona una PC Básica libre. El precio se calcula según la duración.'},standard:{title:'PC Estándar · Bs 6 por hora',copy:'Selecciona una PC Estándar libre. El precio se calcula según la duración.'},premium:{title:'PC Premium · Bs 10 por hora',copy:'Selecciona una PC Premium libre. El precio se calcula según la duración.'},console:{title:'PlayStation 5 · Bs 15 por hora',copy:'Una PS5 libre con un mando incluido. Segundo mando opcional: Bs 6 por sesión.'}};
 function renderServiceSelectionSafe(type) { const target = document.getElementById('serviceSelectionInfo'); const detail = SERVICE_DETAILS[type]; if (!target || !detail) return; const title = document.createElement('strong'); title.className = 'service-selection__title'; title.textContent = String(detail.title ?? ''); const description = document.createElement('p'); description.className = 'service-selection__description'; description.textContent = String(detail.copy ?? ''); target.replaceChildren(title, description); }
 function reserveServiceDirect(type){renderServiceSelectionSafe(type);if(type==='console'){const item=state.consoles.find(x=>isAvailable(x));if(!item){showToast('No hay una PlayStation disponible en este momento.','error');return}openConsoleBooking(item.id);return}if(!['basic','standard','premium'].includes(type))return;const item=state.machines.find(x=>x.type===type&&isAvailable(x));if(!item){showToast('No hay equipos disponibles de esa categoría.','error');return}openBooking(item.id)}
 function bindLevelUpEvents() {
   /* Limpieza previa: evita duplicar escuchadores si se ejecuta una segunda hidratación. */
-  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupValidation .levelupReservation .levelupAccessories');
+  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupValidation .levelupReservation .levelupAccessories .levelupSmokeTest');
   $(window).off('.levelupRuntime .levelupCarousel');
 
   $document.on('click.levelupNavigation', '[data-view-target]', function (event) {
@@ -2185,12 +2187,17 @@ function bindLevelUpEvents() {
 
 
 
-  /* Accesibilidad: simulación reversible de contraste alto. */
-  $document.on('click.levelupA11y', '#btnSimularContraste', function () {
-    const active = document.body.classList.toggle('alto-contraste');
-    this.setAttribute('aria-pressed', String(active));
-    this.textContent = active ? 'Restaurar contraste normal' : 'Simular alto contraste';
-  });
+  /* El control global de alto contraste se inicializa junto al tema en setupLevelUpTheme(). */
+
+  $document.off('click.levelupSmokeTest', '#btnSmokeTest')
+    .on('click.levelupSmokeTest', '#btnSmokeTest', function () {
+      const imgsSinAlt = document.querySelectorAll('img:not([alt]), img[alt=""]').length;
+      const enlacesVacios = document.querySelectorAll('a[href=""], a:not([href])').length;
+      const botones = document.querySelectorAll('button').length;
+      const resultado = `Smoke Test completado · Botones: ${botones} | Imágenes sin alt: ${imgsSinAlt} | Enlaces vacíos: ${enlacesVacios}`;
+      $('#salidaAudit').text(resultado);
+      $('#salidaAudit').toggleClass('is-warning', imgsSinAlt > 0 || enlacesVacios > 0);
+    });
 
   /* Filtros y navegación del carrusel. */
   $document.on('click.levelupFilters', '[data-filter]', function () {
@@ -2575,5 +2582,48 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('scroll', updateKeyboardViewport);
 }
 
-/* Accesibilidad: flechas ↑ ↓ ← → recorren las opciones del dock. */
-(()=>{const dock=document.getElementById('bottomNav');if(!dock)return;dock.addEventListener('keydown',event=>{if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key))return;const buttons=Array.from(dock.querySelectorAll('button[data-view-target]:not(:disabled)'));const index=buttons.indexOf(document.activeElement);if(index<0||!buttons.length)return;event.preventDefault();const offset=event.key==='ArrowUp'||event.key==='ArrowLeft'?-1:1;const next=(index+offset+buttons.length)%buttons.length;buttons[next].focus({preventScroll:true});buttons[next].scrollIntoView({block:'nearest',inline:'nearest'});});})();
+/* Navegación direccional global: las flechas recorren controles visibles de toda la vista,
+   no solo el menú. No interfiere con campos de texto, selectores ni controles nativos. */
+(()=>{
+  const selector='a[href],button:not(:disabled),input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),summary,[role="button"],[tabindex]:not([tabindex="-1"])';
+  const editingSelector='input,textarea,select,[contenteditable="true"],[role="textbox"]';
+  const vectors={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};
+  const visible=element=>{
+    if(!(element instanceof HTMLElement)||element.matches(':disabled,[hidden]'))return false;
+    if(element.closest('[hidden],[aria-hidden="true"],[inert]'))return false;
+    const style=window.getComputedStyle(element);
+    return style.display!=='none'&&style.visibility!=='hidden'&&element.getClientRects().length>0;
+  };
+  document.addEventListener('keydown',event=>{
+    const vector=vectors[event.key];
+    if(!vector||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;
+    const active=document.activeElement;
+    if(active instanceof HTMLElement&&(active.isContentEditable||active.matches(editingSelector)))return;
+    if(!(active instanceof HTMLElement)||!active.matches(selector)||!visible(active))return;
+    const modal=[...document.querySelectorAll('.modal-backdrop.open,.photo-viewer.open')].at(-1);
+    const scope=modal||document;
+    const items=[...scope.querySelectorAll(selector)].filter(element=>element!==active&&visible(element));
+    const rect=active.getBoundingClientRect();
+    const x=rect.left+rect.width/2;
+    const y=rect.top+rect.height/2;
+    const [dx,dy]=vector;
+    let best=null;
+    let bestScore=Infinity;
+    for(const candidate of items){
+      const box=candidate.getBoundingClientRect();
+      const cx=box.left+box.width/2;
+      const cy=box.top+box.height/2;
+      const deltaX=cx-x;
+      const deltaY=cy-y;
+      const primary=dx?deltaX*dx:deltaY*dy;
+      if(primary<=3)continue;
+      const cross=dx?Math.abs(deltaY):Math.abs(deltaX);
+      const score=primary+cross*1.75;
+      if(score<bestScore){best=candidate;bestScore=score}
+    }
+    if(!best)return;
+    event.preventDefault();
+    best.focus({preventScroll:true});
+    best.scrollIntoView({block:'nearest',inline:'nearest'});
+  },true);
+})();
