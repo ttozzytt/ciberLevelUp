@@ -741,19 +741,170 @@ body.keyboard-open .bottom-nav.dock-acciones { display: none !important; }
   }
 }
 
-/* Override C3-A2: dock Flexbox scrollable landscape y responsive portrait. */
-@media (orientation:landscape) and (max-height:700px) {
-.app-shell.contenedor-app{display:flex!important;flex-direction:row!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
-.bottom-nav.dock-acciones{display:flex!important;position:static!important;order:0!important;flex:0 0 clamp(126px,20vw,158px)!important;width:clamp(126px,20vw,158px)!important;max-width:none!important;height:100dvh!important;max-height:100dvh!important;min-height:0!important;flex-direction:column!important;flex-wrap:nowrap!important;justify-content:flex-start!important;align-items:stretch!important;overflow-y:auto!important;overflow-x:hidden!important;gap:6px!important;padding:8px 6px!important}
-.bottom-nav.dock-acciones .bottom-item{flex:0 0 auto!important;width:100%!important;max-width:100%!important;min-width:0!important;min-height:44px!important;flex-direction:row!important;justify-content:flex-start!important;gap:8px!important;padding:8px!important}
-.bottom-nav.dock-acciones .bottom-item small{text-align:left!important;font-size:10px!important}
-.app-column{flex:1 1 0!important;min-width:0!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
-.main-content.area-contenido{flex:1 1 auto!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important}
+
+/* C3-A2 FINAL: el sidebar real es el único menú lateral; el dock solo vive en portrait. */
+.contrast-toggle{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-width:44px;min-height:44px;padding:6px 10px;
+  border:1px solid var(--line);border-radius:10px;
+  color:var(--text);background:var(--panel-2);
+  font-size:10px;font-weight:800;cursor:pointer;
 }
-@media (orientation:portrait) and (max-width:767px){
-.app-shell.contenedor-app{display:flex!important;flex-direction:column!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
-.bottom-nav.dock-acciones{display:flex!important;position:static!important;order:1!important;flex:0 0 auto!important;width:100%!important;height:auto!important;max-height:min(32dvh,210px)!important;flex-direction:row!important;flex-wrap:wrap!important;overflow-x:hidden!important;overflow-y:auto!important;gap:4px!important;padding:6px!important}
-.bottom-nav.dock-acciones .bottom-item{flex:1 1 calc(25% - 6px)!important;width:calc(25% - 6px)!important;max-width:calc(25% - 6px)!important;min-width:60px!important;min-height:44px!important;flex-direction:column!important;justify-content:center!important;padding:5px 3px!important}
-.app-column{flex:1 1 0!important;min-height:0!important;height:auto!important}
-.main-content.area-contenido{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important}
+.contrast-toggle__icon{display:inline-grid;place-items:center;font-size:17px;line-height:1}
+.contrast-toggle__label{white-space:nowrap}
+.contrast-toggle:focus-visible{outline:3px solid #facc15!important;outline-offset:3px!important}
+.panel-auditoria{display:grid;gap:12px}
+.smoke-test-output{margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;color:var(--muted);background:var(--panel-2);font-size:10px;line-height:1.5}
+
+/* Base Flexbox: una sola columna para la vista estrecha. */
+.app-shell.contenedor-app{
+  display:flex!important;flex-direction:column!important;
+  width:100%;height:100dvh;min-height:0;min-width:0;
+  margin:0 auto;overflow:hidden;
 }
+.app-column{
+  display:flex!important;flex:1 1 0!important;flex-direction:column!important;
+  width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;
+}
+.topbar{position:relative!important;flex:0 0 auto!important;min-width:0}
+.main-content.area-contenido{
+  display:block!important;flex:1 1 0!important;
+  width:100%;min-width:0;min-height:0;height:auto;
+  overflow-x:hidden!important;overflow-y:auto!important;
+  overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;
+}
+.mobile-menu-toggle,.mobile-menu{display:none!important}
+
+/* PC y cualquier orientación horizontal: sidebar original a la izquierda. */
+@media (min-width:768px),(orientation:landscape){
+  .app-shell.contenedor-app{
+    display:flex!important;flex-direction:row!important;align-items:stretch;
+    width:100%;height:100dvh;min-height:0;overflow:hidden;
+  }
+  .sidebar{
+    display:flex!important;flex:0 0 clamp(156px,22vw,240px)!important;
+    flex-direction:column!important;width:clamp(156px,22vw,240px)!important;
+    height:100dvh;min-height:0;overflow:hidden;
+    order:0!important;
+  }
+  .sidebar .app-brand{flex:0 0 auto;padding-bottom:20px}
+  .sidebar .nav-list{
+    display:flex!important;flex:1 1 0;flex-direction:column!important;
+    min-height:0;overflow-x:hidden;overflow-y:auto;
+    overscroll-behavior:contain;scrollbar-width:thin;gap:6px;
+  }
+  .sidebar .nav-item{flex:0 0 auto;min-height:44px}
+  .sidebar .sidebar-bottom{flex:0 0 auto}
+  .app-column{
+    display:flex!important;flex:1 1 0!important;flex-direction:column!important;
+    width:auto;height:100dvh;min-width:0;min-height:0;overflow:hidden;
+    order:1!important;
+  }
+  .bottom-nav.dock-acciones{display:none!important}
+  .main-content.area-contenido{
+    display:block!important;flex:1 1 0!important;min-height:0;
+    overflow-x:hidden!important;overflow-y:auto!important;
+    padding:18px 20px 22px!important;
+  }
+  .mobile-brand{display:none!important}
+  .breadcrumb{display:block}
+}
+@media (orientation:landscape) and (max-height:700px){
+  .sidebar{flex-basis:156px!important;width:156px!important;padding:12px 9px 10px!important}
+  .sidebar .app-brand{padding:0 5px 13px!important}
+  .side-caption{padding:0 8px 7px}
+  .sidebar .nav-list{gap:4px}
+  .sidebar .nav-item{min-height:44px;padding:7px 8px;font-size:10px}
+  .sidebar .nav-icon{width:17px;font-size:14px}
+  .sidebar .sidebar-bottom{padding:8px 5px 0;font-size:9px}
+  .topbar{min-height:48px!important;padding:5px 12px!important}
+  .main-content.area-contenido{padding:9px 12px 15px!important}
+}
+
+/* Móvil vertical: el dock inferior se ordena en filas y tiene scroll propio. */
+@media (max-width:767px) and (orientation:portrait){
+  .app-shell.contenedor-app{
+    display:flex!important;flex-direction:column!important;
+    width:100%;height:100dvh;min-height:0;overflow:hidden;
+  }
+  .sidebar{display:none!important}
+  .app-column{
+    display:flex!important;flex:1 1 0!important;flex-direction:column!important;
+    width:100%;height:auto;min-height:0;overflow:hidden;
+  }
+  .topbar{min-height:58px!important;padding:6px 10px!important;gap:7px}
+  .mobile-brand{display:flex!important}
+  .breadcrumb{display:none!important}
+  .top-actions{display:flex;align-items:center;gap:5px!important;min-width:0}
+  .bottom-nav.dock-acciones{
+    display:flex!important;position:static!important;inset:auto!important;
+    order:1!important;flex:0 0 auto!important;
+    width:100%;height:auto;max-height:min(32dvh,196px);min-height:0;
+    flex-direction:row!important;flex-wrap:wrap!important;
+    align-content:flex-start;justify-content:space-around;align-items:stretch;
+    gap:4px;overflow-x:hidden!important;overflow-y:auto!important;
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line);border-right:0;
+    background:var(--panel,#131629);
+    overscroll-behavior:contain;scrollbar-width:thin;
+  }
+  .bottom-nav.dock-acciones .bottom-item{
+    display:flex!important;flex:1 1 calc(25% - 6px)!important;
+    flex-direction:column!important;align-items:center;justify-content:center;
+    width:calc(25% - 6px)!important;max-width:calc(25% - 6px)!important;
+    min-width:64px;min-height:44px;padding:5px 3px;
+    gap:3px;touch-action:manipulation;
+  }
+  .bottom-nav.dock-acciones .bottom-item span{font-size:15px;line-height:1}
+  .bottom-nav.dock-acciones .bottom-item small{font-size:9px;line-height:1.1;text-align:center;overflow-wrap:anywhere}
+  .main-content.area-contenido{
+    display:block!important;flex:1 1 0!important;min-height:0;
+    overflow-x:hidden!important;overflow-y:auto!important;
+    padding:14px 10px 18px!important;
+  }
+  .mobile-menu-toggle,.mobile-menu{display:none!important}
+}
+@media(max-width:560px){
+  .theme-toggle,.contrast-toggle{width:44px;min-width:44px;height:44px;padding:0}
+  .theme-toggle__label,.contrast-toggle__label{display:none}
+}
+body.keyboard-open .bottom-nav.dock-acciones{display:none!important}
+
+/* Modo de alto contraste global y reversible. */
+body.alto-contraste,
+body.alto-contraste .app-shell,
+body.alto-contraste .app-column,
+body.alto-contraste .main-content{background:#000!important;color:#fff!important}
+body.alto-contraste .sidebar,
+body.alto-contraste .topbar,
+body.alto-contraste .bottom-nav,
+body.alto-contraste .panel,
+body.alto-contraste .pc-card,
+body.alto-contraste .console-card,
+body.alto-contraste .card-item,
+body.alto-contraste .catalog-state,
+body.alto-contraste .modal,
+body.alto-contraste .mobile-menu{
+  background:#101010!important;color:#fff!important;border:2px solid #ffeb3b!important;
+}
+body.alto-contraste p,
+body.alto-contraste small,
+body.alto-contraste label,
+body.alto-contraste h1,
+body.alto-contraste h2,
+body.alto-contraste h3,
+body.alto-contraste .muted,
+body.alto-contraste .soft,
+body.alto-contraste .catalog-simulation-status,
+body.alto-contraste .sidebar-bottom{color:#fff!important}
+body.alto-contraste button,
+body.alto-contraste a,
+body.alto-contraste input,
+body.alto-contraste select,
+body.alto-contraste textarea{
+  color:#fff!important;background:#000!important;border:2px solid #ffeb3b!important;
+}
+body.alto-contraste .nav-item.active,
+body.alto-contraste .bottom-item.active{background:#292900!important;color:#fff!important}
+body.alto-contraste .network-status{background:#000!important;color:#fff!important;border-color:#ffeb3b!important}
+body.alto-contraste :focus-visible{outline:3px solid #ffeb3b!important;outline-offset:3px!important}
