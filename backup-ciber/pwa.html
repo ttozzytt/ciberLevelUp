@@ -16,10 +16,10 @@
   <link rel="stylesheet" href="./pwa.css?v=parte1-componentes-r1">
   <link rel="stylesheet" href="./theme.css?v=backup-ciber-20261119-r1">
   <link rel="stylesheet" href="./card-simulation.css?v=backup-ciber-20261119-r1">
-  <link rel="stylesheet" href="./css/layout.css?v=parte2-flexbox-landscape-scroll-r7">
+  <link rel="stylesheet" href="./css/layout.css?v=parte2-html-responsivo-flexbox-20261120-r8">
 </head>
 <body>
-  <div class="app-shell" id="appShell" data-hidratado="false">
+  <div class="app-shell contenedor-app" id="appShell" data-hidratado="false">
     <aside class="sidebar" aria-label="Navegación principal">
       <a class="app-brand" href="./pwa.html#inicio" id="brandHome">
         <span class="brand-mark" aria-hidden="true">🎮</span>
@@ -70,7 +70,7 @@
         </nav>
       </header>
 
-      <main class="main-content" id="mainContent" tabindex="0" aria-label="Contenido principal de LevelUp">
+      <main class="main-content area-contenido" id="mainContent" tabindex="0" aria-label="Contenido principal de LevelUp">
         <section class="sync-notice" id="pendingSyncNotice" hidden role="status"><strong id="pendingSyncCount">0 acciones guardadas</strong><p id="pendingSyncText">Las acciones sin conexión quedan guardadas localmente.</p></section>
         <!-- INICIO: portada de la aplicación. No contiene el listado de computadoras. -->
         <section class="view active" id="view-inicio" aria-labelledby="homeTitle" aria-hidden="false">
@@ -409,18 +409,21 @@
         <footer class="app-footer"><span>© 2026 <strong>LevelUp Cibercafé</strong> · Proyecto de Microempresa</span><span>Diseñado para jugar mejor · GAME ON ⚡</span></footer>
       </main>
     </div>
-  </div>
 
-  
-  <nav class="bottom-nav" id="bottomNav" aria-label="Navegación inferior">
-    <button class="bottom-item active" type="button" data-view-target="inicio" data-hidratado="false" disabled><span>⌂</span><small>Inicio</small></button>
-    <button class="bottom-item" type="button" data-view-target="computadoras" data-hidratado="false" disabled><span>▣</span><small>Equipos</small></button>
-    <button class="bottom-item" type="button" data-view-target="consolas" data-hidratado="false" disabled><span>🎮</span><small>PS5</small></button>
-    <button class="bottom-item" type="button" data-view-target="cuenta" data-hidratado="false" disabled><span>◉</span><small>Cuenta</small></button>
-    <button class="bottom-item" type="button" data-view-target="snacks" data-hidratado="false" disabled><span>🛍</span><small>Snacks</small></button>
-    <button class="bottom-item" type="button" data-view-target="turnos" data-hidratado="false" disabled><span>◷</span><small>Turnos</small></button>
-    <button class="bottom-item" type="button" data-view-target="reservas" data-hidratado="false" disabled><span>▤</span><small>Reservas</small></button>
+  <nav class="bottom-nav dock-acciones" id="bottomNav" aria-label="Navegación principal">
+    <button class="bottom-item active" type="button" data-view-target="inicio" aria-label="Inicio" data-hidratado="false" disabled><span>⌂</span><small>Inicio</small></button>
+    <button class="bottom-item" type="button" data-view-target="computadoras" aria-label="Computadoras" data-hidratado="false" disabled><span>▣</span><small>Equipos</small></button>
+    <button class="bottom-item" type="button" data-view-target="consolas" aria-label="PlayStation" data-hidratado="false" disabled><span>🎮</span><small>PS5</small></button>
+    <button class="bottom-item" type="button" data-view-target="snacks" aria-label="Snacks" data-hidratado="false" disabled><span>🛍</span><small>Snacks</small></button>
+    <button class="bottom-item" type="button" data-view-target="cuenta" aria-label="Mi cuenta" data-hidratado="false" disabled><span>◉</span><small>Cuenta</small></button>
+    <button class="bottom-item" type="button" data-view-target="servicios" aria-label="Servicios" data-hidratado="false" disabled><span>✦</span><small>Servicios</small></button>
+    <button class="bottom-item" type="button" data-view-target="turnos" aria-label="Turnos" data-hidratado="false" disabled><span>◷</span><small>Turnos</small></button>
+    <button class="bottom-item" type="button" data-view-target="reservas" aria-label="Reservas" data-hidratado="false" disabled><span>▤</span><small>Reservas</small></button>
+    <button class="bottom-item" type="button" data-view-target="informacion" aria-label="Información" data-hidratado="false" disabled><span>ⓘ</span><small>Info</small></button>
+    <button class="bottom-item" type="button" data-view-target="simulacion" aria-label="Simulación" data-hidratado="false" disabled><span>◈</span><small>Simular</small></button>
+    <button class="bottom-item" type="button" data-view-target="contacto" aria-label="Contacto" data-hidratado="false" disabled><span>✉</span><small>Contacto</small></button>
   </nav>
+  </div>
 
   <!-- Ventana de reserva en tres pasos. -->
   <div class="modal-backdrop" id="bookingModal" role="presentation" aria-hidden="true">
