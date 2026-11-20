@@ -2199,6 +2199,15 @@ function bindLevelUpEvents() {
       $('#salidaAudit').toggleClass('is-warning', imgsSinAlt > 0 || enlacesVacios > 0);
     });
 
+  $document.off('click.levelupA11YAudit', '#btnAuditarA11Y')
+    .on('click.levelupA11YAudit', '#btnAuditarA11Y', function () {
+      const zonas = document.querySelectorAll('header, nav, main, article, footer').length;
+      const sinAlt = document.querySelectorAll('img:not([alt]), img[alt=""]').length;
+      const resultado = `Auditoría en vivo: ${zonas} etiquetas semánticas HTML5 detectadas | Imágenes sin alt: ${sinAlt}.`;
+      $('#reporteA11Y').text(resultado);
+      $('#reporteA11Y').toggleClass('is-warning', sinAlt > 0 || zonas === 0);
+    });
+
   /* Filtros y navegación del carrusel. */
   $document.on('click.levelupFilters', '[data-filter]', function () {
     setQuickFilter(this.dataset.filter);
