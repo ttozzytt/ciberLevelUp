@@ -1,16 +1,16 @@
 'use strict';
 
 // Caché exclusiva de la copia para no afectar al Cibercafé principal.
-const CACHE_NAME = 'levelup-backup-cibercafe-v12-global-keys-contrast-smoke-20261120';
+const CACHE_NAME = 'levelup-backup-cibercafe-v13-smoke-menu-20261120';
 const APP_SHELL = [
   './',
   './index.html',
   './pwa.html',
   './index.css',
   './pwa.css',
-  './css/layout.css?v=parte2-flexbox-sidebar-global-contrast-20261120-r10',
+  './css/layout.css?v=parte2-flexbox-sidebar-smoke-menu-20261120-r11',
   './index.js',
-  './pwa.js?v=backup-ciber-20261120-global-arrows-smoketest-r4',
+  './pwa.js?v=backup-ciber-20261120-smoke-menu-r5',
   './theme.css',
   './card-simulation.css',
   './card-simulation.js',
