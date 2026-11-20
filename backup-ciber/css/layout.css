@@ -353,3 +353,32 @@ body.alto-contraste input,body.alto-contraste select,body.alto-contraste textare
  .catalog-toolbar .catalog-simulation-actions{flex-wrap:wrap}
  .bottom-nav{position:fixed;bottom:0;left:0;right:0}
 }
+
+
+/* Menú accesible en móvil horizontal: panel flotante no recortado por el shell.
+   Se conserva el botón hamburguesa y el listado navegable, con altura limitada y scroll. */
+@media (orientation:landscape) and (max-height:600px) and (max-width:900px){
+  .topbar{position:relative;z-index:40;overflow:visible}
+  .mobile-menu{
+    display:none;
+    position:fixed!important;
+    top:56px!important;
+    left:auto!important;
+    right:8px!important;
+    width:min(280px,calc(100vw - 16px))!important;
+    max-height:calc(100dvh - 64px)!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    z-index:9999!important;
+    background:var(--panel,#131629)!important;
+    border:1px solid var(--line)!important;
+    box-shadow:0 12px 36px rgba(0,0,0,.45)!important;
+  }
+  .mobile-menu.open{display:grid!important;gap:4px}
+  .mobile-menu .nav-item{min-height:44px;width:100%;text-align:left}
+  .mobile-menu-toggle{position:relative;z-index:10000;min-width:44px;min-height:44px}
+}
+@media (orientation:landscape) and (max-height:420px) and (max-width:900px){
+  .mobile-menu{top:48px!important;max-height:calc(100dvh - 56px)!important}
+}
