@@ -959,3 +959,13 @@ body.alto-contraste :focus-visible{outline:3px solid #ffeb3b!important;outline-o
     overflow-x:hidden!important;overflow-y:auto!important;
   }
 }
+
+
+/* Auditoría semántica HTML5 solicitada en la guía de cierre. */
+.audit-action{display:grid;gap:8px}
+.a11y-audit-btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:54px;padding:12px 14px;border:1px solid #e9c84a;border-radius:10px;background:rgba(233,200,74,.10);color:#f0cb4d;font:inherit;font-weight:800;text-align:center;cursor:pointer;transition:background .18s ease,border-color .18s ease,transform .18s ease}
+.a11y-audit-btn:hover{background:rgba(233,200,74,.18);border-color:#f4d968}
+.a11y-audit-btn:focus-visible{outline:3px solid #f4d968;outline-offset:3px}
+.a11y-audit-btn:disabled{opacity:.65;cursor:wait}
+.a11y-audit-output{margin:0;padding:10px 12px;border:1px solid rgba(233,200,74,.35);border-radius:10px;color:#e8cf68;background:rgba(233,200,74,.07);font-size:10px;line-height:1.5}
+.a11y-audit-output.is-warning{border-color:#f4a261;color:#ffd4a8}
