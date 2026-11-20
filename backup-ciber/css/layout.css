@@ -920,3 +920,42 @@ body.alto-contraste :focus-visible{outline:3px solid #ffeb3b!important;outline-o
  .smoke-menu-panel p{font-size:12px}
 }
 @media (min-width:768px),(orientation:landscape){.smoke-menu-panel{display:none!important}}
+
+/* Navegación única en móviles: hamburguesa en vertical y horizontal. */
+@media (max-width:767px), (orientation:landscape) and (max-height:600px) {
+  .app-shell.contenedor-app{
+    display:flex!important;flex-direction:column!important;
+    width:100%;height:100dvh;min-height:0;overflow:hidden;
+  }
+  .sidebar{display:none!important}
+  .app-column{
+    display:flex!important;flex:1 1 0!important;flex-direction:column!important;
+    width:100%;height:100%;min-width:0;min-height:0;overflow:hidden;
+  }
+  .topbar{position:relative!important;flex:0 0 auto!important}
+  .mobile-brand{display:flex!important}
+  .mobile-menu-toggle{
+    display:inline-flex!important;align-items:center;justify-content:center;
+    min-width:44px;min-height:44px;padding:0 10px;
+    border:1px solid var(--line);border-radius:10px;
+    background:var(--panel-2);color:var(--text);font-size:20px;
+  }
+  .mobile-menu{
+    display:none!important;position:absolute!important;z-index:100;
+    top:calc(100% + 2px);right:8px;left:8px;
+    max-height:70dvh;overflow-x:hidden;overflow-y:auto;
+    flex-direction:column;gap:5px;padding:9px;
+    border:1px solid var(--line);border-radius:14px;
+    background:var(--panel);box-shadow:0 16px 40px #0008;
+  }
+  .mobile-menu.open{display:flex!important}
+  .mobile-menu .nav-item{display:flex!important;flex:0 0 auto;min-height:42px}
+  .smoke-menu-panel{display:grid!important;margin-top:8px;padding:12px}
+  .smoke-menu-panel h2{font-size:16px;margin:0}
+  .smoke-menu-panel p{font-size:12px}
+  .bottom-nav.dock-acciones{display:none!important}
+  .main-content.area-contenido{
+    display:block!important;flex:1 1 0!important;min-height:0;
+    overflow-x:hidden!important;overflow-y:auto!important;
+  }
+}
