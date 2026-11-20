@@ -740,3 +740,20 @@ body.keyboard-open .bottom-nav.dock-acciones { display: none !important; }
     transition-duration: .01ms !important;
   }
 }
+
+/* Override C3-A2: dock Flexbox scrollable landscape y responsive portrait. */
+@media (orientation:landscape) and (max-height:700px) {
+.app-shell.contenedor-app{display:flex!important;flex-direction:row!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
+.bottom-nav.dock-acciones{display:flex!important;position:static!important;order:0!important;flex:0 0 clamp(126px,20vw,158px)!important;width:clamp(126px,20vw,158px)!important;max-width:none!important;height:100dvh!important;max-height:100dvh!important;min-height:0!important;flex-direction:column!important;flex-wrap:nowrap!important;justify-content:flex-start!important;align-items:stretch!important;overflow-y:auto!important;overflow-x:hidden!important;gap:6px!important;padding:8px 6px!important}
+.bottom-nav.dock-acciones .bottom-item{flex:0 0 auto!important;width:100%!important;max-width:100%!important;min-width:0!important;min-height:44px!important;flex-direction:row!important;justify-content:flex-start!important;gap:8px!important;padding:8px!important}
+.bottom-nav.dock-acciones .bottom-item small{text-align:left!important;font-size:10px!important}
+.app-column{flex:1 1 0!important;min-width:0!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
+.main-content.area-contenido{flex:1 1 auto!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important}
+}
+@media (orientation:portrait) and (max-width:767px){
+.app-shell.contenedor-app{display:flex!important;flex-direction:column!important;height:100dvh!important;min-height:0!important;overflow:hidden!important}
+.bottom-nav.dock-acciones{display:flex!important;position:static!important;order:1!important;flex:0 0 auto!important;width:100%!important;height:auto!important;max-height:min(32dvh,210px)!important;flex-direction:row!important;flex-wrap:wrap!important;overflow-x:hidden!important;overflow-y:auto!important;gap:4px!important;padding:6px!important}
+.bottom-nav.dock-acciones .bottom-item{flex:1 1 calc(25% - 6px)!important;width:calc(25% - 6px)!important;max-width:calc(25% - 6px)!important;min-width:60px!important;min-height:44px!important;flex-direction:column!important;justify-content:center!important;padding:5px 3px!important}
+.app-column{flex:1 1 0!important;min-height:0!important;height:auto!important}
+.main-content.area-contenido{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important}
+}
