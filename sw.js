@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v31-c3a2-saturday-cwv';
+const CACHE_NAME = 'levelup-cibercafe-v32-c3a2-entry-cwv';
 const APP_SHELL = [
   './',
   './index.html',
