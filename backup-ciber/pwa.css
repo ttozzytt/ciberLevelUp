@@ -626,3 +626,43 @@ button:disabled { opacity: .48; cursor: not-allowed ; transform: none ; box-shad
 .console-photo__image { display:block; width:100%; height:100%; aspect-ratio:1 / 1; object-fit:contain; }
 .accessory-art__image { display:block; width:100%; height:100%; aspect-ratio:4 / 3; object-fit:contain; }
 .photo-viewer__image { display:block; width:100%; max-height:78dvh; aspect-ratio:auto; object-fit:contain; }
+
+
+/* Accesibilidad: alto contraste real (botón Contraste alto). */
+body.alto-contraste {
+  --text: #ffffff;
+  --muted: #e6e6e6;
+  --soft: #dddddd;
+  --line: #ffffff;
+  --panel: #000000;
+  --panel-2: #111111;
+  --bg: #000000;
+  --bg-soft: #000000;
+  --cyan: #00ffff;
+  --purple: #ffff00;
+  --green: #00ff00;
+  --red: #ff6666;
+  --gold: #ffff00;
+}
+body.alto-contraste :is(button,a,input,select,textarea,summary,.nav-item,.bottom-item,.filter-chip) {
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+}
+body.alto-contraste :is(.primary-btn,.service-card__reserve,.active,.selected) {
+  background: #ffff00 !important;
+  color: #000000 !important;
+}
+body.alto-contraste :is(.network-status,.status-dot,.muted,.catalog-simulation-status,.entry-note) {
+  color: #ffffff !important;
+}
+body.alto-contraste :is(.pc-card,.console-card,.service-card,.panel,.modal,.toast,.service-selection,.service-more__details) {
+  background: #000000 !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: none !important;
+}
+body.alto-contraste img { outline: 1px solid #ffffff; }
+body.alto-contraste a { text-decoration: underline; }
+body.alto-contraste :is(button,a,input,select,textarea):focus-visible {
+  outline: 4px solid #ffff00 !important;
+  outline-offset: 3px;
+}
