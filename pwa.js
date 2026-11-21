@@ -1427,19 +1427,31 @@ async function submitScheduledReservation(event){
     status.text('El turno debe estar entre las 08:00 y las 24:00 y terminar el mismo día.').attr('class','form-status error');return;
   }
   if(button)button.disabled=true;
+  const requestKey=levelupRequestKey('pendingReservationRequestId');
+  const payload={p_resource_id:levelupResourceId(result.resource.key),p_customer_name:result.name,
+    p_starts_at:new Date(result.startAt).toISOString(),p_duration_hours:result.duration,p_request_key:requestKey};
   try{
-    const client=await levelupRequireClient();const requestKey=levelupRequestKey('pendingReservationRequestId');
-    const {error}=await client.rpc('levelup_create_scheduled_reservation',{
-      p_resource_id:levelupResourceId(result.resource.key),p_customer_name:result.name,
-      p_starts_at:new Date(result.startAt).toISOString(),p_duration_hours:result.duration,p_request_key:requestKey
-    });
+    const client=await levelupRequireClient();
+    const {error}=await client.rpc('levelup_create_scheduled_reservation',payload);
     if(error)throw error;
     state.pendingReservationRequestId=null;
     await levelupLoadMyScheduledReservations();await levelupRefreshResourceAvailability();
     form.reset();setReservationDateMinimum();status.text('Turno guardado en Supabase.').attr('class','form-status success');
     showToast('Reserva confirmada en la base de datos.');
-  }catch(error){console.error(error);status.text(error.message||'Error guardando en Supabase.').attr('class','form-status error');showToast(error.message||'No se guardó el turno.','error');}
-  finally{if(button)button.disabled=false;}
+  }catch(error){
+    console.error(error);
+    if(levelupIsTransportFailure(error)){
+      try{
+        await levelupEnqueueOffline('reservation_create',payload,requestKey);
+        state.pendingReservationRequestId=null;form.reset();setReservationDateMinimum();
+        status.text('Turno guardado en este dispositivo y pendiente de sincronizar. Todavía no está reservado.').attr('class','form-status');
+        showToast('Turno pendiente de enviar a Supabase cuando vuelva Internet.');
+      }catch(queueError){status.text(queueError.message||'No se pudo guardar la solicitud pendiente.').attr('class','form-status error');showToast(queueError.message||'No se pudo guardar la solicitud.','error');}
+    }else{
+      status.text(error.message||'Error guardando en Supabase.').attr('class','form-status error');
+      showToast(error.message||'No se guardó el turno.','error');
+    }
+  }finally{if(button)button.disabled=false;}
 }
 async function cancelScheduledReservation(id){
   if(id===state.activeScheduledReservationId){showToast('Cierra el proceso de inicio antes de cancelar un turno.','error');return;}
@@ -1644,6 +1656,8 @@ async function activateLevelUpAuthUser(authUser){
   await levelupLoadMyScheduledReservations();
   await levelupLoadMyRechargeRequests();
   if(['admin','staff'].includes(state.activeUser.role))await levelupLoadAdminDashboard();
+  await levelupRenderOfflineQueue();
+  await levelupProcessPendingTransactions();
   setAccountAuthNote('Perfil, saldo, historial, sesiones y reservas cargados desde Supabase.');
 }
 async function restoreLevelUpAuthSession() {
@@ -1973,14 +1987,25 @@ async function confirmRecharge(){
   if(!state.activeUser)return;const button=document.getElementById('confirmRecharge');if(button?.disabled)return;
   const amount=Number(state.rechargeAmount);if(!Number.isFinite(amount)||amount<5||amount>500){showToast('Recarga entre Bs 5 y Bs 500.','error');return;}
   if(button)button.disabled=true;
+  const requestKey=levelupRequestKey('pendingRechargeRequestId');
+  const payload={p_amount:amount,p_payment_method:state.rechargeMethod,p_request_key:requestKey};
   try{
-    const client=await levelupRequireClient();const requestKey=levelupRequestKey('pendingRechargeRequestId');
-    const {error}=await client.rpc('levelup_create_recharge_request',{p_amount:amount,p_payment_method:state.rechargeMethod,p_request_key:requestKey});
-    if(error)throw error;state.pendingRechargeRequestId=null;closeModal('#rechargeModal');
+    const client=await levelupRequireClient();
+    const {error}=await client.rpc('levelup_create_recharge_request',payload);
+    if(error)throw error;
+    state.pendingRechargeRequestId=null;closeModal('#rechargeModal');
     await levelupLoadMyRechargeRequests();
     showToast('Solicitud registrada. El saldo solo cambiará tras la aprobación del personal.');
-  }catch(error){console.error(error);showToast(error.message||'No se registró la solicitud.','error');}
-  finally{if(button)button.disabled=false;}
+  }catch(error){
+    console.error(error);
+    if(levelupIsTransportFailure(error)){
+      try{
+        await levelupEnqueueOffline('recharge_request',payload,requestKey);
+        state.pendingRechargeRequestId=null;closeModal('#rechargeModal');
+        showToast('Solicitud guardada como pendiente local. El saldo no ha cambiado ni se ha acreditado.');
+      }catch(queueError){showToast(queueError.message||'No se pudo guardar la solicitud pendiente.','error');}
+    }else showToast(error.message||'No se registró la solicitud.','error');
+  }finally{if(button)button.disabled=false;}
 }
 
 /* Temporizador único: se actualizan los textos, no se adjuntan listeners a cada tarjeta. */
@@ -2234,15 +2259,24 @@ async function sendAccessoryOrder(){
   const controllerItem=state.accessoryQueue.find(item=>item.id==='controller');
   if(controllerItem&&(session.resourceType!=='console'||session.extraController)){showToast('El mando adicional solo se permite una vez durante una sesión de PlayStation.','error');return;}
   if(button)button.disabled=true;
+  const requestKey=levelupRequestKey('pendingOrderRequestId');
+  const payload={p_session_id:session.id,p_items:state.accessoryQueue.map(item=>({product_id:item.id,quantity:item.quantity})),p_request_key:requestKey};
   try{
-    const client=await levelupRequireClient();const requestKey=levelupRequestKey('pendingOrderRequestId');
-    const items=state.accessoryQueue.map(item=>({product_id:item.id,quantity:item.quantity}));
-    const {error}=await client.rpc('levelup_create_order',{p_session_id:session.id,p_items:items,p_request_key:requestKey});
+    const client=await levelupRequireClient();
+    const {error}=await client.rpc('levelup_create_order',payload);
     if(error)throw error;
     state.pendingOrderRequestId=null;state.accessoryQueue=[];saveAccessoryQueue();renderAccessoryQueue();
     await levelupRefreshWalletAndSessions();showToast('Pedido, artículos y cobro confirmados en Supabase.');
-  }catch(error){console.error(error);showToast(error.message||'No se guardó el pedido.','error');}
-  finally{if(button)button.disabled=false;}
+  }catch(error){
+    console.error(error);
+    if(levelupIsTransportFailure(error)){
+      try{
+        await levelupEnqueueOffline('order_create',payload,requestKey);
+        state.pendingOrderRequestId=null;state.accessoryQueue=[];saveAccessoryQueue();renderAccessoryQueue();
+        showToast('Pedido guardado como pendiente local. No se ha cobrado ni confirmado aún.');
+      }catch(queueError){showToast(queueError.message||'No se pudo guardar el pedido pendiente.','error');}
+    }else showToast(error.message||'No se guardó el pedido.','error');
+  }finally{if(button)button.disabled=false;}
 }
 function clearAccessoryQueue() {
   state.accessoryQueue = [];
@@ -2262,8 +2296,13 @@ function renderServiceSelectionSafe(type){const target=document.getElementById('
 function reserveServiceDirect(type){renderServiceSelectionSafe(type);if(type==='console'){const item=state.consoles.find(x=>isAvailable(x));if(!item){showToast('No hay una PlayStation disponible en este momento.','error');return}openConsoleBooking(item.id);return}if(!['basic','standard','premium'].includes(type))return;const item=state.machines.find(x=>x.type===type&&isAvailable(x));if(!item){showToast('No hay equipos disponibles de esa categoría.','error');return}openBooking(item.id)}
 function bindLevelUpEvents() {
   /* Limpieza previa: evita duplicar escuchadores si se ejecuta una segunda hidratación. */
-  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupValidation .levelupReservation .levelupAccessories .levelupAdmin');
+  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupValidation .levelupReservation .levelupAccessories .levelupAdmin .levelupQueue');
   $(window).off('.levelupRuntime .levelupCarousel');
+  $(window).on('online.levelupRuntime',function(){
+    refreshNetworkStatus(true);
+    levelupProcessPendingTransactions().catch(error=>console.warn('No se pudo sincronizar la cola local:',error));
+  });
+
 
   $document.on('click.levelupNavigation', '[data-view-target]', function (event) {
     event.preventDefault();
@@ -2321,6 +2360,18 @@ function bindLevelUpEvents() {
     try{await levelupLoadAdminDashboard();await levelupRefreshResourceAvailability();showToast('Panel actualizado desde Supabase.');}
     catch(error){console.error(error);showToast(error.message||'No se pudo actualizar el panel.','error');}
     finally{this.disabled=false;}
+  });
+  $document.on('click.levelupQueue', '#offlinePendingList [data-retry-offline]', async function(){
+    const button=this;button.disabled=true;
+    try{await levelupRetryOfflineOperation(button.dataset.retryOffline);}
+    catch(error){console.error(error);showToast(error.message||'No se pudo reintentar.','error');}
+    finally{button.disabled=false;}
+  });
+  $document.on('click.levelupQueue', '#offlinePendingList [data-remove-offline]', async function(){
+    const button=this;button.disabled=true;
+    try{await levelupQueueDelete(button.dataset.removeOffline);await levelupRenderOfflineQueue();}
+    catch(error){console.error(error);showToast(error.message||'No se pudo quitar la operación.','error');}
+    finally{button.disabled=false;}
   });
   $document.on('click.levelupAdmin', '#adminToolsPanel [data-role-change]', async function(){
     const button=this;button.disabled=true;
