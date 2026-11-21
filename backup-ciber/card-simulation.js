@@ -1,11 +1,8 @@
-
 'use strict';
 
-// Hidratación: enlazar los botones una sola vez al cargar el módulo.
 (function bindCardSimulation() {
   if (document.documentElement.dataset.cardSimulationBound === 'true') return;
 
-  // Estado: solo cambia la tarjeta donde se hizo clic.
   document.addEventListener('click', event => {
     const target = event.target instanceof Element
       ? event.target.closest('.btn-simular')

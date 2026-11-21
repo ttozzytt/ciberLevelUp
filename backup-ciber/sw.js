@@ -1,18 +1,18 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-backup-cibercafe-v16-clean-layout-20261121';
+const CACHE_NAME = 'levelup-backup-cibercafe-v17-final-shell-20261121';
 const APP_SHELL = [
   './',
   './index.html',
   './pwa.html',
-  './index.css',
-  './pwa.css',
+  './index.css?v=20261117-theme-1',
+  './pwa.css?v=backup-ciber-layout-final-20261121',
   './css/layout.css?v=backup-ciber-final-layout-20261121',
   './index.js',
   './pwa.js?v=backup-ciber-clean-20261121',
-  './theme.css',
-  './card-simulation.css',
-  './card-simulation.js',
+  './theme.css?v=backup-ciber-clean-20261121',
+  './card-simulation.css?v=backup-ciber-clean-20261121',
+  './card-simulation.js?v=backup-ciber-clean-20261121',
   './js/security-and-vitals.js',
   './manifest.json',
   './data/computadoras.json?v=16',
@@ -58,22 +58,6 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  const isPexelsPhoto = request.destination === 'image' && url.hostname === 'images.pexels.com';
-  if (isPexelsPhoto) {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE_NAME);
-      const saved = await cache.match(request);
-      if (saved) return saved;
-      try {
-        const live = await fetch(request);
-        if (live.ok || live.type === 'opaque') await cache.put(request, live.clone());
-        return live;
-      } catch (_) {
-        return (await caches.match(new URL('./imagenes/pc-gamer.webp', self.location.href).href)) || Response.error();
-      }
-    })());
-    return;
-  }
   if (url.origin !== self.location.origin) return;
 
   if (url.searchParams.has('__levelup_health')) {

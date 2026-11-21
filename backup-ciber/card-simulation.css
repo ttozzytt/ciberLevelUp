@@ -1,5 +1,3 @@
-
-/* Tarjetas de simulación */
 .card-simulation-module {
   display:flex;
   flex-direction:column;
@@ -57,7 +55,7 @@
   background:var(--panel-2);
   transition:border-color .18s ease,background .18s ease,box-shadow .18s ease;
 }
-/* Estado seleccionado */
+
 .card-item--activo {
   border-color:var(--cyan);
   background:rgba(77,231,238,.08);
@@ -142,7 +140,7 @@
 @media (max-width:1100px) {
   .card-simulation-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
-/* Ajustes para celular */
+
 @media (max-width:560px) {
   #view-simulacion .view-heading { align-items:flex-start; }
   #view-simulacion .view-heading h1 { font-size:clamp(25px,7vw,34px); }
