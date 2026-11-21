@@ -2004,15 +2004,23 @@ function closeBooking(release = true) {
   if (wasScheduledTurn) renderScheduledReservations();
 }
 
-/* Recargas: simulación local, sin procesar dinero real. */
-function openRecharge() {
+/* Recargas: la solicitud se registra en Supabase; el crédito solo llega tras aprobar el pago. */
+async function openRecharge() {
   if (!state.activeUser) {
     showView('cuenta');
     showToast('Primero crea tu cuenta o inicia sesión.');
     return;
   }
-  $('#rechargeAmountLabel').text(money(state.rechargeAmount));
-  openModal('#rechargeModal');
+  try {
+    // El saldo se muestra siempre desde el perfil real de Supabase.
+    await levelupRefreshWalletAndSessions();
+    $('#rechargeCurrentBalance').text(money(state.activeUser.balance));
+    $('#rechargeAmountLabel').text(money(state.rechargeAmount));
+    openModal('#rechargeModal');
+  } catch (error) {
+    console.error('No se pudo consultar el saldo antes de solicitar una recarga:', error);
+    showToast('No pudimos consultar tu saldo en Supabase. No se envió ninguna recarga.', 'error');
+  }
 }
 async function confirmRecharge(){
   if(!state.activeUser)return;const button=document.getElementById('confirmRecharge');if(button?.disabled)return;
@@ -2026,16 +2034,18 @@ async function confirmRecharge(){
     if(error)throw error;
     state.pendingRechargeRequestId=null;closeModal('#rechargeModal');
     await levelupLoadMyRechargeRequests();
-    showToast('Solicitud registrada. El saldo solo cambiará tras la aprobación del personal.');
+    await levelupRefreshWalletAndSessions();
+    showToast('Solicitud registrada en Supabase. Tu saldo se conserva y solo aumentará cuando el personal apruebe el pago.');
   }catch(error){
     console.error(error);
+    // Una recarga no se encola offline: solo se acepta cuando Supabase confirma
+    // que la solicitud quedó registrada. La misma clave se conserva al reintentar
+    // por si el servidor recibió la petición y la respuesta se perdió.
     if(levelupIsTransportFailure(error)){
-      try{
-        await levelupEnqueueOffline('recharge_request',payload,requestKey);
-        state.pendingRechargeRequestId=null;closeModal('#rechargeModal');
-        showToast('Solicitud guardada como pendiente local. El saldo no ha cambiado ni se ha acreditado.');
-      }catch(queueError){showToast(queueError.message||'No se pudo guardar la solicitud pendiente.','error');}
-    }else showToast(error.message||'No se registró la solicitud.','error');
+      showToast('Sin conexión con Supabase. La recarga no se registró ni cambió tu saldo. Vuelve a intentarlo online.','error');
+    }else{
+      showToast(error.message||'No se registró la solicitud de recarga.','error');
+    }
   }finally{if(button)button.disabled=false;}
 }
 

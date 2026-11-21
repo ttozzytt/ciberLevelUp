@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b0c16" id="themeColorMeta">
   <script>try{document.documentElement.dataset.theme=localStorage.getItem("levelup-pwa-theme-v1")==="light"?"light":"dark"}catch(_){document.documentElement.dataset.theme="dark"}</script>
-  <meta name="description" content="Aplicación LevelUp Cibercafé: catálogo de equipos, cuentas locales y reservas de sesión.">
+  <meta name="description" content="Aplicación LevelUp Cibercafé: catálogo de equipos, cuentas, saldo y reservas conectados a Supabase.">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -439,8 +439,8 @@
       <div class="recharge-grid" role="group" aria-label="Seleccionar monto"><button class="pay-option" type="button" data-recharge-amount="10" data-hidratado="false" disabled>Bs 10</button><button class="pay-option active" type="button" data-recharge-amount="20" data-hidratado="false" disabled>Bs 20</button><button class="pay-option" type="button" data-recharge-amount="50" data-hidratado="false" disabled>Bs 50</button><button class="pay-option" type="button" data-recharge-amount="100" data-hidratado="false" disabled>Bs 100</button></div>
       <div class="form-field"><label>Método de pago</label><div class="payment-methods"><button class="pay-option active" type="button" data-recharge-method="QR" data-hidratado="false" disabled>QR</button><button class="pay-option" type="button" data-recharge-method="Efectivo" data-hidratado="false" disabled>Efectivo</button></div></div>
       <div class="total-card"><span>Importe elegido</span><strong id="rechargeAmountLabel">Bs 20</strong></div>
-      <p class="payment-note">Esta acción registra una solicitud en Supabase. El saldo no cambia hasta que el personal verifique y apruebe el pago. No se genera un QR bancario ni se procesa un cobro automático.</p>
-      <div class="modal-actions"><button class="secondary-btn" id="cancelRecharge" type="button" data-hidratado="false" disabled>Cancelar</button><button class="primary-btn" id="confirmRecharge" type="button" data-hidratado="false" disabled>Confirmar recarga →</button></div>
+      <p class="payment-note">Saldo actual: <strong id="rechargeCurrentBalance">Bs 0</strong>. Esta acción envía una solicitud a Supabase. No se descuenta dinero ni se acredita saldo hasta que el personal verifique el pago. Sin Internet no se envía ni se guarda como recarga local.</p>
+      <div class="modal-actions"><button class="secondary-btn" id="cancelRecharge" type="button" data-hidratado="false" disabled>Cancelar</button><button class="primary-btn" id="confirmRecharge" type="button" data-hidratado="false" disabled>Enviar solicitud →</button></div>
     </section>
   </div>
 
@@ -461,7 +461,7 @@
   <script src="./js/security-and-vitals.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="./js/supabase-client.js?v=levelup-supabase-auth-phone-password-r2" defer></script>
-  <script src="./pwa.js?v=levelup-supabase-production-r13" defer></script>
+  <script src="./pwa.js?v=levelup-supabase-production-r14-recharge-ledger" defer></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
