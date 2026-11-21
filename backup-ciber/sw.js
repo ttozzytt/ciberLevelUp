@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-backup-cibercafe-v17-final-shell-20261121';
+const CACHE_NAME = 'levelup-backup-cibercafe-v18-final-shell-20261121';
 const APP_SHELL = [
   './',
   './index.html',
@@ -32,6 +32,39 @@ const APP_SHELL = [
   './imagenes/accesorio-cascos-gamer.jpg',
   './imagenes/accesorio-mousepad-gamer.jpg',
   './imagenes/mando-adicional-ps5.jpg',
+  './lab-jquery/index.html',
+  './lab-jquery/styles.css',
+  './lab-jquery/script.js',
+  './lab-jquery/jquery.min.js',
+  './lab-jquery/ejercicios/index.html',
+  './lab-jquery/ejercicios/styles.css',
+  './lab-jquery/ejercicios/01-hidratacion-boton/index.html',
+  './lab-jquery/ejercicios/01-hidratacion-boton/script.js',
+  './lab-jquery/ejercicios/01-hidratacion-boton/styles.css',
+  './lab-jquery/ejercicios/02-memory-leaks-off-on/index.html',
+  './lab-jquery/ejercicios/02-memory-leaks-off-on/script.js',
+  './lab-jquery/ejercicios/02-memory-leaks-off-on/styles.css',
+  './lab-jquery/ejercicios/03-event-bubbling-delegacion/index.html',
+  './lab-jquery/ejercicios/03-event-bubbling-delegacion/script.js',
+  './lab-jquery/ejercicios/03-event-bubbling-delegacion/styles.css',
+  './lab-jquery/ejercicios/04-reserva-segura-xss/index.html',
+  './lab-jquery/ejercicios/04-reserva-segura-xss/script.js',
+  './lab-jquery/ejercicios/04-reserva-segura-xss/styles.css',
+  './lab-jquery/ejercicios/05-lista-dinamica-segura/index.html',
+  './lab-jquery/ejercicios/05-lista-dinamica-segura/script.js',
+  './lab-jquery/ejercicios/05-lista-dinamica-segura/styles.css',
+  './lab-jquery/ejercicios/06-catalogo-asincrono-lazy/index.html',
+  './lab-jquery/ejercicios/06-catalogo-asincrono-lazy/script.js',
+  './lab-jquery/ejercicios/06-catalogo-asincrono-lazy/styles.css',
+  './lab-jquery/ejercicios/07-diagnostico-html-dom/index.html',
+  './lab-jquery/ejercicios/07-diagnostico-html-dom/script.js',
+  './lab-jquery/ejercicios/07-diagnostico-html-dom/styles.css',
+  './lab-jquery/ejercicios/06-catalogo-asincrono-lazy/data/catalogo.json',
+  './lab-jquery/ejercicios/06-catalogo-asincrono-lazy/assets/producto-ejemplo.svg',
+  './lab-jquery/ejercicios/06-catalogo-asincrono-lazy/manifest.json',
+  './lab-jquery/ejercicios/06-catalogo-asincrono-lazy/sw.js',
+  './lab-jquery/ejercicios/06-catalogo-asincrono-lazy/icons/icon-192.png',
+  './lab-jquery/ejercicios/06-catalogo-asincrono-lazy/icons/icon-512.png',
   './imagenes/imagen-respaldo.svg'
 ];
 
