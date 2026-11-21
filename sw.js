@@ -1,14 +1,14 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v46-accessibility-simulation';
+const CACHE_NAME = 'levelup-cibercafe-v47-accessibility-cache-aligned';
 const APP_SHELL = [
   './',
   './index.html',
   './pwa.html',
   './index.css',
-  './pwa.css?v=c3a2-user-images-services-20261121-r3',
+  './pwa.css?v=c3a2-user-images-services-20261121-r5',
   './index.js',
-  './pwa.js?v=levelup-supabase-staff-pwa-registration-r10',
+  './pwa.js?v=levelup-supabase-accessibility-r11',
   './theme.css',
   './js/security-and-vitals.js',
   './js/supabase-client.js?v=levelup-supabase-auth-phone-password-r2',
