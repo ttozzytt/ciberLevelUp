@@ -128,12 +128,16 @@ function getActiveScheduledReservation(resourceOrKey, now = Date.now()) {
       && ((start <= now && now < end) || item.id === state.activeScheduledReservationId);
   }) || null;
 }
-function getNextScheduledReservation(resourceOrKey, now = Date.now()) {
-  const resourceKey = typeof resourceOrKey === 'string' ? resourceOrKey : resourceKeyForEquipment(resourceOrKey);
-  if (!resourceKey) return null;
-  return state.scheduledReservations
-    .filter(item => item.resourceKey === resourceKey && new Date(item.startsAt).getTime() > now)
-    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0] || null;
+function getNextScheduledReservation(resourceOrKey,now=Date.now()){
+  const resourceKey=typeof resourceOrKey==='string'?resourceOrKey:resourceKeyForEquipment(resourceOrKey);
+  if(!resourceKey)return null;
+  const local=state.scheduledReservations
+    .filter(item=>item.resourceKey===resourceKey&&new Date(item.startsAt).getTime()>now)
+    .sort((a,b)=>new Date(a.startsAt).getTime()-new Date(b.startsAt).getTime())[0];
+  if(local)return local;
+  const resource=typeof resourceOrKey==='string'?getReservationResource(resourceOrKey)?.item:resourceOrKey;
+  const remoteStart=resource?.nextReservationAt?new Date(resource.nextReservationAt).getTime():NaN;
+  return Number.isFinite(remoteStart)&&remoteStart>now?{resourceKey,startsAt:resource.nextReservationAt,remote:true}:null;
 }
 function isReserved(machine) { return Boolean(machine.reservationExpiresAt && machine.reservationExpiresAt > Date.now()); }
 function isAvailable(machine) {
@@ -516,11 +520,14 @@ function getFilteredMachines() {
     return matchesQuick && matchesCategory && matchesCpu && matchesGpu && (!query || searchText.includes(query));
   });
 }
-function cardStatus(machine) {
-  if (isReserved(machine)) return { label: 'Apartada', className: 'reserved' };
-  if (getActiveScheduledReservation(machine)) return { label: 'Turno reservado', className: 'reserved' };
-  if (isAvailable(machine)) return { label: 'Disponible', className: 'available' };
-  return { label: 'Ocupada', className: 'occupied' };
+function cardStatus(machine){
+  if(isReserved(machine))return {label:'Apartada',className:'reserved'};
+  if(getActiveScheduledReservation(machine))return {label:'Turno reservado',className:'reserved'};
+  if(isAvailable(machine)){
+    const next=getNextScheduledReservation(machine);
+    return {label:next?'Disponible · próximo turno':'Disponible',className:'available'};
+  }
+  return {label:'Ocupada',className:'occupied'};
 }
 function renderMachines() {
   const grid = document.getElementById('pcGrid');
