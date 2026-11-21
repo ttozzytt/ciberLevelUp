@@ -8,7 +8,7 @@ const APP_SHELL = [
   './index.css',
   './pwa.css',
   './index.js',
-  './pwa.js',
+  './pwa.js?v=levelup-supabase-auth-phone-password-r2',
   './theme.css',
   './js/security-and-vitals.js',
   './js/supabase-client.js?v=levelup-supabase-auth-phone-password-r2',
