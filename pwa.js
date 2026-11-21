@@ -1952,43 +1952,246 @@ function startPaymentStep() {
   const timeLabel = billingMode === 'open' ? 'Sin límite · primer bloque de 30 min' : durationLabel(durationMinutes);
   $('#paymentSummary').text(`${timeLabel}${hasExtraController ? ' · segundo mando (+ Bs 6)' : ''} · comienza al confirmar`);
   $('#paymentTotal').text(money(state.booking.total));
+  $('#paymentStatus').text('').attr('class', 'form-status').prop('hidden', true);
   showBookingStep('payment');
   updatePaymentState();
 }
-async function confirmSessionPayment(){
-  const machine=state.selectedMachine,user=state.activeUser,booking=state.booking;
-  const scheduledId=booking?.scheduledReservationId||null;
-  const scheduledEntry=scheduledId?state.scheduledReservations.find(item=>item.id===scheduledId):null;
-  const validHold=machine?.reservationExpiresAt&&machine.reservationExpiresAt>Date.now();
-  if(!machine||!user||!booking||(scheduledId?!scheduledEntry:!validHold)){showToast('La reserva temporal o el turno ya no está disponible.','error');return;}
-  const button=document.getElementById('confirmPayment');
-  if(button?.disabled)return;
-  if(button)button.disabled=true;
-  try{
-    const client=await levelupRequireClient();
-    const {data,error}=await client.rpc('levelup_start_session',{
-      p_resource_id:levelupResourceId(resourceKeyForEquipment(machine)),
-      p_billing_mode:booking.billingMode,
-      p_duration_minutes:booking.billingMode==='open'?30:Number(booking.durationMinutes),
-      p_has_extra_controller:Boolean(booking.hasExtraController),
-      p_scheduled_reservation_id:scheduledId
+function levelupApplyConfirmedSessionStart(sessionRow, balance, charged, machine, user, booking) {
+  const resourceKey = resourceKeyForEquipment(machine);
+  const resourceType = booking.kind || state.selectedResourceType || 'pc';
+  const startedAt = new Date(sessionRow.started_at).getTime();
+  const endsAt = sessionRow.planned_end_at ? new Date(sessionRow.planned_end_at).getTime() : null;
+  const resourceLabel = resourceLabelForSession(machine, resourceType);
+  const session = {
+    id: sessionRow.id,
+    resourceKey,
+    resourceType,
+    machine: Number(sessionRow.resource_id),
+    resourceLabel,
+    ownerPhone: user.phone,
+    ownerName: user.name,
+    billingMode: sessionRow.billing_mode,
+    startedAt,
+    endsAt,
+    durationMinutes: endsAt ? Math.round((endsAt - startedAt) / 60000) : null,
+    ratePerHour: Number(sessionRow.hourly_rate_snapshot || machine.price || 0),
+    halfHourRate: halfHourPrice(machine),
+    timeAmount: Number(sessionRow.time_amount ?? charged),
+    snacksTotal: Number(sessionRow.snacks_total || 0),
+    extraController: Boolean(sessionRow.extra_controller),
+    paidUntil: sessionRow.paid_until ? new Date(sessionRow.paid_until).getTime() : null,
+    nextChargeAt: sessionRow.next_charge_at ? new Date(sessionRow.next_charge_at).getTime() : null,
+    orders: []
+  };
+
+  state.activeUser.balance = Number(balance);
+  state.activeSessions = [session, ...state.activeSessions.filter(item => item.id !== session.id)];
+
+  if (!Array.isArray(user.history)) user.history = [];
+  if (!user.history.some(item => item.sessionId === session.id)) {
+    user.history.push({
+      type: booking.billingMode === 'open'
+        ? 'Inicio de sesión · primer bloque de 30 minutos'
+        : 'Inicio de sesión LevelUp',
+      amount: -Number(charged),
+      date: sessionRow.started_at,
+      method: 'Sistema',
+      details: resourceLabel,
+      sessionId: session.id
     });
-    if(error)throw error;
-    await levelupRefreshWalletAndSessions();
-    await levelupLoadMyScheduledReservations();
-    await levelupRefreshResourceAvailability();
-    state.activeScheduledReservationId='';
-    $('#successText').text('Sesión registrada y cobrada en Supabase. Saldo restante: '+money(data.balance));
-    $('#contractedAtLabel').text('Contratado el '+new Date().toLocaleString('es-BO',{dateStyle:'medium',timeStyle:'short'}));
-    $('#syncNote').text('La base de datos confirmó la sesión y el movimiento de saldo.');
-    showBookingStep('success');
-    showToast('Sesión y cobro confirmados en Supabase.');
-  }catch(error){
-    console.error(error);
-    $('#scheduledBookingConflict').text(error.message||'Error al iniciar').prop('hidden',false);
-    showToast(error.message||'No se inició ni cobró la sesión.','error');
-  }finally{if(button)button.disabled=false;}
+  }
+
+  machine.available = false;
+  machine.sessionStartedAt = startedAt;
+  machine.sessionEndsAt = endsAt;
+  machine.reservationExpiresAt = null;
+  state.activeScheduledReservationId = '';
+  booking.confirmed = true;
+
+  renderMachines();
+  renderConsoles();
+  renderAccount();
+
+  $('#successText').text(
+    'Se descontaron ' + money(charged) + ' de tu saldo. Saldo disponible: ' + money(balance) +
+    '. Tu sesión en ' + resourceLabel + ' ya está activa.'
+  );
+  $('#contractedAtLabel').text(
+    'Iniciada el ' + new Date(sessionRow.started_at).toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short' })
+  );
+  $('#syncNote').text('Supabase confirmó la sesión y el movimiento de saldo.');
+  showBookingStep('success');
+  showToast('Cobro de ' + money(charged) + ' confirmado. Saldo restante: ' + money(balance) + '.');
+  return session;
 }
+
+async function levelupRefreshAfterConfirmedSession() {
+  const results = await Promise.allSettled([
+    levelupRefreshWalletAndSessions(),
+    levelupLoadMyScheduledReservations(),
+    levelupRefreshResourceAvailability()
+  ]);
+  const failed = results.filter(result => result.status === 'rejected');
+  if (failed.length) {
+    failed.forEach(result => console.warn('Actualización secundaria después del cobro confirmado:', result.reason));
+    $('#syncNote').text(
+      'El cobro y la sesión ya están confirmados. La pantalla muestra el saldo devuelto por Supabase; ' +
+      'alguna consulta secundaria no se actualizó. Vuelve a entrar a Mi cuenta para sincronizar el historial.'
+    );
+    return false;
+  }
+  $('#syncNote').text('Saldo, sesión, historial y disponibilidad actualizados desde Supabase.');
+  return true;
+}
+
+async function recoverSessionStartAfterLostResponse(machine, user, booking, requestedAt, previousSessionIds) {
+  const client = await levelupRequireClient();
+  const resourceId = levelupResourceId(resourceKeyForEquipment(machine));
+  const [sessionsResult, profileResult] = await Promise.all([
+    client.from('sessions')
+      .select('*')
+      .eq('customer_id', user.id)
+      .eq('resource_id', resourceId)
+      .eq('status', 'active')
+      .gte('started_at', new Date(requestedAt - 60000).toISOString())
+      .order('started_at', { ascending: false })
+      .limit(5),
+    client.from('profiles')
+      .select('balance')
+      .eq('id', user.id)
+      .single()
+  ]);
+  if (sessionsResult.error) throw sessionsResult.error;
+  if (profileResult.error) throw profileResult.error;
+
+  const recovered = (sessionsResult.data || []).find(row => !previousSessionIds.has(row.id));
+  if (!recovered) return false;
+
+  const balance = Number(profileResult.data.balance);
+  const charged = Number(recovered.time_amount ?? booking.total);
+  if (!Number.isFinite(balance) || !Number.isFinite(charged)) {
+    throw new Error('El servidor encontró la sesión, pero no pudo confirmar el saldo.');
+  }
+
+  levelupApplyConfirmedSessionStart(recovered, balance, charged, machine, user, booking);
+  return true;
+}
+
+async function confirmSessionPayment() {
+  const machine = state.selectedMachine;
+  const user = state.activeUser;
+  const booking = state.booking;
+  const scheduledId = booking?.scheduledReservationId || null;
+  const scheduledEntry = scheduledId
+    ? state.scheduledReservations.find(item => item.id === scheduledId)
+    : null;
+  const validHold = machine?.reservationExpiresAt && machine.reservationExpiresAt > Date.now();
+
+  if (!machine || !user || !booking || booking.confirmed || booking.uncertain ||
+      (scheduledId ? !scheduledEntry : !validHold)) {
+    showToast('La reserva temporal o el turno ya no está disponible.', 'error');
+    return;
+  }
+
+  const button = document.getElementById('confirmPayment');
+  if (button?.disabled) return;
+
+  const originalLabel = button?.textContent || 'Confirmar servicio →';
+  const resourceKey = resourceKeyForEquipment(machine);
+  const requestedAt = Date.now();
+  const previousSessionIds = new Set(state.activeSessions.map(item => item.id));
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Procesando cobro…';
+  }
+  $('#paymentStatus')
+    .attr('class', 'form-status')
+    .text('Confirmando el inicio de sesión y el descuento de tu saldo…')
+    .prop('hidden', false);
+
+  try {
+    const client = await levelupRequireClient();
+    const { data, error } = await client.rpc('levelup_start_session', {
+      p_resource_id: levelupResourceId(resourceKey),
+      p_billing_mode: booking.billingMode,
+      p_duration_minutes: booking.billingMode === 'open' ? 30 : Number(booking.durationMinutes),
+      p_has_extra_controller: Boolean(booking.hasExtraController),
+      p_scheduled_reservation_id: scheduledId
+    });
+
+    if (error) throw error;
+
+    const sessionRow = data?.session;
+    const balance = Number(data?.balance);
+    const charged = Number(data?.charged);
+    if (!sessionRow?.id || !Number.isFinite(balance) || !Number.isFinite(charged)) {
+      const uncertain = new Error('Supabase no devolvió todos los datos de confirmación.');
+      uncertain.code = 'LEVELUP_CONFIRMATION_UNCERTAIN';
+      throw uncertain;
+    }
+
+    levelupApplyConfirmedSessionStart(sessionRow, balance, charged, machine, user, booking);
+    await levelupRefreshAfterConfirmedSession();
+  } catch (error) {
+    console.error('Error al iniciar sesión o verificar el cobro de LevelUp:', error);
+
+    const responseMayHaveBeenLost =
+      levelupIsTransportFailure(error) || error?.code === 'LEVELUP_CONFIRMATION_UNCERTAIN';
+
+    if (responseMayHaveBeenLost) {
+      $('#paymentStatus')
+        .attr('class', 'form-status')
+        .text('No llegó la respuesta de cobro. Estoy comprobando si la sesión quedó registrada para evitar un segundo descuento.')
+        .prop('hidden', false);
+
+      try {
+        const recovered = await recoverSessionStartAfterLostResponse(
+          machine, user, booking, requestedAt, previousSessionIds
+        );
+        if (recovered) {
+          await levelupRefreshAfterConfirmedSession();
+          return;
+        }
+
+        const client = await levelupRequireClient();
+        const profile = await client.from('profiles')
+          .select('balance')
+          .eq('id', user.id)
+          .single();
+        if (profile.error) throw profile.error;
+        state.activeUser.balance = Number(profile.data.balance);
+        renderAccount();
+        updatePaymentState();
+
+        const message = 'No encontramos una sesión nueva ni un descuento asociado. Tu saldo no cambió; puedes volver a intentarlo.';
+        $('#paymentStatus').attr('class', 'form-status error').text(message).prop('hidden', false);
+        showToast('No se confirmó el cobro. Puedes volver a intentarlo.', 'error');
+      } catch (recoveryError) {
+        console.error('No se pudo verificar el resultado del cobro:', recoveryError);
+        booking.uncertain = true;
+        if (button) button.textContent = 'Verifica tu sesión';
+        $('#paymentStatus')
+          .attr('class', 'form-status error')
+          .text('No pudimos verificar la respuesta del servidor. Para evitar un doble cobro, no vuelvas a confirmar todavía. Recarga la página y revisa Mi cuenta; si la sesión aparece activa, el descuento ya se aplicó.')
+          .prop('hidden', false);
+        showToast('No se pudo verificar el cobro. Revisa Mi cuenta antes de reintentar.', 'error');
+      }
+    } else {
+      const message = error?.hint || error?.message || 'No se pudo iniciar la sesión.';
+      $('#paymentStatus')
+        .attr('class', 'form-status error')
+        .text('No se inició la sesión ni se descontó saldo: ' + message)
+        .prop('hidden', false);
+      showToast('No se creó la sesión ni se descontó el saldo.', 'error');
+    }
+  } finally {
+    if (button && !booking.confirmed && !booking.uncertain) {
+      button.disabled = false;
+      button.textContent = originalLabel;
+    }
+  }
+} 
 function closeBooking(release = true) {
   const wasScheduledTurn = Boolean(state.activeScheduledReservationId);
   if (release) releaseReservation(false);

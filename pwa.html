@@ -424,6 +424,7 @@
         <div class="booking-machine"><div><strong id="paymentMachine">PC #01</strong><small id="paymentSummary">1 hora · al confirmar el servicio</small></div><span class="booking-rate" id="paymentTotal">Bs 0</span></div>
         <div class="total-card"><span>Saldo disponible</span><strong id="currentBalance">Bs 0</strong></div>
         <p class="form-status error" id="balanceWarning" hidden></p>
+         <p class="form-status" id="paymentStatus" role="status" aria-live="polite" hidden></p>
         <p class="payment-note">El importe se descuenta del saldo disponible en tu cuenta LevelUp. Esta versión no procesa cobros bancarios reales.</p>
         <div class="modal-actions"><button class="secondary-btn" id="cancelBookingPayment" type="button" data-hidratado="false" disabled>Cancelar reserva</button><button class="secondary-btn" id="backToBooking" type="button" data-hidratado="false" disabled>Volver</button><button class="secondary-btn" id="rechargeFromPayment" type="button" data-hidratado="false" disabled>＋ Recargar saldo</button><button class="primary-btn" id="confirmPayment" type="button" data-hidratado="false" disabled>Confirmar servicio →</button></div>
       </div>
@@ -460,7 +461,7 @@
   <script src="./js/security-and-vitals.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="./js/supabase-client.js?v=levelup-supabase-auth-phone-password-r2" defer></script>
-  <script src="./pwa.js?v=levelup-supabase-production-r14" defer></script>
+  <script src="./pwa.js?v=levelup-supabase-payment-feedback-r15" defer></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
