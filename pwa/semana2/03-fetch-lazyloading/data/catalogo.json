@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "name": "PC Básica",
+    "category": "A",
+    "detail": "Intel Core i3 · GTX 1050 Ti · 8 GB RAM · Bs 3/h",
+    "image": "../../../imagenes/pc-basica.webp"
+  },
+  {
+    "id": 2,
+    "name": "PC Estándar",
+    "category": "B",
+    "detail": "Ryzen 5 · RTX 3050 · 16 GB RAM · Bs 6/h",
+    "image": "../../../imagenes/pc-estandar.webp"
+  },
+  {
+    "id": 3,
+    "name": "PC Premium",
+    "category": "C",
+    "detail": "Ryzen 9 · RTX 5090 · Bs 10/h",
+    "image": "../../../imagenes/pc-premium.webp"
+  },
+  {
+    "id": 4,
+    "name": "PlayStation 5",
+    "category": "C",
+    "detail": "4 consolas · Bs 15/h",
+    "image": "../../../imagenes/playstation.webp"
+  }
+]
