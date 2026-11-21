@@ -2485,31 +2485,114 @@ function removeAccessoryFromQueue(id) {
   renderAccessoryQueue();
   setQuickOrderStatus(`${ACCESSORY_ITEMS[id]?.name || 'Producto'} quitado del pedido.`);
 }
-async function sendAccessoryOrder(){
-  const button=document.getElementById('sendAccessoryOrder');if(button?.disabled||!state.accessoryQueue.length)return;
-  if(!state.activeUser){showToast('Inicia sesión para registrar tu pedido.','error');showView('cuenta');return;}
-  const session=getLatestActiveSessionForUser();if(!session){showToast('Primero inicia una sesión activa.','error');return;}
-  const controllerItem=state.accessoryQueue.find(item=>item.id==='controller');
-  if(controllerItem&&(session.resourceType!=='console'||session.extraController)){showToast('El mando adicional solo se permite una vez durante una sesión de PlayStation.','error');return;}
-  if(button)button.disabled=true;
-  const requestKey=levelupRequestKey('pendingOrderRequestId');
-  const payload={p_session_id:session.id,p_items:state.accessoryQueue.map(item=>({product_id:item.id,quantity:item.quantity})),p_request_key:requestKey};
-  try{
-    const client=await levelupRequireClient();
-    const {error}=await client.rpc('levelup_create_order',payload);
-    if(error)throw error;
-    state.pendingOrderRequestId=null;state.accessoryQueue=[];saveAccessoryQueue();renderAccessoryQueue();
-    await levelupRefreshWalletAndSessions();showToast('Pedido, artículos y cobro confirmados en Supabase.');
-  }catch(error){
-    console.error(error);
-    if(levelupIsTransportFailure(error)){
-      try{
-        await levelupEnqueueOffline('order_create',payload,requestKey);
-        state.pendingOrderRequestId=null;state.accessoryQueue=[];saveAccessoryQueue();renderAccessoryQueue();
-        showToast('Pedido guardado como pendiente local. No se ha cobrado ni confirmado aún.');
-      }catch(queueError){showToast(queueError.message||'No se pudo guardar el pedido pendiente.','error');}
-    }else showToast(error.message||'No se guardó el pedido.','error');
-  }finally{if(button)button.disabled=false;}
+async function sendAccessoryOrder() {
+  const button = document.getElementById('sendAccessoryOrder');
+  if (button?.disabled || !state.accessoryQueue.length) return;
+  if (!state.activeUser) {
+    showToast('Inicia sesión para registrar tu pedido.', 'error');
+    showView('cuenta');
+    return;
+  }
+  const session = getLatestActiveSessionForUser();
+  if (!session) {
+    showToast('Primero inicia una sesión activa.', 'error');
+    return;
+  }
+  const controllerItem = state.accessoryQueue.find(item => item.id === 'controller');
+  if (controllerItem && (session.resourceType !== 'console' || session.extraController)) {
+    showToast('El mando adicional solo se permite una vez durante una sesión de PlayStation.', 'error');
+    return;
+  }
+
+  const originalLabel = button?.textContent || 'Enviar pedido';
+  const requestKey = levelupRequestKey('pendingOrderRequestId');
+  const payload = {
+    p_session_id: session.id,
+    p_items: state.accessoryQueue.map(item => ({ product_id: item.id, quantity: item.quantity })),
+    p_request_key: requestKey
+  };
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Procesando pedido…';
+  }
+  setQuickOrderStatus('Confirmando pedido y descontando el saldo…');
+
+  try {
+    const client = await levelupRequireClient();
+    const { data, error } = await client.rpc('levelup_create_order', payload);
+    if (error) throw error;
+
+    const orderRow = data?.order;
+    const balance = Number(data?.balance);
+    const charged = Number(orderRow?.total_amount);
+    if (!orderRow?.id || !Number.isFinite(balance) || !Number.isFinite(charged)) {
+      const uncertain = new Error('El servidor no devolvió todos los datos de confirmación del pedido.');
+      uncertain.code = 'LEVELUP_ORDER_CONFIRMATION_UNCERTAIN';
+      throw uncertain;
+    }
+
+    if (!Array.isArray(session.orders)) session.orders = [];
+    const alreadyListed = session.orders.some(order => order.id === orderRow.id);
+    if (!alreadyListed) {
+      const orderItems = Array.isArray(data.items) ? data.items.map(item => ({
+        id: item.product_id,
+        name: item.item_name,
+        quantity: Number(item.quantity),
+        price: Number(item.unit_price)
+      })) : [];
+      session.orders.push({
+        id: orderRow.id,
+        date: orderRow.created_at || new Date().toISOString(),
+        total: charged,
+        items: orderItems
+      });
+      session.snacksTotal = Number(session.snacksTotal || 0) + charged;
+    }
+
+    state.activeUser.balance = balance;
+    renderAccount();
+    state.pendingOrderRequestId = null;
+    state.accessoryQueue = [];
+    saveAccessoryQueue();
+    renderAccessoryQueue();
+    setQuickOrderStatus('Pedido confirmado y cobrado: ' + money(charged) + '. Saldo disponible: ' + money(balance) + '.');
+    showToast('Pedido cobrado: ' + money(charged) + '. Saldo restante: ' + money(balance) + '.');
+
+    // La confirmación del RPC ya es definitiva: una consulta secundaria fallida
+    // no debe mostrar el pedido como fallido ni volver a enviarlo.
+    try {
+      await levelupRefreshWalletAndSessions();
+    } catch (refreshError) {
+      console.warn('Pedido confirmado; no se pudo actualizar el historial secundario:', refreshError);
+      setQuickOrderStatus('Pedido cobrado (' + money(charged) + '). Saldo: ' + money(balance) + '. El historial se actualizará al volver a entrar a Mi cuenta.');
+    }
+  } catch (error) {
+    console.error('No se pudo confirmar el pedido de LevelUp:', error);
+    if (levelupIsTransportFailure(error) || error?.code === 'LEVELUP_ORDER_CONFIRMATION_UNCERTAIN') {
+      try {
+        await levelupEnqueueOffline('order_create', payload, requestKey);
+        state.pendingOrderRequestId = null;
+        state.accessoryQueue = [];
+        saveAccessoryQueue();
+        renderAccessoryQueue();
+        setQuickOrderStatus('No llegó la confirmación del servidor. El pedido quedó pendiente de sincronización; no lo vuelvas a enviar hasta comprobar su estado.');
+        showToast('Pedido pendiente de confirmación. No se volverá a cobrar dos veces.');
+      } catch (queueError) {
+        setQuickOrderStatus(queueError.message || 'No se pudo guardar el pedido pendiente.', true);
+        showToast(queueError.message || 'No se pudo guardar el pedido pendiente.', 'error');
+      }
+    } else {
+      const message = error?.hint || error?.message || 'No se guardó el pedido.';
+      setQuickOrderStatus(message, true);
+      showToast(message, 'error');
+    }
+  } finally {
+    if (button) {
+      button.textContent = originalLabel;
+      button.disabled = false;
+    }
+    renderAccessoryQueue();
+  }
 }
 function clearAccessoryQueue() {
   state.accessoryQueue = [];

@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v52-session-payment-feedback';
+const CACHE_NAME = 'levelup-cibercafe-v53-orders-instant-debit';
 const APP_SHELL = [
   './',
   './index.html',
@@ -8,7 +8,7 @@ const APP_SHELL = [
   './index.css',
   './pwa.css?v=c3a2-snacks-buttons-20261121-r8',
   './index.js',
-  './pwa.js?v=levelup-supabase-payment-feedback-r15',
+  './pwa.js?v=levelup-supabase-orders-instant-debit-r16',
   './theme.css?v=snacks-buttons-20261121-r2',
   './js/security-and-vitals.js',
   './js/supabase-client.js?v=levelup-supabase-auth-phone-password-r2',
