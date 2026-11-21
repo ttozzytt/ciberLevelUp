@@ -255,9 +255,82 @@ async function readCatalogJSON(relativePath, label) {
   throw new Error(`${label}: no se pudo leer ${url.pathname}. ${networkError?.message || 'Comprueba la carpeta data y vuelve a publicar el archivo.'}`);
 }
 
+/* Catálogos compartidos de LevelUp: Supabase en línea y JSON local como respaldo offline. */
+async function readResourcesFromSupabase(resourceType) {
+  const client = window.levelupSupabase;
+  if (!client) throw new Error('Cliente Supabase no disponible.');
+  const { data, error } = await client
+    .from('resources')
+    .select('id,resource_type,resource_code,label,category,cpu,gpu,ram,storage,monitor,seat,hourly_rate,half_hour_rate,included_controllers,extra_controller_fee,features,image_path,is_active')
+    .eq('resource_type', resourceType)
+    .eq('is_active', true)
+    .order('id', { ascending: true });
+  if (error) throw error;
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error('Supabase no devolvió recursos activos para ' + resourceType + '.');
+  }
+  return data;
+}
+
+async function loadProductsFromSupabase() {
+  const client = window.levelupSupabase;
+  if (!client) return;
+  const { data, error } = await client
+    .from('products')
+    .select('id,name,category,price,unit_label,is_active')
+    .eq('is_active', true)
+    .order('id', { ascending: true });
+  if (error) throw error;
+  if (!Array.isArray(data) || data.length !== 8) {
+    throw new Error('El catálogo de Supabase debe devolver los ocho productos de LevelUp.');
+  }
+
+  data.forEach(product => {
+    const localItem = ACCESSORY_ITEMS[product.id];
+    const price = Number(product.price);
+    if (!localItem || !Number.isFinite(price) || price < 0) return;
+    localItem.name = String(product.name);
+    localItem.price = price;
+    localItem.priceLabel = `Bs ${price} / ${String(product.unit_label || 'unidad')}`;
+
+    const button = [...document.querySelectorAll('[data-accessory-add]')]
+      .find(element => element.dataset.accessoryAdd === product.id);
+    const card = button?.closest('.accessory-card');
+    const title = card?.querySelector('h3');
+    const amount = card?.querySelector('.accessory-copy > strong');
+    const image = card?.querySelector('img');
+    if (title) {
+      title.textContent = localItem.name;
+      title.title = localItem.name;
+    }
+    if (amount) {
+      amount.replaceChildren(
+        document.createTextNode(`Bs ${price} `),
+        createTextElement('small', '', `/ ${String(product.unit_label || 'unidad')}`)
+      );
+    }
+    if (image) image.alt = localItem.name;
+  });
+  console.info('Catálogo de productos cargado desde Supabase:', data.length);
+}
+
 async function loadMachineCatalog() {
-  const catalog = await readCatalogJSON('./data/computadoras.json?v=15', 'Catálogo de computadoras');
-  if (!Array.isArray(catalog) || catalog.length < 15) throw new Error('computadoras.json debe contener al menos 15 estaciones.');
+  let catalog;
+  try {
+    const rows = await readResourcesFromSupabase('pc');
+    catalog = rows.map(row => ({
+      id: row.id, type: row.category, label: row.label, price: row.hourly_rate,
+      cpu: row.cpu, gpu: row.gpu, ram: row.ram, storage: row.storage,
+      monitor: row.monitor, seat: row.seat, features: row.features,
+      image: row.image_path, imageAlt: `PC ${row.label} de LevelUp`,
+      available: true, elapsed: ''
+    }));
+    console.info('Catálogo de computadoras cargado desde Supabase:', catalog.length);
+  } catch (databaseError) {
+    console.warn('Supabase de PC no disponible; se usará el catálogo JSON local:', databaseError);
+    catalog = await readCatalogJSON('./data/computadoras.json?v=15', 'Catálogo de computadoras');
+  }
+  if (!Array.isArray(catalog) || catalog.length < 15) throw new Error('El catálogo debe contener al menos 15 estaciones.');
   const usedIds = new Set();
   state.machines = catalog.map(item => {
     const id = Number(item.id);
@@ -320,8 +393,24 @@ function saveMachineStates() {
 }
 
 async function loadConsoleCatalog() {
-  const catalog = await readCatalogJSON('./data/consolas.json?v=15', 'Catálogo PlayStation');
-  if (!Array.isArray(catalog) || catalog.length !== 4) throw new Error('consolas.json debe contener exactamente cuatro consolas.');
+  let catalog;
+  try {
+    const rows = await readResourcesFromSupabase('console');
+    catalog = rows.map(row => ({
+      id: row.id, label: row.label, price: row.hourly_rate,
+      priceNote: `Tarifa LevelUp · Bs ${row.hourly_rate} por hora`,
+      controllersIncluded: row.included_controllers,
+      extraControllerFee: row.extra_controller_fee,
+      seat: row.seat, features: row.features,
+      image: row.image_path, imageAlt: `PlayStation 5 número ${Number(row.id) - 100}`,
+      available: true, elapsed: ''
+    }));
+    console.info('Catálogo de PlayStation cargado desde Supabase:', catalog.length);
+  } catch (databaseError) {
+    console.warn('Supabase de PlayStation no disponible; se usará el catálogo JSON local:', databaseError);
+    catalog = await readCatalogJSON('./data/consolas.json?v=15', 'Catálogo PlayStation');
+  }
+  if (!Array.isArray(catalog) || catalog.length !== 4) throw new Error('El catálogo debe contener exactamente cuatro consolas.');
   const ids = new Set();
   state.consoles = catalog.map(item => {
     const id = Number(item.id);
@@ -650,6 +739,9 @@ async function initializeCatalog() {
     loadMachineCatalog(),
     loadConsoleCatalog()
   ]);
+  loadProductsFromSupabase().catch(error => {
+    console.warn('No se pudo leer el catálogo de productos de Supabase; se mantienen los valores locales:', error);
+  });
 
   if (machinesResult.status === 'fulfilled') {
     fillSelect('filterCategory', 'Todas las categorías', ['basic', 'standard', 'premium'], false);
