@@ -356,41 +356,8 @@ async function loadMachineCatalog() {
   });
   restoreMachineStates();
 }
-function restoreMachineStates() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE.machines) || '[]');
-    if (Array.isArray(stored)) stored.forEach(saved => {
-      const machine = getMachine(saved.id);
-      if (!machine) return;
-      ['available', 'sessionStartedAt', 'sessionEndsAt', 'reservationExpiresAt'].forEach(key => {
-        if (saved[key] !== undefined) machine[key] = saved[key];
-      });
-    });
-  } catch (error) { console.warn('No se pudieron recuperar los estados guardados de los equipos.', error); }
-  state.machines.forEach(machine => {
-    if (!machine.available && !machine.reservationExpiresAt && !machine.sessionEndsAt && !machine.sessionStartedAt) {
-      machine.sessionStartedAt = Date.now() - parseElapsed(machine.elapsed) * 1000;
-    }
-    if (machine.reservationExpiresAt && machine.reservationExpiresAt <= Date.now()) {
-      machine.available = true;
-      machine.reservationExpiresAt = null;
-      machine.sessionStartedAt = null;
-    }
-  });
-  saveMachineStates();
-}
-function saveMachineStates() {
-  try {
-    const snapshot = state.machines.map(machine => ({
-      id: machine.id,
-      available: machine.available,
-      sessionStartedAt: machine.sessionStartedAt || null,
-      sessionEndsAt: machine.sessionEndsAt || null,
-      reservationExpiresAt: machine.reservationExpiresAt || null
-    }));
-    localStorage.setItem(STORAGE.machines, JSON.stringify(snapshot));
-  } catch (error) { showToast('No se pudieron guardar los estados en este navegador.', 'error'); }
-}
+function restoreMachineStates(){state.machines.forEach(machine=>{machine.available=true;machine.sessionStartedAt=null;machine.sessionEndsAt=null;machine.reservationExpiresAt=null;});}
+function saveMachineStates(){return false;}
 
 async function loadConsoleCatalog() {
   let catalog;
@@ -443,38 +410,8 @@ async function loadConsoleCatalog() {
   });
   restoreConsoleStates();
 }
-function restoreConsoleStates() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE.consoles) || '[]');
-    if (Array.isArray(stored)) stored.forEach(saved => {
-      const consoleUnit = getConsole(saved.id);
-      if (!consoleUnit) return;
-      ['available', 'sessionStartedAt', 'sessionEndsAt', 'reservationExpiresAt'].forEach(key => {
-        if (saved[key] !== undefined) consoleUnit[key] = saved[key];
-      });
-    });
-  } catch (error) { console.warn('No se pudieron recuperar los estados de las consolas.', error); }
-  state.consoles.forEach(consoleUnit => {
-    if (consoleUnit.reservationExpiresAt && consoleUnit.reservationExpiresAt <= Date.now()) {
-      consoleUnit.available = true;
-      consoleUnit.reservationExpiresAt = null;
-      consoleUnit.sessionStartedAt = null;
-    }
-  });
-  saveConsoleStates();
-}
-function saveConsoleStates() {
-  try {
-    const snapshot = state.consoles.map(consoleUnit => ({
-      id: consoleUnit.id,
-      available: consoleUnit.available,
-      sessionStartedAt: consoleUnit.sessionStartedAt || null,
-      sessionEndsAt: consoleUnit.sessionEndsAt || null,
-      reservationExpiresAt: consoleUnit.reservationExpiresAt || null
-    }));
-    localStorage.setItem(STORAGE.consoles, JSON.stringify(snapshot));
-  } catch (error) { showToast('No se pudieron guardar los estados de las consolas.', 'error'); }
-}
+function restoreConsoleStates(){state.consoles.forEach(machine=>{machine.available=true;machine.sessionStartedAt=null;machine.sessionEndsAt=null;machine.reservationExpiresAt=null;});}
+function saveConsoleStates(){return false;}
 function renderConsoles() {
   const grid = document.getElementById('consoleGrid');
   if (!grid) return;
@@ -729,100 +666,36 @@ function setCatalogLoadingState(containerId, title, detail) {
   container.replaceChildren(stateBox);
 }
 
-async function initializeCatalog() {
-  $('#catalogError, #consoleCatalogError').prop('hidden', true);
-  $('#catalogStatus').text('Cargando catálogo…');
-  setCatalogLoadingState('pcGrid', 'Preparando las estaciones…', 'Estamos leyendo data/computadoras.json.');
-  setCatalogLoadingState('consoleGrid', 'Preparando las consolas…', 'Estamos leyendo data/consolas.json.');
-
-  const [machinesResult, consolesResult] = await Promise.allSettled([
-    loadMachineCatalog(),
-    loadConsoleCatalog()
-  ]);
-  loadProductsFromSupabase().catch(error => {
-    console.warn('No se pudo leer el catálogo de productos de Supabase; se mantienen los valores locales:', error);
-  });
-
-  if (machinesResult.status === 'fulfilled') {
-    fillSelect('filterCategory', 'Todas las categorías', ['basic', 'standard', 'premium'], false);
-    const categoryLabels = { basic: 'Básica', standard: 'Estándar', premium: 'Premium' };
-    [...document.getElementById('filterCategory').options].forEach(option => {
-      if (categoryLabels[option.value]) option.textContent = categoryLabels[option.value];
-    });
-    fillSelect('filterCPU', 'Primero elige categoría', [], true);
-    fillSelect('filterGPU', 'Primero elige procesador', [], true);
-    renderMachines();
-    $('#catalogStatus').text(`${state.machines.length} estaciones listas`);
-  } else {
-    const error = machinesResult.reason;
-    console.error('Error en data/computadoras.json:', error);
-    state.machines = [];
-    document.getElementById('pcGrid')?.replaceChildren();
-    $('#catalogStatus').text('No se pudo cargar el catálogo de computadoras');
-    $('#catalogErrorText').text(error?.message || 'Comprueba que data/computadoras.json esté publicado.');
-    $('#catalogError').prop('hidden', false);
-    updateStats();
+async function initializeCatalog(){
+  $('#catalogError, #consoleCatalogError').prop('hidden',true);$('#catalogStatus').text('Cargando catálogo…');
+  setCatalogLoadingState('pcGrid','Preparando las estaciones…','Consultando el catálogo de Supabase.');
+  setCatalogLoadingState('consoleGrid','Preparando las consolas…','Consultando el catálogo de Supabase.');
+  const [machinesResult,consolesResult]=await Promise.allSettled([loadMachineCatalog(),loadConsoleCatalog()]);
+  loadProductsFromSupabase().catch(error=>console.warn('No se pudo leer el catálogo de productos de Supabase:',error));
+  if(machinesResult.status==='fulfilled'){
+    fillSelect('filterCategory','Todas las categorías',['basic','standard','premium'],false);
+    const labels={basic:'Básica',standard:'Estándar',premium:'Premium'};
+    [...document.getElementById('filterCategory').options].forEach(option=>{if(labels[option.value])option.textContent=labels[option.value];});
+    fillSelect('filterCPU','Primero elige categoría',[],true);fillSelect('filterGPU','Primero elige procesador',[],true);
+    renderMachines();$('#catalogStatus').text(state.machines.length+' estaciones listas');
+  }else{
+    const error=machinesResult.reason;console.error('Error en catálogo de computadoras:',error);state.machines=[];
+    document.getElementById('pcGrid')?.replaceChildren();$('#catalogStatus').text('No se pudo cargar el catálogo de computadoras');
+    $('#catalogErrorText').text(error?.message||'Comprueba la conexión con Supabase.');$('#catalogError').prop('hidden',false);updateStats();
   }
-
-  if (consolesResult.status === 'fulfilled') {
-    renderConsoles();
-    $('#consoleCatalogError').prop('hidden', true);
-  } else {
-    const error = consolesResult.reason;
-    console.error('Error en data/consolas.json:', error);
-    state.consoles = [];
-    document.getElementById('consoleGrid')?.replaceChildren();
-    $('#consoleCatalogErrorText').text(error?.message || 'Comprueba que data/consolas.json esté publicado.');
-    $('#consoleCatalogError').prop('hidden', false);
-  }
-  populateReservationResources();
-  setReservationDateMinimum();
-  renderScheduledReservations();
-  state.activeScheduledSignature = activeScheduledSignature();
+  if(consolesResult.status==='fulfilled'){renderConsoles();$('#consoleCatalogError').prop('hidden',true);}
+  else{const error=consolesResult.reason;console.error('Error en catálogo de consolas:',error);state.consoles=[];
+    document.getElementById('consoleGrid')?.replaceChildren();$('#consoleCatalogErrorText').text(error?.message||'Comprueba la conexión con Supabase.');$('#consoleCatalogError').prop('hidden',false);}
+  populateReservationResources();setReservationDateMinimum();renderScheduledReservations();
+  state.activeScheduledSignature=activeScheduledSignature();
+  try{await levelupRefreshResourceAvailability();}catch(error){console.warn('No se pudo consultar disponibilidad remota:',error);}
   startSessionTicker();
 }
 
 /* Reservas futuras de turno: ejercicio local de validación y persistencia, separado del apartado de reserva inmediata. */
 const RESERVATION_DURATIONS = [1, 2, 3, 5, 8];
-function loadScheduledReservations() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE.scheduledReservations) || '[]');
-    const now = Date.now();
-    const source = Array.isArray(stored) ? stored : [];
-    state.scheduledReservations = source
-      .filter(item => item && typeof item === 'object' && typeof item.id === 'string'
-        && typeof item.name === 'string' && typeof item.resourceKey === 'string'
-        && typeof item.startsAt === 'string' && Number.isFinite(new Date(item.startsAt).getTime())
-        && new Date(item.startsAt).getTime() + Number(item.durationHours) * 60 * 60 * 1000 >= now
-        && RESERVATION_DURATIONS.includes(Number(item.durationHours)))
-      .slice(0, 50)
-      .map(item => ({
-        id: item.id.slice(0, 80), name: item.name.slice(0, 60),
-        resourceKey: item.resourceKey.slice(0, 40), resourceLabel: String(item.resourceLabel || 'Equipo LevelUp').slice(0, 120),
-        startsAt: item.startsAt, durationHours: Number(item.durationHours), createdAt: String(item.createdAt || '')
-      }));
-    // Las solicitudes cuyo turno ya pasó dejan de aparecer en la lista activa.
-    if (state.scheduledReservations.length !== source.length) {
-      try {
-        localStorage.setItem(STORAGE.scheduledReservations, JSON.stringify(state.scheduledReservations));
-      } catch (writeError) {
-        console.warn('No se pudieron depurar las solicitudes antiguas; se ocultarán de la lista activa.', writeError);
-      }
-    }
-  } catch (error) {
-    state.scheduledReservations = [];
-    console.warn('No se pudieron leer las solicitudes de turno guardadas en este navegador.', error);
-  }
-}
-function saveScheduledReservations() {
-  try {
-    localStorage.setItem(STORAGE.scheduledReservations, JSON.stringify(state.scheduledReservations));
-    return true;
-  } catch (error) {
-    showToast('El navegador no permitió guardar el turno. Libera espacio e inténtalo de nuevo.', 'error');
-    return false;
-  }
-}
+function loadScheduledReservations(){state.scheduledReservations=[];renderScheduledReservations();}
+function saveScheduledReservations(){return false;}
 function getReservationResource(resourceKey) {
   const match = /^(pc|console):(\d+)$/.exec(String(resourceKey || ''));
   if (!match) return null;
@@ -1331,55 +1204,46 @@ async function levelupResolveRechargeRequest(requestId,decision) {
   showToast(decision==='approved'?'Recarga aprobada y saldo acreditado.':'Solicitud de recarga rechazada.');
 }
 
-async function submitScheduledReservation(event){event.preventDefault();const result=validateScheduledReservation();const status=$('#reservationFormStatus');status.text('').attr('class','form-status');if(!result.valid){status.text('Revisa los campos marcados antes de guardar.').attr('class','form-status error');return;}const endAt=result.startAt+result.duration*3600000;const endMinusOne=new Date(endAt-1);const startDate=new Date(result.startAt);if(startDate.getHours()<8||endMinusOne.getDate()!==startDate.getDate()){status.text('El turno debe estar entre las 08:00 y las 24:00 y terminar el mismo día.').attr('class','form-status error');return;}try{const c=await levelupRequireClient();const {data,error}=await c.rpc('levelup_create_scheduled_reservation',{p_resource_id:levelupResourceId(result.resource.key),p_customer_name:result.name,p_starts_at:new Date(result.startAt).toISOString(),p_duration_hours:result.duration});if(error)throw error;await levelupLoadMyScheduledReservations();event.currentTarget.reset();setReservationDateMinimum();status.text('Turno guardado en Supabase.').attr('class','form-status success');showToast('Reserva guardada en Supabase.');}catch(e){console.error(e);status.text(e.message||'Error guardando en Supabase.').attr('class','form-status error');showToast(e.message||'No se guardó.','error');}}
-async function cancelScheduledReservation(id){if(id===state.activeScheduledReservationId){showToast('Cierra el proceso de inicio antes de cancelar este turno.','error');return;}try{const c=await levelupRequireClient();const {error}=await c.rpc('levelup_cancel_scheduled_reservation',{p_reservation_id:id});if(error)throw error;await levelupLoadMyScheduledReservations();$('#reservationFormStatus').text('Turno cancelado en Supabase.').attr('class','form-status success');showToast('Turno cancelado.');}catch(e){console.error(e);showToast(e.message||'No se pudo cancelar.','error');}}
+async function submitScheduledReservation(event){
+  event.preventDefault();const form=event.currentTarget;const button=form.querySelector('button[type="submit"]');
+  if(button?.disabled)return;
+  const result=validateScheduledReservation();const status=$('#reservationFormStatus');status.text('').attr('class','form-status');
+  if(!result.valid){status.text('Revisa los campos marcados antes de guardar.').attr('class','form-status error');return;}
+  const endAt=result.startAt+result.duration*3600000;const endMinusOne=new Date(endAt-1),startDate=new Date(result.startAt);
+  if(startDate.getHours()<8||endMinusOne.getDate()!==startDate.getDate()){
+    status.text('El turno debe estar entre las 08:00 y las 24:00 y terminar el mismo día.').attr('class','form-status error');return;
+  }
+  if(button)button.disabled=true;
+  try{
+    const client=await levelupRequireClient();const requestKey=levelupRequestKey('pendingReservationRequestId');
+    const {error}=await client.rpc('levelup_create_scheduled_reservation',{
+      p_resource_id:levelupResourceId(result.resource.key),p_customer_name:result.name,
+      p_starts_at:new Date(result.startAt).toISOString(),p_duration_hours:result.duration,p_request_key:requestKey
+    });
+    if(error)throw error;
+    state.pendingReservationRequestId=null;
+    await levelupLoadMyScheduledReservations();await levelupRefreshResourceAvailability();
+    form.reset();setReservationDateMinimum();status.text('Turno guardado en Supabase.').attr('class','form-status success');
+    showToast('Reserva confirmada en la base de datos.');
+  }catch(error){console.error(error);status.text(error.message||'Error guardando en Supabase.').attr('class','form-status error');showToast(error.message||'No se guardó el turno.','error');}
+  finally{if(button)button.disabled=false;}
+}
+async function cancelScheduledReservation(id){
+  if(id===state.activeScheduledReservationId){showToast('Cierra el proceso de inicio antes de cancelar un turno.','error');return;}
+  try{
+    const client=await levelupRequireClient();const {error}=await client.rpc('levelup_cancel_scheduled_reservation',{p_reservation_id:id});
+    if(error)throw error;
+    await levelupLoadMyScheduledReservations();await levelupRefreshResourceAvailability();
+    $('#reservationFormStatus').text('Turno cancelado en Supabase.').attr('class','form-status success');showToast('Turno cancelado.');
+  }catch(error){console.error(error);showToast(error.message||'No se pudo cancelar.','error');}
+}
 
 /* Cuentas y actividad local. Se conservan las claves usadas por el prototipo anterior. */
-function loadAccounts() {
-  try {
-    const accounts = JSON.parse(localStorage.getItem(STORAGE.accounts) || '[]');
-    state.accounts = Array.isArray(accounts) ? accounts : [];
-  } catch (error) {
-    state.accounts = [];
-  }
-  // Los registros antiguos del navegador no son una sesión autenticada.
-  state.activeUser = null;
-}
-function saveAccounts() {
-  try {
-    localStorage.setItem(STORAGE.accounts, JSON.stringify(state.accounts));
-    localStorage.removeItem(STORAGE.activePhone);
-  } catch (error) { showToast('No se pudo guardar la copia local del perfil.', 'error'); }
-}
-function saveActiveUser() {
-  if (!state.activeUser) return;
-  const index = state.accounts.findIndex(account => account.phone === state.activeUser.phone);
-  if (index >= 0) state.accounts[index] = state.activeUser;
-  else state.accounts.push(state.activeUser);
-  saveAccounts();
-  renderAccount();
-}
-function loadActiveSessions() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE.activeSessions) || '[]');
-    state.activeSessions = Array.isArray(saved) ? saved.filter(item => item && typeof item.id === 'string'
-      && typeof item.resourceKey === 'string' && typeof item.ownerPhone === 'string'
-      && Number.isFinite(Number(item.startedAt)) && ['fixed', 'open'].includes(item.billingMode)
-      && Number.isFinite(Number(item.timeAmount)) && Number.isFinite(Number(item.snacksTotal)))
-      .slice(0, 30).map(item => ({
-        ...item,
-        durationMinutes: item.billingMode === 'open' ? null : Number(item.durationMinutes),
-        halfHourRate: Math.max(0, Number(item.halfHourRate || 0)),
-        timeAmount: Math.max(0, Number(item.timeAmount || 0)),
-        snacksTotal: Math.max(0, Number(item.snacksTotal || 0)),
-        orders: Array.isArray(item.orders) ? item.orders.slice(-30) : []
-      })) : [];
-  } catch (_) { state.activeSessions = []; }
-}
-function saveActiveSessions() {
-  try { localStorage.setItem(STORAGE.activeSessions, JSON.stringify(state.activeSessions)); }
-  catch (_) { showToast('No se pudo guardar la sesión en este navegador.', 'error'); }
-}
+function loadAccounts(){state.accounts=[];state.activeUser=null;}
+function saveAccounts(){return false;}
+function saveActiveUser(){return false;}
+function loadActiveSessions(){state.activeSessions=[];}
+function saveActiveSessions(){return false;}
 function activeSessionsForPhone(phone) {
   return state.activeSessions.filter(item => item.ownerPhone === phone)
     .sort((a, b) => Number(b.startedAt) - Number(a.startedAt));
@@ -1463,7 +1327,14 @@ function updateActiveSessionPanel() {
     if (grandTotal) grandTotal.textContent = money(session.timeAmount + session.snacksTotal);
   });
 }
-async function finishOpenSession(sessionId,reason='manual'){try{const c=await levelupRequireClient();const {error}=await c.rpc('levelup_finish_open_session',{p_session_id:sessionId});if(error)throw error;await levelupRefreshWalletAndSessions();await levelupLoadMyScheduledReservations();renderMachines();renderConsoles();populateReservationResources();showToast('Sesión finalizada en Supabase.');}catch(e){console.error(e);showToast(e.message||'No se pudo finalizar.','error');}}
+async function finishOpenSession(sessionId,reason='manual'){
+  try{
+    const client=await levelupRequireClient();const {error}=await client.rpc('levelup_finish_open_session',{p_session_id:sessionId});
+    if(error)throw error;
+    await levelupRefreshWalletAndSessions();await levelupLoadMyScheduledReservations();await levelupRefreshResourceAvailability();
+    showToast('Sesión finalizada y sincronizada con Supabase.');
+  }catch(error){console.error(error);showToast(error.message||'No se pudo finalizar la sesión.','error');}
+}
 function processOpenSessionCharges(now){return [];}
 
 function renderAccount(){
@@ -1612,14 +1483,7 @@ function renderPendingActions() {
   $('#pendingSyncCount').text(`${queue.length} ${queue.length === 1 ? 'acción guardada' : 'acciones guardadas'}`);
   $('#pendingSyncText').text('Guardadas únicamente en este navegador y pendientes de un servidor. GitHub Pages no recibe ni sincroniza estos registros automáticamente.');
 }
-function queueLocalAction(type, payload) {
-  try {
-    const queue = readPendingActions();
-    queue.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type, payload, createdAt: new Date().toISOString(), status: 'pendiente de servidor' });
-    localStorage.setItem(STORAGE.pending, JSON.stringify(queue.slice(-100)));
-    renderPendingActions();
-  } catch (error) { console.warn('No se pudo guardar la acción pendiente localmente.', error); }
-}
+function queueLocalAction(){return false;}
 
 /* Capas modales accesibles y visor de imágenes. */
 function openModal(selector) {
@@ -1864,10 +1728,35 @@ function openRecharge() {
   $('#rechargeAmountLabel').text(money(state.rechargeAmount));
   openModal('#rechargeModal');
 }
-async function confirmRecharge(){if(!state.activeUser)return;const amount=Number(state.rechargeAmount);if(!Number.isFinite(amount)||amount<5||amount>500){showToast('Recarga entre Bs 5 y Bs 500.','error');return;}try{const c=await levelupRequireClient();const {error}=await c.rpc('levelup_create_recharge_request',{p_amount:amount,p_payment_method:state.rechargeMethod});if(error)throw error;closeModal('#rechargeModal');showToast('Solicitud registrada. El saldo se acredita cuando el personal aprueba.');}catch(e){console.error(e);showToast(e.message||'No se registró la solicitud.','error');}}
+async function confirmRecharge(){
+  if(!state.activeUser)return;const button=document.getElementById('confirmRecharge');if(button?.disabled)return;
+  const amount=Number(state.rechargeAmount);if(!Number.isFinite(amount)||amount<5||amount>500){showToast('Recarga entre Bs 5 y Bs 500.','error');return;}
+  if(button)button.disabled=true;
+  try{
+    const client=await levelupRequireClient();const requestKey=levelupRequestKey('pendingRechargeRequestId');
+    const {error}=await client.rpc('levelup_create_recharge_request',{p_amount:amount,p_payment_method:state.rechargeMethod,p_request_key:requestKey});
+    if(error)throw error;state.pendingRechargeRequestId=null;closeModal('#rechargeModal');
+    await levelupLoadMyRechargeRequests();
+    showToast('Solicitud registrada. El saldo solo cambiará tras la aprobación del personal.');
+  }catch(error){console.error(error);showToast(error.message||'No se registró la solicitud.','error');}
+  finally{if(button)button.disabled=false;}
+}
 
 /* Temporizador único: se actualizan los textos, no se adjuntan listeners a cada tarjeta. */
-function tickSessions(){const now=Date.now();[...state.machines,...state.consoles].forEach(machine=>{if(machine.reservationExpiresAt&&machine.reservationExpiresAt<=now){machine.reservationExpiresAt=null;machine.available=true;machine.sessionStartedAt=null;machine.sessionEndsAt=null;}if(machine.sessionEndsAt&&machine.sessionEndsAt<=now){machine.available=true;machine.sessionEndsAt=null;machine.sessionStartedAt=null;}});updateActiveSessionPanel();if(state.activeUser?.id&&state.networkState==='online'&&!state.levelupSyncBusy&&(now-(state.levelupLastSyncAt||0)>=30000)){state.levelupSyncBusy=true;state.levelupLastSyncAt=now;levelupRefreshWalletAndSessions().then(levelupLoadMyScheduledReservations).catch(e=>console.warn('Sync Supabase',e)).finally(()=>state.levelupSyncBusy=false);}}
+function tickSessions(){
+  const now=Date.now();
+  [...state.machines,...state.consoles].forEach(machine=>{
+    if(machine.reservationExpiresAt&&machine.reservationExpiresAt<=now){machine.reservationExpiresAt=null;machine.available=true;machine.sessionStartedAt=null;machine.sessionEndsAt=null;}
+    if(machine.sessionEndsAt&&machine.sessionEndsAt<=now){machine.available=true;machine.sessionEndsAt=null;machine.sessionStartedAt=null;}
+  });
+  updateActiveSessionPanel();
+  if(state.networkState==='online'&&!state.levelupSyncBusy&&(now-(state.levelupLastSyncAt||0)>=30000)){
+    state.levelupSyncBusy=true;state.levelupLastSyncAt=now;
+    const tasks=[levelupRefreshResourceAvailability()];
+    if(state.activeUser?.id)tasks.push(levelupRefreshWalletAndSessions().then(levelupLoadMyScheduledReservations).then(levelupLoadMyRechargeRequests));
+    Promise.all(tasks).catch(error=>console.warn('Sincronización Supabase:',error)).finally(()=>{state.levelupSyncBusy=false;});
+  }
+}
 function startSessionTicker() {
   if (state.sessionTimer !== null) window.clearInterval(state.sessionTimer);
   tickSessions();
@@ -2097,7 +1986,23 @@ function removeAccessoryFromQueue(id) {
   renderAccessoryQueue();
   setQuickOrderStatus(`${ACCESSORY_ITEMS[id]?.name || 'Producto'} quitado del pedido.`);
 }
-async function sendAccessoryOrder(){if(!state.accessoryQueue.length)return;if(!state.activeUser){showToast('Inicia sesión.','error');showView('cuenta');return;}const session=getLatestActiveSessionForUser();if(!session){showToast('Primero inicia una sesión activa.','error');return;}try{const c=await levelupRequireClient();const items=state.accessoryQueue.map(x=>({product_id:x.id,quantity:x.quantity}));const {data,error}=await c.rpc('levelup_create_order',{p_session_id:session.id,p_items:items});if(error)throw error;state.accessoryQueue=[];saveAccessoryQueue();renderAccessoryQueue();await levelupRefreshWalletAndSessions();showToast('Pedido y cobro guardados en Supabase.');}catch(e){console.error(e);showToast(e.message||'No se guardó el pedido.','error');}}
+async function sendAccessoryOrder(){
+  const button=document.getElementById('sendAccessoryOrder');if(button?.disabled||!state.accessoryQueue.length)return;
+  if(!state.activeUser){showToast('Inicia sesión para registrar tu pedido.','error');showView('cuenta');return;}
+  const session=getLatestActiveSessionForUser();if(!session){showToast('Primero inicia una sesión activa.','error');return;}
+  const controllerItem=state.accessoryQueue.find(item=>item.id==='controller');
+  if(controllerItem&&(session.resourceType!=='console'||session.extraController)){showToast('El mando adicional solo se permite una vez durante una sesión de PlayStation.','error');return;}
+  if(button)button.disabled=true;
+  try{
+    const client=await levelupRequireClient();const requestKey=levelupRequestKey('pendingOrderRequestId');
+    const items=state.accessoryQueue.map(item=>({product_id:item.id,quantity:item.quantity}));
+    const {error}=await client.rpc('levelup_create_order',{p_session_id:session.id,p_items:items,p_request_key:requestKey});
+    if(error)throw error;
+    state.pendingOrderRequestId=null;state.accessoryQueue=[];saveAccessoryQueue();renderAccessoryQueue();
+    await levelupRefreshWalletAndSessions();showToast('Pedido, artículos y cobro confirmados en Supabase.');
+  }catch(error){console.error(error);showToast(error.message||'No se guardó el pedido.','error');}
+  finally{if(button)button.disabled=false;}
+}
 function clearAccessoryQueue() {
   state.accessoryQueue = [];
   saveAccessoryQueue();
