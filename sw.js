@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v51-supabase-recharge-confirmation';
+const CACHE_NAME = 'levelup-cibercafe-v52-supabase-only-operations';
 const APP_SHELL = [
   './',
   './index.html',
@@ -8,7 +8,7 @@ const APP_SHELL = [
   './index.css',
   './pwa.css?v=c3a2-user-images-services-20261121-r6',
   './index.js',
-  './pwa.js?v=levelup-supabase-production-r15-recharge-confirmation',
+  './pwa.js?v=levelup-supabase-production-r16-supabase-only-operations',
   './theme.css',
   './js/security-and-vitals.js',
   './js/supabase-client.js?v=levelup-supabase-auth-phone-password-r2',

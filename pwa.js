@@ -1042,7 +1042,7 @@ function levelupIsTransportFailure(error){
 }
 async function levelupEnqueueOffline(type,payload,requestKey){
   if(!state.activeUser?.id)throw new Error('Inicia sesión para guardar una operación pendiente.');
-  if(!['reservation_create','order_create','recharge_request'].includes(type))throw new Error('Esta operación no admite cola offline.');
+  if(!['reservation_create','order_create'].includes(type))throw new Error('Esta operación no admite cola offline.');
   const record={
     id:requestKey,user_id:state.activeUser.id,type,payload,
     status:'pending',created_at:new Date().toISOString(),last_error:''
@@ -1475,24 +1475,27 @@ async function submitScheduledReservation(event){
     const client=await levelupRequireClient();
     const {error}=await client.rpc('levelup_create_scheduled_reservation',payload);
     if(error)throw error;
+    // El RPC es la confirmación de PostgreSQL; no guardamos la reserva en el navegador.
     state.pendingReservationRequestId=null;
-    await levelupLoadMyScheduledReservations();await levelupRefreshResourceAvailability();
-    form.reset();setReservationDateMinimum();status.text('Turno guardado en Supabase.').attr('class','form-status success');
-    showToast('Reserva confirmada en la base de datos.');
+    form.reset();setReservationDateMinimum();
+    status.text('Turno guardado en Supabase.').attr('class','form-status success');
+    showToast('Reserva registrada en la base de datos.');
   }catch(error){
     console.error(error);
-    if(levelupIsTransportFailure(error)){
-      try{
-        await levelupEnqueueOffline('reservation_create',payload,requestKey);
-        state.pendingReservationRequestId=null;form.reset();setReservationDateMinimum();
-        status.text('Turno guardado en este dispositivo y pendiente de sincronizar. Todavía no está reservado.').attr('class','form-status');
-        showToast('Turno pendiente de enviar a Supabase cuando vuelva Internet.');
-      }catch(queueError){status.text(queueError.message||'No se pudo guardar la solicitud pendiente.').attr('class','form-status error');showToast(queueError.message||'No se pudo guardar la solicitud.','error');}
-    }else{
-      status.text(error.message||'Error guardando en Supabase.').attr('class','form-status error');
-      showToast(error.message||'No se guardó el turno.','error');
-    }
+    const message=levelupIsTransportFailure(error)
+      ?'Sin conexión con Supabase. El turno NO se guardó ni quedó reservado. Vuelve a conectarte e inténtalo otra vez.'
+      :(error.message||'Error guardando el turno en Supabase.');
+    status.text(message).attr('class','form-status error');
+    showToast(message,'error');
+    return;
   }finally{if(button)button.disabled=false;}
+  try{
+    await levelupLoadMyScheduledReservations();
+    await levelupRefreshResourceAvailability();
+  }catch(refreshError){
+    console.error('El turno sí quedó guardado en Supabase, pero no se pudo refrescar la vista:',refreshError);
+    showToast('Reserva guardada en Supabase. Actualiza la pantalla para refrescar la disponibilidad.','error');
+  }
 }
 async function cancelScheduledReservation(id){
   if(id===state.activeScheduledReservationId){showToast('Cierra el proceso de inicio antes de cancelar un turno.','error');return;}
@@ -2327,18 +2330,24 @@ async function sendAccessoryOrder(){
     const client=await levelupRequireClient();
     const {error}=await client.rpc('levelup_create_order',payload);
     if(error)throw error;
-    state.pendingOrderRequestId=null;state.accessoryQueue=[];saveAccessoryQueue();renderAccessoryQueue();
-    await levelupRefreshWalletAndSessions();showToast('Pedido, artículos y cobro confirmados en Supabase.');
+    // Solo vaciamos el carrito tras confirmación exitosa del RPC en Supabase.
+    state.pendingOrderRequestId=null;
+    state.accessoryQueue=[];saveAccessoryQueue();renderAccessoryQueue();
+    showToast('Pedido, artículos y cobro confirmados en Supabase.');
   }catch(error){
     console.error(error);
-    if(levelupIsTransportFailure(error)){
-      try{
-        await levelupEnqueueOffline('order_create',payload,requestKey);
-        state.pendingOrderRequestId=null;state.accessoryQueue=[];saveAccessoryQueue();renderAccessoryQueue();
-        showToast('Pedido guardado como pendiente local. No se ha cobrado ni confirmado aún.');
-      }catch(queueError){showToast(queueError.message||'No se pudo guardar el pedido pendiente.','error');}
-    }else showToast(error.message||'No se guardó el pedido.','error');
+    const message=levelupIsTransportFailure(error)
+      ?'Sin conexión con Supabase. El pedido NO se guardó ni se cobró. El carrito sigue como borrador; reconéctate e inténtalo otra vez.'
+      :(error.message||'No se guardó el pedido en Supabase.');
+    showToast(message,'error');
+    return;
   }finally{if(button)button.disabled=false;}
+  try{
+    await levelupRefreshWalletAndSessions();
+  }catch(refreshError){
+    console.error('El pedido sí quedó guardado y cobrado en Supabase, pero el panel no se pudo actualizar:',refreshError);
+    showToast('El pedido sí quedó confirmado y cobrado en Supabase. Actualiza tu cuenta para ver el saldo.','error');
+  }
 }
 function clearAccessoryQueue() {
   state.accessoryQueue = [];
