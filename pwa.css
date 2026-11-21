@@ -801,3 +801,34 @@ button:disabled { opacity: .48; cursor: not-allowed ; transform: none ; box-shad
     padding: 18px;
   }
 }
+
+
+/* Demostración Mobile-First del catálogo: el modo normal conserva el carrusel. */
+.catalog-demo-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 8px 0 2px;
+}
+.demo-view-toggle {
+  min-height: 40px;
+  white-space: normal;
+}
+.pc-carousel.sim-movil {
+  width: min(100%, 380px);
+  margin-inline: auto;
+  overflow-x: hidden;
+  scroll-snap-type: none;
+}
+.pc-track.sim-movil {
+  display: grid;
+  grid-auto-flow: row;
+  grid-auto-columns: auto;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  max-width: 380px;
+  margin-inline: auto;
+}
+.pc-track.sim-movil .pc-card {
+  width: 100%;
+  min-width: 0;
+}
