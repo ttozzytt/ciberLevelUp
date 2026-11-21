@@ -1,8 +1,8 @@
 'use strict';
-const CACHE='levelup-backup-practicas-v1';
+const CACHE='levelup-backup-practicas-v2';
 const SHELL=[
  './','./index.html','./styles.css','./app.js','./tarjeta.js','./manifest.json',
- '../icons/icon-192.png','../icons/icon-512.png',
+ '../icons/icon-192.png','../icons/icon-512.png','../js/security-and-vitals.js',
  './semana1/01-modo-oscuro/index.html',
  './semana1/02-filtro-catalogo/index.html',
  './semana1/03-menu-hamburguesa/index.html',
