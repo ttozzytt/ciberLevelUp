@@ -1102,92 +1102,12 @@ function activeScheduledSignature(now = Date.now()) {
     })
     .map(item => `${item.resourceKey}:${item.id}`).sort().join('|');
 }
-function submitScheduledReservation(event) {
-  event.preventDefault();
-  const result = validateScheduledReservation();
-  const status = $('#reservationFormStatus');
-  status.text('').attr('class', 'form-status');
-  if (!result.valid) {
-    const firstInvalid = document.querySelector('#formReserva .form-field.invalid input, #formReserva .form-field.invalid select');
-    firstInvalid?.focus();
-    status.text('Revisa los campos marcados antes de guardar.').attr('class', 'form-status error');
-    return;
-  }
-
-  const endAt = result.startAt + result.duration * 60 * 60 * 1000;
-  const endMinusOne = new Date(endAt - 1);
-  const startDate = new Date(result.startAt);
-  if (startDate.getHours() < 8 || endMinusOne.getFullYear() !== startDate.getFullYear()
-    || endMinusOne.getMonth() !== startDate.getMonth() || endMinusOne.getDate() !== startDate.getDate()) {
-    setReservationFieldError('fechaTurno', 'fechaTurnoError', 'El turno debe estar dentro del horario de 08:00 a 24:00 y terminar el mismo día.');
-    document.getElementById('fechaTurno')?.focus();
-    status.text('El horario seleccionado queda fuera de atención.').attr('class', 'form-status error');
-    return;
-  }
-
-  const resource = result.resource;
-  const liveBusyUntil = Number(resource.item.sessionEndsAt || resource.item.reservationExpiresAt || 0);
-  if (!resource.item.available && (!liveBusyUntil || result.startAt < liveBusyUntil)) {
-    setReservationFieldError('recursoSelect', 'recursoSelectError', 'El catálogo muestra este equipo ocupado y no tiene una hora de liberación confirmada. Elige otro equipo.');
-    document.getElementById('recursoSelect')?.focus();
-    status.text('No se puede proponer ese turno para un equipo ocupado sin hora de liberación.').attr('class', 'form-status error');
-    return;
-  }
-  if (reservationOverlaps(resource.key, result.startAt, endAt)) {
-    setReservationFieldError('fechaTurno', 'fechaTurnoError', 'Ese equipo ya tiene una reserva en un horario que se cruza.');
-    document.getElementById('fechaTurno')?.focus();
-    status.text('Cambia el horario o selecciona otro equipo.').attr('class', 'form-status error');
-    return;
-  }
-
-  if (state.scheduledReservations.length >= 50) {
-    status.text('Ya hay 50 reservas guardadas. Cancela una antes de agregar otra.').attr('class', 'form-status error');
-    return;
-  }
-
-  const reservation = {
-    id: (window.crypto && typeof window.crypto.randomUUID === 'function') ? window.crypto.randomUUID() : `turno-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    name: result.name,
-    resourceKey: resource.key,
-    resourceLabel: resource.label,
-    startsAt: new Date(result.startAt).toISOString(),
-    durationHours: result.duration,
-    createdAt: new Date().toISOString()
-  };
-  state.scheduledReservations.push(reservation);
-  if (!saveScheduledReservations()) {
-    state.scheduledReservations.pop();
-    return;
-  }
-  renderScheduledReservations();
-  populateReservationResources();
-  renderMachines();
-  renderConsoles();
-  event.currentTarget.reset();
-  document.querySelectorAll('#formReserva .form-field').forEach(field => field.classList.remove('invalid'));
-  ['clienteNombreError', 'recursoSelectError', 'fechaTurnoError', 'duracionTurnoError'].forEach(id => $(`#${id}`).text(''));
-  setReservationDateMinimum();
-  const endLabel = reservationDateLabel(new Date(endAt).toISOString());
-  status.text(`Turno reservado: ${resource.label} · ${reservationDateLabel(reservation.startsAt)} a ${endLabel}.`).attr('class', 'form-status success');
-  showToast('Turno reservado. El equipo quedará protegido durante ese horario.');
-}
-function cancelScheduledReservation(id) {
-  if (id === state.activeScheduledReservationId) { showToast('Cierra el proceso de inicio antes de cancelar este turno.', 'error'); return; }
-  if (id === state.pendingScheduledReservationId) state.pendingScheduledReservationId = null;
-  const index = state.scheduledReservations.findIndex(item => item.id === id);
-  if (index < 0) return;
-  const [removed] = state.scheduledReservations.splice(index, 1);
-  if (!saveScheduledReservations()) {
-    state.scheduledReservations.splice(index, 0, removed);
-    return;
-  }
-  renderScheduledReservations();
-  populateReservationResources();
-  renderMachines();
-  renderConsoles();
-  $('#reservationFormStatus').text('El turno fue cancelado.').attr('class', 'form-status success');
-  showToast('Turno cancelado.');
-}
+async function levelupRequireClient(){const c=window.levelupSupabase;if(!c||!state.activeUser?.id)throw new Error('Inicia sesión para operar con Supabase.');return c;}
+function levelupResourceId(key){const m=/^(pc|console):(\d+)$/.exec(String(key||''));if(!m)throw new Error('Equipo inválido.');return Number(m[2]);}
+async function levelupRefreshWalletAndSessions(){const c=await levelupRequireClient();const sync=await c.rpc('levelup_sync_my_sessions');if(sync.error)throw sync.error;const q=await Promise.all([c.from('profiles').select('id,full_name,phone,balance').eq('id',state.activeUser.id).single(),c.from('sessions').select('*').eq('customer_id',state.activeUser.id).eq('status','active'),c.from('wallet_transactions').select('*').eq('customer_id',state.activeUser.id).order('created_at',{ascending:false}).limit(30),c.from('orders').select('id,session_id,total_amount,status,created_at,order_items(product_id,item_name,quantity,unit_price,line_total)').eq('customer_id',state.activeUser.id).order('created_at',{ascending:false}).limit(20)]);q.forEach(x=>{if(x.error)throw x.error;});state.activeUser.balance=Number(q[0].data.balance||0);state.activeSessions=q[1].data.map(r=>({id:r.id,resourceKey:r.resource_id>=101?'console:'+r.resource_id:'pc:'+r.resource_id,resourceType:r.resource_id>=101?'console':'pc',machine:r.resource_id,resourceLabel:'Equipo '+r.resource_id,ownerPhone:state.activeUser.phone,ownerName:state.activeUser.name,billingMode:r.billing_mode,startedAt:new Date(r.started_at).getTime(),endsAt:r.planned_end_at?new Date(r.planned_end_at).getTime():null,durationMinutes:r.planned_end_at?Math.round((new Date(r.planned_end_at)-new Date(r.started_at))/60000):null,ratePerHour:Number(r.hourly_rate_snapshot),halfHourRate:0,timeAmount:Number(r.time_amount),snacksTotal:Number(r.snacks_total),extraController:r.extra_controller,paidUntil:r.paid_until?new Date(r.paid_until).getTime():null,nextChargeAt:r.next_charge_at?new Date(r.next_charge_at).getTime():null,orders:q[3].data.filter(o=>o.session_id===r.id).map(o=>({id:o.id,date:o.created_at,total:Number(o.total_amount),items:o.order_items.map(i=>({id:i.product_id,name:i.item_name,quantity:i.quantity,price:Number(i.unit_price)}))}))}));state.activeUser.history=q[2].data.map(t=>({type:t.reason,amount:t.direction==='credit'?Number(t.amount):-Number(t.amount),date:t.created_at,method:t.payment_method,details:t.reason}));renderMachines();renderConsoles();renderAccount();updatePaymentState();return sync.data;}
+async function levelupLoadMyScheduledReservations(){const c=await levelupRequireClient();const q=await c.from('reservations').select('*').eq('customer_id',state.activeUser.id).in('status',['pending','confirmed','active']).order('starts_at');if(q.error)throw q.error;state.scheduledReservations=(q.data||[]).map(r=>({id:r.id,name:r.customer_name,resourceKey:r.resource_id>=101?'console:'+r.resource_id:'pc:'+r.resource_id,resourceLabel:'Equipo '+r.resource_id,startsAt:r.starts_at,durationHours:r.duration_hours,createdAt:r.created_at,db:true}));renderScheduledReservations();populateReservationResources();renderMachines();renderConsoles();}
+async function submitScheduledReservation(event){event.preventDefault();const result=validateScheduledReservation();const status=$('#reservationFormStatus');status.text('').attr('class','form-status');if(!result.valid){status.text('Revisa los campos marcados antes de guardar.').attr('class','form-status error');return;}const endAt=result.startAt+result.duration*3600000;const endMinusOne=new Date(endAt-1);const startDate=new Date(result.startAt);if(startDate.getHours()<8||endMinusOne.getDate()!==startDate.getDate()){status.text('El turno debe estar entre las 08:00 y las 24:00 y terminar el mismo día.').attr('class','form-status error');return;}try{const c=await levelupRequireClient();const {data,error}=await c.rpc('levelup_create_scheduled_reservation',{p_resource_id:levelupResourceId(result.resource.key),p_customer_name:result.name,p_starts_at:new Date(result.startAt).toISOString(),p_duration_hours:result.duration});if(error)throw error;await levelupLoadMyScheduledReservations();event.currentTarget.reset();setReservationDateMinimum();status.text('Turno guardado en Supabase.').attr('class','form-status success');showToast('Reserva guardada en Supabase.');}catch(e){console.error(e);status.text(e.message||'Error guardando en Supabase.').attr('class','form-status error');showToast(e.message||'No se guardó.','error');}}
+async function cancelScheduledReservation(id){if(id===state.activeScheduledReservationId){showToast('Cierra el proceso de inicio antes de cancelar este turno.','error');return;}try{const c=await levelupRequireClient();const {error}=await c.rpc('levelup_cancel_scheduled_reservation',{p_reservation_id:id});if(error)throw error;await levelupLoadMyScheduledReservations();$('#reservationFormStatus').text('Turno cancelado en Supabase.').attr('class','form-status success');showToast('Turno cancelado.');}catch(e){console.error(e);showToast(e.message||'No se pudo cancelar.','error');}}
 
 /* Cuentas y actividad local. Se conservan las claves usadas por el prototipo anterior. */
 function loadAccounts() {
@@ -1318,68 +1238,8 @@ function updateActiveSessionPanel() {
     if (grandTotal) grandTotal.textContent = money(session.timeAmount + session.snacksTotal);
   });
 }
-function finishOpenSession(sessionId, reason = 'manual') {
-  const session = state.activeSessions.find(item => item.id === sessionId && item.billingMode === 'open');
-  if (!session) return;
-  const resource = getReservationResource(session.resourceKey)?.item;
-  if (resource) {
-    resource.available = true;
-    resource.reservationExpiresAt = null;
-    resource.sessionStartedAt = null;
-    resource.sessionEndsAt = null;
-    if (session.resourceType === 'console') saveConsoleStates(); else saveMachineStates();
-  }
-  state.activeSessions = state.activeSessions.filter(item => item.id !== sessionId);
-  saveActiveSessions();
-  renderMachines();
-  renderConsoles();
-  populateReservationResources();
-  renderAccount();
-  showToast(reason === 'insufficient'
-    ? 'El saldo no alcanzó para el siguiente bloque. La sesión terminó.'
-    : 'Sesión finalizada.');
-}
-function processOpenSessionCharges(now) {
-  let accountsChanged = false;
-  const ended = [];
-  state.activeSessions.forEach(session => {
-    if (session.billingMode !== 'open') return;
-    const user = state.accounts.find(account => account.phone === session.ownerPhone);
-    if (!user) { ended.push({ id: session.id, reason: 'insufficient' }); return; }
-    while (Number(session.nextChargeAt || Infinity) <= now) {
-      const charge = Number(session.halfHourRate || 0);
-      if (!(charge > 0) || Number(user.balance || 0) < charge) {
-        ended.push({ id: session.id, reason: 'insufficient' });
-        break;
-      }
-      user.balance = Number(user.balance) - charge;
-      user.history = Array.isArray(user.history) ? user.history : [];
-      user.history.push({ type: 'Tiempo sin límite · bloque de 30 min', machine: session.machine, minutes: 30, amount: -charge, date: new Date(session.nextChargeAt).toISOString() });
-      session.timeAmount = Number(session.timeAmount || 0) + charge;
-      session.nextChargeAt += 30 * 60000;
-      session.paidUntil = session.nextChargeAt;
-      accountsChanged = true;
-    }
-  });
-  if (ended.length) {
-    const endingIds = new Set(ended.map(item => item.id));
-    ended.forEach(item => {
-      const session = state.activeSessions.find(entry => entry.id === item.id);
-      if (!session) return;
-      const resource = getReservationResource(session.resourceKey)?.item;
-      if (resource) {
-        resource.available = true;
-        resource.reservationExpiresAt = null;
-        resource.sessionStartedAt = null;
-        resource.sessionEndsAt = null;
-      }
-    });
-    state.activeSessions = state.activeSessions.filter(item => !endingIds.has(item.id));
-  }
-  if (accountsChanged) saveAccounts();
-  if (accountsChanged || ended.length) saveActiveSessions();
-  return ended;
-}
+async function finishOpenSession(sessionId,reason='manual'){try{const c=await levelupRequireClient();const {error}=await c.rpc('levelup_finish_open_session',{p_session_id:sessionId});if(error)throw error;await levelupRefreshWalletAndSessions();await levelupLoadMyScheduledReservations();renderMachines();renderConsoles();populateReservationResources();showToast('Sesión finalizada en Supabase.');}catch(e){console.error(e);showToast(e.message||'No se pudo finalizar.','error');}}
+function processOpenSessionCharges(now){return [];}
 
 function renderAccount() {
   renderPendingActions();
@@ -1482,33 +1342,7 @@ function setAccountAuthNote(message, isError = false) {
   note.textContent = String(message || '');
   note.classList.toggle('error', Boolean(isError));
 }
-async function activateLevelUpAuthUser(authUser) {
-  if (!authUser?.id || !window.levelupSupabase) throw new Error('No se pudo identificar la sesión autenticada.');
-  const { data: profile, error } = await window.levelupSupabase
-    .from('profiles')
-    .select('id, full_name, phone, balance')
-    .eq('id', authUser.id)
-    .maybeSingle();
-  if (error) throw error;
-  if (!profile) throw new Error('La cuenta se creó, pero no encontramos su perfil. Revisa el trigger de perfiles en Supabase.');
-  const name = String(profile.full_name || authUser.user_metadata?.full_name || 'Cliente LevelUp');
-  const phone = localLevelUpPhone(profile.phone || authUser.phone);
-  const legacyIndex = state.accounts.findIndex(item => item.phone === phone);
-  state.activeUser = {
-    id: authUser.id, name, phone,
-    balance: Number(profile.balance || 0),
-    history: [],
-    createdAt: authUser.created_at || new Date().toISOString(),
-    supabaseAuth: true
-  };
-  if (legacyIndex >= 0) {
-    state.accounts[legacyIndex] = { name, phone, balance: 0, history: [], createdAt: state.activeUser.createdAt, supabaseAuth: true };
-  } else {
-    state.accounts.push({ name, phone, balance: 0, history: [], createdAt: state.activeUser.createdAt, supabaseAuth: true });
-  }
-  renderAccount();
-  setAccountAuthNote('Acceso autenticado con Supabase. El saldo, las sesiones y los pedidos aún no están sincronizados con la base central.');
-}
+async function activateLevelUpAuthUser(authUser){if(!authUser?.id||!window.levelupSupabase)throw new Error('No se pudo identificar la sesión.');const c=window.levelupSupabase;const {data:profile,error}=await c.from('profiles').select('id,full_name,phone,balance').eq('id',authUser.id).maybeSingle();if(error)throw error;if(!profile)throw new Error('No encontramos el perfil.');state.activeUser={id:authUser.id,name:String(profile.full_name||authUser.user_metadata?.full_name||'Cliente LevelUp'),phone:localLevelUpPhone(profile.phone||authUser.phone),balance:Number(profile.balance||0),history:[],createdAt:authUser.created_at||new Date().toISOString(),supabaseAuth:true};renderAccount();await levelupRefreshWalletAndSessions();await levelupLoadMyScheduledReservations();setAccountAuthNote('Datos cargados desde Supabase.');}
 async function restoreLevelUpAuthSession() {
   const client = window.levelupSupabase;
   if (!client) return;
@@ -1785,96 +1619,7 @@ function startPaymentStep() {
   showBookingStep('payment');
   updatePaymentState();
 }
-function confirmSessionPayment() {
-  const machine = state.selectedMachine;
-  const user = state.activeUser;
-  const scheduledId = state.booking?.scheduledReservationId || '';
-  const scheduledEntry = scheduledId ? state.scheduledReservations.find(item => item.id === scheduledId) : null;
-  const validWalkInHold = machine?.reservationExpiresAt && machine.reservationExpiresAt > Date.now();
-  if (!machine || !user || !state.booking || (scheduledId ? !scheduledEntry : !validWalkInHold)) {
-    if (scheduledId) { closeBooking(false); showToast('El turno reservado ya no está disponible.', 'error'); }
-    else expireReservation();
-    return;
-  }
-  const bookingStart = Date.now();
-  const openMode = state.booking.billingMode === 'open';
-  const durationMinutes = openMode ? null : Number(state.booking.durationMinutes);
-  const bookingEnd = openMode ? Number.MAX_SAFE_INTEGER : bookingStart + durationMinutes * 60000;
-  const bookingConflict = findScheduledReservationOverlap(resourceKeyForEquipment(machine), bookingStart, bookingEnd, scheduledId);
-  if (bookingConflict) {
-    showBookingStep('booking');
-    $('#scheduledBookingConflict')
-      .text(`Este equipo ya tiene un turno programado para ${reservationDateLabel(bookingConflict.startsAt)}. Reduce la duración o elige otro equipo.`)
-      .prop('hidden', false);
-    return;
-  }
-  if (Number(user.balance) < state.booking.total) { updatePaymentState(); return; }
-  if (scheduledId) {
-    const reservedIndex = state.scheduledReservations.findIndex(item => item.id === scheduledId);
-    if (reservedIndex < 0) { showToast('El turno ya fue cancelado o iniciado.', 'error'); closeBooking(false); return; }
-    const [convertedReservation] = state.scheduledReservations.splice(reservedIndex, 1);
-    if (!saveScheduledReservations()) {
-      state.scheduledReservations.splice(reservedIndex, 0, convertedReservation);
-      renderScheduledReservations();
-      return;
-    }
-    renderScheduledReservations();
-  }
-  user.balance = Number(user.balance) - state.booking.total;
-  user.history = Array.isArray(user.history) ? user.history : [];
-  const isConsole = state.selectedResourceType === 'console';
-  const resourceName = isConsole ? `PlayStation 5 · Consola #${machine.id - 100}` : `Estación #${pad(machine.id)} · ${machine.label}`;
-  // La fecha de contratación se asigna automáticamente al confirmar el servicio.
-  const contractedAt = new Date();
-  const contractedAtMs = contractedAt.getTime();
-  const resourceKey = resourceKeyForEquipment(machine);
-  const durationText = openMode ? 'Sin límite de tiempo' : durationLabel(durationMinutes);
-  const session = { type: isConsole ? 'Sesión PlayStation' : 'Sesión PC', resource: isConsole ? 'console' : 'pc', machine: machine.id, hours: openMode ? null : durationMinutes / 60, minutes: durationMinutes, billingMode: state.booking.billingMode, durationLabel: durationText, scheduledReservation: Boolean(scheduledId), extraController: Boolean(state.booking.hasExtraController), controllerFee: Number(state.booking.controllerFee || 0), amount: -state.booking.total, date: contractedAt.toISOString() };
-  user.history.push(session);
-  machine.available = false;
-  machine.reservationExpiresAt = null;
-  machine.sessionStartedAt = contractedAtMs;
-  machine.sessionEndsAt = openMode ? null : contractedAtMs + durationMinutes * 60000;
-  const activeSession = {
-    id: `${resourceKey}-${contractedAtMs}`,
-    resourceKey,
-    resourceType: isConsole ? 'console' : 'pc',
-    machine: machine.id,
-    resourceLabel: resourceLabelForSession(machine, isConsole ? 'console' : 'pc'),
-    ownerPhone: user.phone,
-    ownerName: user.name,
-    billingMode: state.booking.billingMode,
-    startedAt: contractedAtMs,
-    endsAt: openMode ? null : machine.sessionEndsAt,
-    durationMinutes,
-    ratePerHour: Number(machine.price),
-    halfHourRate: halfHourPrice(machine),
-    timeAmount: Number(state.booking.baseAmount),
-    snacksTotal: Number(state.booking.controllerFee || 0),
-    extraController: Boolean(state.booking.hasExtraController),
-    orders: state.booking.hasExtraController ? [{ id: `controller-${contractedAtMs}`, date: contractedAt.toISOString(), total: Number(state.booking.controllerFee || 0), items: [{ id: 'controller', name: 'Mando adicional PS5', quantity: 1, price: Number(state.booking.controllerFee || 0) }] }] : [],
-    paidUntil: openMode ? contractedAtMs + 30 * 60000 : machine.sessionEndsAt,
-    nextChargeAt: openMode ? contractedAtMs + 30 * 60000 : null
-  };
-  state.activeSessions = state.activeSessions.filter(item => item.resourceKey !== resourceKey);
-  state.activeSessions.push(activeSession);
-  saveActiveSessions();
-  saveActiveUser();
-  if (state.networkState !== 'online') queueLocalAction(isConsole ? 'sesion-playstation-local' : 'sesion-pc-local', session);
-  if (isConsole) { saveConsoleStates(); renderConsoles(); }
-  else { saveMachineStates(); renderMachines(); }
-  state.activeScheduledReservationId = '';
-  populateReservationResources();
-  const extra = isConsole && state.booking.hasExtraController ? ' Se añadió un segundo mando por Bs 6.' : '';
-  const message = `${state.booking.name}, se asignó ${resourceName} ${openMode ? 'sin límite de tiempo, con cobro por bloques de 30 minutos' : `durante ${durationLabel(durationMinutes)}`}.${extra} Se descontaron ${money(state.booking.total)}. Saldo restante: ${money(user.balance)}.`;
-  $('#successText').text(message);
-  $('#contractedAtLabel').text(`Contratado el ${contractedAt.toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short' })}`);
-  $('#syncNote').text(state.networkState === 'online'
-    ? 'Registro guardado en este navegador. Esta versión no procesa cobros bancarios.'
-    : 'Sin Internet: el registro quedó guardado en este dispositivo. No se ha enviado a un servidor.');
-  showBookingStep('success');
-  updateBookingCountdown();
-}
+async function confirmSessionPayment(){const machine=state.selectedMachine,user=state.activeUser,booking=state.booking,scheduledId=booking?.scheduledReservationId||null;const scheduledEntry=scheduledId?state.scheduledReservations.find(x=>x.id===scheduledId):null;const validHold=machine?.reservationExpiresAt&&machine.reservationExpiresAt>Date.now();if(!machine||!user||!booking||(scheduledId?!scheduledEntry:!validHold)){showToast('Reserva temporal o turno ya no disponible.','error');return;}try{const c=await levelupRequireClient();const {data,error}=await c.rpc('levelup_start_session',{p_resource_id:levelupResourceId(resourceKeyForEquipment(machine)),p_billing_mode:booking.billingMode,p_duration_minutes:booking.billingMode==='open'?30:Number(booking.durationMinutes),p_has_extra_controller:Boolean(booking.hasExtraController),p_scheduled_reservation_id:scheduledId});if(error)throw error;await levelupRefreshWalletAndSessions();await levelupLoadMyScheduledReservations();machine.available=false;machine.reservationExpiresAt=null;$('#successText').text('Sesión registrada en Supabase. Saldo restante: '+money(data.balance));showBookingStep('success');showToast('Sesión y cobro confirmados en Supabase.');}catch(e){console.error(e);$('#scheduledBookingConflict').text(e.message||'Error al iniciar').prop('hidden',false);showToast(e.message||'No se inició la sesión.','error');}}
 function closeBooking(release = true) {
   const wasScheduledTurn = Boolean(state.activeScheduledReservationId);
   if (release) releaseReservation(false);
@@ -1900,98 +1645,10 @@ function openRecharge() {
   $('#rechargeAmountLabel').text(money(state.rechargeAmount));
   openModal('#rechargeModal');
 }
-function confirmRecharge() {
-  if (!state.activeUser) return;
-  const amount = Number(state.rechargeAmount);
-  state.activeUser.balance = Number(state.activeUser.balance || 0) + amount;
-  state.activeUser.history = Array.isArray(state.activeUser.history) ? state.activeUser.history : [];
-  const recharge = { type: 'Recarga de saldo', amount, method: state.rechargeMethod, date: new Date().toISOString() };
-  state.activeUser.history.push(recharge);
-  saveActiveUser();
-  if (state.networkState !== 'online') queueLocalAction('recarga-local', recharge);
-  closeModal('#rechargeModal');
-  updatePaymentState();
-  showToast(`${money(amount)} añadidos al saldo de tu cuenta en este navegador.`);
-}
+async function confirmRecharge(){if(!state.activeUser)return;const amount=Number(state.rechargeAmount);if(!Number.isFinite(amount)||amount<5||amount>500){showToast('Recarga entre Bs 5 y Bs 500.','error');return;}try{const c=await levelupRequireClient();const {error}=await c.rpc('levelup_create_recharge_request',{p_amount:amount,p_payment_method:state.rechargeMethod});if(error)throw error;closeModal('#rechargeModal');showToast('Solicitud registrada. El saldo se acredita cuando el personal aprueba.');}catch(e){console.error(e);showToast(e.message||'No se registró la solicitud.','error');}}
 
 /* Temporizador único: se actualizan los textos, no se adjuntan listeners a cada tarjeta. */
-function tickSessions() {
-  const now = Date.now();
-  let changed = false;
-  const openSessionEnded = processOpenSessionCharges(now);
-  if (openSessionEnded.length) changed = true;
-  const expiredReservations = [];
-  const finishedSessions = [];
-  [...state.machines, ...state.consoles].forEach(machine => {
-    if (machine.reservationExpiresAt) {
-      const remaining = machine.reservationExpiresAt - now;
-      if (remaining <= 0) {
-        machine.reservationExpiresAt = null;
-        machine.available = true;
-        machine.sessionStartedAt = null;
-        expiredReservations.push({ id: machine.id, kind: machine.kind || 'pc' });
-        changed = true;
-      } else {
-        $(`[data-hold-timer="${machine.id}"]`).text(formatHold(remaining));
-        if (state.selectedMachine?.id === machine.id) updateBookingCountdown();
-      }
-    }
-    if (machine.sessionEndsAt) {
-      const remaining = machine.sessionEndsAt - now;
-      if (remaining <= 0) {
-        machine.available = true;
-        machine.sessionEndsAt = null;
-        machine.sessionStartedAt = null;
-        finishedSessions.push({ id: machine.id, kind: machine.kind || 'pc' });
-        changed = true;
-      } else $(`[data-session-timer="${machine.id}"]`).text(formatClock(remaining));
-    } else if (!machine.available && !machine.reservationExpiresAt && machine.sessionStartedAt) {
-      const elapsed = now - machine.sessionStartedAt;
-      $(`[data-elapsed-timer="${machine.id}"]`).text(formatClock(elapsed));
-    }
-  });
-  if (expiredReservations.length) {
-    expiredReservations.forEach(item => {
-      const isSelected = state.selectedMachine?.id === item.id && state.selectedResourceType === item.kind;
-      if (isSelected) {
-        state.selectedMachine = null;
-        state.selectedResourceType = null;
-        state.booking = null;
-        closeModal('#bookingModal');
-      }
-      const label = item.kind === 'console' ? `PlayStation #${item.id - 100}` : `estación #${pad(item.id)}`;
-      showToast(`La reserva de ${label} venció y quedó libre.`, 'error');
-    });
-  }
-  const expiredScheduled = state.scheduledReservations.filter(item =>
-    item.id !== state.activeScheduledReservationId && scheduledReservationEnd(item) <= now
-  );
-  if (expiredScheduled.length) {
-    const expiredIds = new Set(expiredScheduled.map(item => item.id));
-    state.scheduledReservations = state.scheduledReservations.filter(item => !expiredIds.has(item.id));
-    saveScheduledReservations();
-    renderScheduledReservations();
-  }
-  const nextSignature = activeScheduledSignature(now);
-  const scheduleChanged = nextSignature !== state.activeScheduledSignature;
-  state.activeScheduledSignature = nextSignature;
-  if (changed || scheduleChanged || expiredScheduled.length) {
-    if (changed) { saveMachineStates(); saveConsoleStates(); }
-    renderMachines();
-    renderConsoles();
-    populateReservationResources();
-    if (scheduleChanged) renderScheduledReservations();
-  }
-  if (finishedSessions.length) {
-    const finishedKeys = new Set(finishedSessions.map(item => `${item.kind === 'console' ? 'console' : 'pc'}:${item.id}`));
-    const before = state.activeSessions.length;
-    state.activeSessions = state.activeSessions.filter(session => !finishedKeys.has(session.resourceKey));
-    if (state.activeSessions.length !== before) saveActiveSessions();
-  }
-  if (finishedSessions.length || openSessionEnded.length) renderAccount();
-  updateActiveSessionPanel();
-  finishedSessions.forEach(item => showToast(`Terminó la sesión de ${item.kind === 'console' ? `PlayStation #${item.id - 100}` : `estación #${pad(item.id)}`}. Ya está disponible.`));
-}
+function tickSessions(){const now=Date.now();[...state.machines,...state.consoles].forEach(machine=>{if(machine.reservationExpiresAt&&machine.reservationExpiresAt<=now){machine.reservationExpiresAt=null;machine.available=true;machine.sessionStartedAt=null;machine.sessionEndsAt=null;}if(machine.sessionEndsAt&&machine.sessionEndsAt<=now){machine.available=true;machine.sessionEndsAt=null;machine.sessionStartedAt=null;}});updateActiveSessionPanel();if(state.activeUser?.id&&state.networkState==='online'&&!state.levelupSyncBusy){state.levelupSyncBusy=true;levelupRefreshWalletAndSessions().then(levelupLoadMyScheduledReservations).catch(e=>console.warn('Sync Supabase',e)).finally(()=>state.levelupSyncBusy=false);}}
 function startSessionTicker() {
   if (state.sessionTimer !== null) window.clearInterval(state.sessionTimer);
   tickSessions();
@@ -2221,60 +1878,7 @@ function removeAccessoryFromQueue(id) {
   renderAccessoryQueue();
   setQuickOrderStatus(`${ACCESSORY_ITEMS[id]?.name || 'Producto'} quitado del pedido.`);
 }
-function sendAccessoryOrder() {
-  if (!state.accessoryQueue.length) return;
-  if (!state.activeUser) {
-    showToast('Inicia sesión para registrar tu pedido.', 'error');
-    showView('cuenta');
-    return;
-  }
-  const session = getLatestActiveSessionForUser();
-  if (!session) {
-    showToast('Primero inicia una sesión para pedir productos.', 'error');
-    return;
-  }
-  const controllerItem = state.accessoryQueue.find(item => item.id === 'controller');
-  if (controllerItem && (session.resourceType !== 'console' || session.extraController)) {
-    showToast(session.resourceType !== 'console'
-      ? 'El mando adicional solo se puede pedir durante una sesión de PlayStation.'
-      : 'Esta sesión ya tiene un mando adicional.', 'error');
-    return;
-  }
-  const items = state.accessoryQueue.map(item => {
-    const product = ACCESSORY_ITEMS[item.id];
-    return { id: item.id, name: product.name, quantity: item.quantity, price: product.price, lineTotal: product.price * item.quantity };
-  });
-  const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
-  if (Number(state.activeUser.balance || 0) < total) {
-    showToast(`Saldo insuficiente. Tu pedido cuesta ${money(total)}.`, 'error');
-    return;
-  }
-  const createdAt = new Date();
-  const order = {
-    id: `order-${createdAt.getTime()}-${Math.random().toString(36).slice(2, 7)}`,
-    date: createdAt.toISOString(), items, total, status: 'Registrado'
-  };
-  session.orders = Array.isArray(session.orders) ? session.orders : [];
-  session.orders.push(order);
-  session.snacksTotal = Number(session.snacksTotal || 0) + total;
-  if (controllerItem) session.extraController = true;
-  state.activeUser.balance = Number(state.activeUser.balance) - total;
-  state.activeUser.history = Array.isArray(state.activeUser.history) ? state.activeUser.history : [];
-  state.activeUser.history.push({
-    type: 'Pedido de snacks y accesorios',
-    machine: session.machine,
-    resource: session.resourceType,
-    details: items.map(item => `${item.quantity} × ${item.name}`).join(', '),
-    amount: -total,
-    date: createdAt.toISOString()
-  });
-  state.accessoryQueue = [];
-  saveAccessoryQueue();
-  saveActiveSessions();
-  saveActiveUser();
-  renderAccessoryQueue();
-  showToast(`Pedido registrado para ${session.resourceLabel}. Se descontaron ${money(total)}.`);
-}
+async function sendAccessoryOrder(){if(!state.accessoryQueue.length)return;if(!state.activeUser){showToast('Inicia sesión.','error');showView('cuenta');return;}const session=getLatestActiveSessionForUser();if(!session){showToast('Primero inicia una sesión activa.','error');return;}try{const c=await levelupRequireClient();const items=state.accessoryQueue.map(x=>({product_id:x.id,quantity:x.quantity}));const {data,error}=await c.rpc('levelup_create_order',{p_session_id:session.id,p_items:items});if(error)throw error;state.accessoryQueue=[];saveAccessoryQueue();renderAccessoryQueue();await levelupRefreshWalletAndSessions();showToast('Pedido y cobro guardados en Supabase.');}catch(e){console.error(e);showToast(e.message||'No se guardó el pedido.','error');}}
 function clearAccessoryQueue() {
   state.accessoryQueue = [];
   saveAccessoryQueue();
