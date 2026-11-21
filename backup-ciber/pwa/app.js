@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if(kind==='cwv'){
     const results=byId('safeResult'),input=byId('htmlInput');
-    byId('sanitizeButton')?.addEventListener('click',()=>{const raw=input.value;const cleaned=window.DOMPurify?.sanitize?window.DOMPurify.sanitize(raw):raw;results.textContent='Salida segura como texto: '+cleaned;});
+    byId('sanitizeButton')?.addEventListener('click',()=>{const raw=input.value;if(window.DOMPurify&&typeof window.DOMPurify.sanitize==='function'){results.innerHTML=window.DOMPurify.sanitize(raw);}else{results.textContent=raw;} });
     const metrics={};[['largest-contentful-paint','LCP'],['layout-shift','CLS']].forEach(([type,label])=>{try{const observer=new PerformanceObserver(list=>{const rows=list.getEntries();if(rows.length){const entry=rows[rows.length-1];metrics[label]=Math.round((entry.value??entry.startTime)*100)/100;say('cwvStatus',Object.entries(metrics).map(([k,v])=>k+': '+v).join(' · '));}});observer.observe({type,buffered:true});}catch(_){}});
     say('cwvStatus','Métricas disponibles según el navegador. La salida siempre se trata como texto.');
   }
