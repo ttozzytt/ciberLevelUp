@@ -490,3 +490,45 @@ body { height: 100dvh; min-height: 0; }
   background: rgba(255,255,255,.94);
   color: var(--text);
 }
+
+/* Botones del catálogo de snacks: contraste visible en estados activo y bloqueado. */
+#view-snacks .accessory-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  color: #0b1720;
+  background: linear-gradient(110deg, #59edf0 0%, #9a83ff 100%);
+  border: 1px solid #58dce4;
+  border-bottom: 3px solid #087d8b;
+  border-radius: 9px;
+  box-shadow: 0 5px 14px rgba(77, 231, 238, .14);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  opacity: 1;
+  cursor: pointer;
+  transition: transform .15s ease, filter .15s ease, background .15s ease;
+}
+#view-snacks .accessory-add:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+#view-snacks .accessory-add:active:not(:disabled) {
+  transform: translateY(1px);
+}
+#view-snacks .accessory-add:focus-visible {
+  outline: 2px solid #59edf0;
+  outline-offset: 3px;
+}
+#view-snacks .accessory-add:disabled {
+  color: #e2e8f0;
+  background: #34445c;
+  border-color: #64748b;
+  border-bottom-color: #71839a;
+  box-shadow: none;
+  opacity: 1;
+  cursor: not-allowed;
+}
