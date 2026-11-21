@@ -184,6 +184,10 @@
                 <div class="panel-heading"><div><h3 id="myRechargeTitle">Mis solicitudes de recarga</h3><p>El saldo se acredita cuando el personal confirma el pago.</p></div></div>
                 <div id="myRechargeRequests" class="recharge-request-list" aria-live="polite"><p class="history-empty">Todavía no tienes solicitudes.</p></div>
               </section>
+              <section class="account-recharge-requests panel" id="offlinePendingPanel" aria-labelledby="offlinePendingTitle" hidden>
+                <div class="panel-heading"><div><h3 id="offlinePendingTitle">Operaciones pendientes</h3><p>No están confirmadas ni cambian tu saldo hasta que Supabase las reciba.</p></div></div>
+                <div id="offlinePendingList" class="recharge-request-list" aria-live="polite"></div>
+              </section>
               <section class="active-session-panel" id="activeSessionPanel" aria-labelledby="activeSessionTitle" hidden>
                 <div class="active-session-heading"><div><p class="eyebrow">EN JUEGO</p><h3 id="activeSessionTitle">Mi sesión actual</h3></div><span class="active-session-badge">ACTIVA</span></div>
                 <div id="activeSessionList" class="active-session-list" aria-live="polite"></div>
