@@ -1,15 +1,15 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v53-orders-instant-debit';
+const CACHE_NAME = 'levelup-cibercafe-v54-contrast-button-fix';
 const APP_SHELL = [
   './',
   './index.html',
   './pwa.html',
-  './index.css',
+  './index.css?v=contrast-button-20261121-r1',
   './pwa.css?v=c3a2-snacks-buttons-20261121-r8',
   './index.js',
   './pwa.js?v=levelup-supabase-orders-instant-debit-r16',
-  './theme.css?v=snacks-buttons-20261121-r2',
+  './theme.css?v=contrast-button-20261121-r1',
   './js/security-and-vitals.js',
   './js/supabase-client.js?v=levelup-supabase-auth-phone-password-r2',
   './manifest.json',
