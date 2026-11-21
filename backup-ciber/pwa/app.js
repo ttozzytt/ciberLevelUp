@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if(kind==='menu'){const button=byId('menuButton'),menu=byId('demoMenu');button?.addEventListener('click',()=>{const open=menu.hidden;menu.hidden=!open;button.setAttribute('aria-expanded',String(open));say('menuStatus',open?'Menú abierto.':'Menú cerrado.');});}
   if(kind==='validation'){
     const form=byId('demoForm'),name=byId('clientName'),phone=byId('clientPhone');
-    const validate=()=>{const n=name.value.trim().length>=2,p=/^\\d{8}$/.test(phone.value.trim());say('nameError',n?'':'Escribe al menos 2 caracteres.');say('phoneError',p?'':'Ingresa 8 dígitos.');return n&&p;};
+    const validate=()=>{const n=name.value.trim().length>=2,p=/^\d{8}$/.test(phone.value.trim());say('nameError',n?'':'Escribe al menos 2 caracteres.');say('phoneError',p?'':'Ingresa 8 dígitos.');return n&&p;};
     form?.addEventListener('input',validate);form?.addEventListener('submit',e=>{e.preventDefault();say('formStatus',validate()?'Datos válidos para la demostración.':'Revisa los campos marcados.');});
   }
   if(kind==='log1'||kind==='log2'){
