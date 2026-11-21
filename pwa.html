@@ -164,14 +164,16 @@
               <div class="account-tabs"><button class="filter-chip active" id="showRegister" type="button" data-account-tab="register" data-hidratado="false" disabled>Crear cuenta</button><button class="filter-chip" id="showLogin" type="button" data-account-tab="login" data-hidratado="false" disabled>Iniciar sesión</button></div>
               <form id="registerForm" class="account-form" novalidate>
                 <div class="form-field" id="fieldAccountName"><label for="accountName">Nombre completo</label><input id="accountName" name="name" type="text" maxlength="60" autocomplete="name" placeholder="Ej. Oscar Calle" data-hidratado="false" disabled><small id="accountNameError"></small></div>
-                <div class="form-field" id="fieldAccountPhone"><label for="accountPhone">Celular (8 dígitos)</label><input id="accountPhone" name="phone" type="tel" inputmode="numeric" maxlength="8" autocomplete="tel" placeholder="71234567" data-hidratado="false" disabled><small id="accountPhoneError"></small></div>
+                <div class="form-field" id="fieldAccountPhone"><label for="accountPhone">Celular boliviano (8 dígitos)</label><input id="accountPhone" name="phone" type="tel" inputmode="numeric" maxlength="8" autocomplete="tel" placeholder="71234567" data-hidratado="false" disabled><small id="accountPhoneError"></small></div>
+                <div class="form-field" id="fieldAccountPassword"><label for="accountPassword">Contraseña (mínimo 8 caracteres)</label><input id="accountPassword" name="password" type="password" minlength="8" maxlength="72" autocomplete="new-password" placeholder="Crea una contraseña" data-hidratado="false" disabled><small id="accountPasswordError"></small></div>
                 <button class="primary-btn" type="submit" data-hidratado="false" disabled>Crear mi cuenta →</button>
               </form>
               <form id="loginForm" class="account-form" hidden novalidate>
                 <div class="form-field" id="fieldLoginPhone"><label for="loginPhone">Celular registrado</label><input id="loginPhone" name="phone" type="tel" inputmode="numeric" maxlength="8" autocomplete="tel" placeholder="71234567" data-hidratado="false" disabled><small id="loginPhoneError"></small></div>
+                <div class="form-field" id="fieldLoginPassword"><label for="loginPassword">Contraseña</label><input id="loginPassword" name="password" type="password" maxlength="72" autocomplete="current-password" placeholder="Tu contraseña" data-hidratado="false" disabled><small id="loginPasswordError"></small></div>
                 <button class="primary-btn" type="submit" data-hidratado="false" disabled>Entrar a mi cuenta →</button>
               </form>
-              <p class="account-note">Prototipo académico: el acceso y el saldo se almacenan únicamente en este navegador. No existe un servidor de cuentas ni se realizan cobros reales.</p>
+              <p class="account-note" id="accountAuthNote" role="status" aria-live="polite">El acceso se verifica con Supabase. El saldo, las sesiones y los pedidos todavía están en proceso de conexión y por ahora no se comparten entre dispositivos.</p>
             </section>
             <section class="panel account-panel account-dashboard" id="accountDashboard" hidden>
               <div class="panel-heading"><span class="feature-icon">👤</span><div><h2>Resumen de cuenta</h2><p>Tu información guardada en este dispositivo.</p></div></div>
@@ -424,7 +426,7 @@
   </script>
   <script src="./js/security-and-vitals.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="./js/supabase-client.js?v=levelup-supabase-catalog-r1" defer></script>
-  <script src="./pwa.js?v=levelup-supabase-catalog-r1" defer></script>
+  <script src="./js/supabase-client.js?v=levelup-supabase-auth-phone-password-r2" defer></script>
+  <script src="./pwa.js?v=levelup-supabase-auth-phone-password-r2" defer></script>
 </body>
 </html>
