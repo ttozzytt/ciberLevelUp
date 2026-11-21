@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v45-pwa-sw-registration';
+const CACHE_NAME = 'levelup-cibercafe-v46-accessibility-simulation';
 const APP_SHELL = [
   './',
   './index.html',
