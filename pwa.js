@@ -1191,6 +1191,43 @@ async function levelupLoadAdminDashboard() {
       item.append(copy);orderList.append(item);
     });
   }
+  const customerList=document.getElementById('adminCustomers');
+  if(customerList){
+    customerList.replaceChildren();
+    if(!profiles.length)customerList.append(levelupAdminEmpty('Todavía no hay clientes registrados.'));
+    profiles.forEach(profile=>{
+      const item=createTextElement('article','admin-list-item');
+      const copy=createTextElement('div','admin-list-item__copy');
+      copy.append(createTextElement('strong','',profile.full_name||'Cliente sin nombre'));
+      copy.append(createTextElement('small','',(profile.phone||'Sin celular')+' · Saldo '+money(profile.balance)));
+      const roleLabel=profile.role==='admin'?'Administrador':profile.role==='staff'?'Personal':'Cliente';
+      copy.append(createTextElement('small','',roleLabel));
+      item.append(copy);
+      if(profile.role!=='admin'&&profile.id!==state.activeUser.id){
+        const actions=createTextElement('div','admin-list-item__actions');
+        const button=createTextElement('button','secondary-btn',profile.role==='staff'?'Quitar personal':'Hacer personal');
+        button.type='button';button.dataset.roleChange='true';button.dataset.profileId=profile.id;
+        button.dataset.newRole=profile.role==='staff'?'customer':'staff';button.dataset.hidratado='true';
+        actions.append(button);item.append(actions);
+      }
+      customerList.append(item);
+    });
+  }
+
+}
+
+async function levelupSetProfileRole(profileId,newRole){
+  if(!state.activeUser||state.activeUser.role!=='admin')throw new Error('Solo un administrador puede gestionar el personal.');
+  if(!['customer','staff'].includes(newRole))throw new Error('Rol no permitido.');
+  const promptText=newRole==='staff'
+    ?'¿Conceder acceso al panel del personal a esta cuenta?'
+    :'¿Retirar el acceso al panel del personal a esta cuenta?';
+  if(!window.confirm(promptText))return;
+  const client=await levelupRequireClient();
+  const {error}=await client.rpc('levelup_set_profile_role',{p_target_user_id:profileId,p_new_role:newRole});
+  if(error)throw error;
+  await levelupLoadAdminDashboard();
+  showToast(newRole==='staff'?'Acceso de personal asignado.':'Acceso de personal retirado.');
 }
 async function levelupResolveRechargeRequest(requestId,decision) {
   if(!state.activeUser||!['admin','staff'].includes(state.activeUser.role))throw new Error('Solo el personal autorizado puede validar recargas.');
@@ -1469,12 +1506,7 @@ function validateContactForm() {
 }
 
 /* Almacenamiento local de solicitudes pendientes. Sin API de servidor no se afirma que hayan sido enviadas. */
-function readPendingActions() {
-  try {
-    const queue = JSON.parse(localStorage.getItem(STORAGE.pending) || '[]');
-    return Array.isArray(queue) ? queue : [];
-  } catch (_) { return []; }
-}
+function readPendingActions(){return [];}
 function renderPendingActions() {
   const queue = readPendingActions();
   const panel = document.getElementById('pendingSyncNotice');
@@ -2102,6 +2134,12 @@ function bindLevelUpEvents() {
     try{await levelupLoadAdminDashboard();await levelupRefreshResourceAvailability();showToast('Panel actualizado desde Supabase.');}
     catch(error){console.error(error);showToast(error.message||'No se pudo actualizar el panel.','error');}
     finally{this.disabled=false;}
+  });
+  $document.on('click.levelupAdmin', '#adminToolsPanel [data-role-change]', async function(){
+    const button=this;button.disabled=true;
+    try{await levelupSetProfileRole(button.dataset.profileId,button.dataset.newRole);}
+    catch(error){console.error(error);showToast(error.message||'No se pudo cambiar el rol.','error');}
+    finally{button.disabled=false;}
   });
   $document.on('click.levelupAdmin', '#adminToolsPanel [data-recharge-review]', async function(){
     const button=this;button.disabled=true;
