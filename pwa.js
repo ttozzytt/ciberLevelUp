@@ -1334,7 +1334,12 @@ async function levelupLoadAdminDashboard() {
       copy.append(createTextElement('strong','',resource+' · '+(profile.full_name||'Cliente')));
       copy.append(createTextElement('small','',(row.billing_mode==='open'?'Sin límite':'Tiempo definido')+' · Inicio '+new Date(row.started_at).toLocaleString('es-BO')));
       copy.append(createTextElement('small','', 'Tiempo Bs '+Number(row.time_amount||0).toFixed(2)+' · Pedidos Bs '+Number(row.snacks_total||0).toFixed(2)));
-      item.append(copy);activeList.append(item);
+      item.append(copy);
+      const actions=createTextElement('div','admin-list-item__actions');
+      const finish=createTextElement('button','secondary-btn','Finalizar sesión');
+      finish.type='button';finish.dataset.adminFinishSession=row.id;finish.dataset.hidratado='true';
+      actions.append(finish);item.append(actions);
+      activeList.append(item);
     });
   }
   const reservationList=document.getElementById('adminReservations');
@@ -1364,7 +1369,14 @@ async function levelupLoadAdminDashboard() {
       copy.append(createTextElement('strong','',money(row.total_amount)+' · '+(profile.full_name||'Cliente')));
       copy.append(createTextElement('small','',items||'Pedido sin detalle'));
       copy.append(createTextElement('small','',new Date(row.created_at).toLocaleString('es-BO')+' · '+row.status));
-      item.append(copy);orderList.append(item);
+      item.append(copy);
+      if(row.status==='placed'){
+        const actions=createTextElement('div','admin-list-item__actions');
+        const deliver=createTextElement('button','secondary-btn','Marcar entregado');
+        deliver.type='button';deliver.dataset.adminDeliverOrder=row.id;deliver.dataset.hidratado='true';
+        actions.append(deliver);item.append(actions);
+      }
+      orderList.append(item);
     });
   }
   const customerList=document.getElementById('adminCustomers');
@@ -1404,6 +1416,25 @@ async function levelupSetProfileRole(profileId,newRole){
   if(error)throw error;
   await levelupLoadAdminDashboard();
   showToast(newRole==='staff'?'Acceso de personal asignado.':'Acceso de personal retirado.');
+}
+async function levelupAdminFinishSession(sessionId){
+  if(!state.activeUser||!['admin','staff'].includes(state.activeUser.role))throw new Error('Solo el personal puede finalizar sesiones.');
+  if(!window.confirm('¿Finalizar esta sesión? Se cerrará desde Supabase y no se aplicará ningún reembolso automático.'))return;
+  const client=await levelupRequireClient();
+  const {error}=await client.rpc('levelup_admin_finish_session',{p_session_id:sessionId});
+  if(error)throw error;
+  await levelupRefreshWalletAndSessions();
+  await levelupLoadAdminDashboard();
+  await levelupRefreshResourceAvailability();
+  showToast('Sesión finalizada desde el panel del personal.');
+}
+async function levelupAdminMarkOrderDelivered(orderId){
+  if(!state.activeUser||!['admin','staff'].includes(state.activeUser.role))throw new Error('Solo el personal puede actualizar pedidos.');
+  const client=await levelupRequireClient();
+  const {error}=await client.rpc('levelup_admin_mark_order_delivered',{p_order_id:orderId});
+  if(error)throw error;
+  await levelupLoadAdminDashboard();
+  showToast('Pedido marcado como entregado.');
 }
 async function levelupResolveRechargeRequest(requestId,decision) {
   if(!state.activeUser||!['admin','staff'].includes(state.activeUser.role))throw new Error('Solo el personal autorizado puede validar recargas.');
@@ -2376,6 +2407,18 @@ function bindLevelUpEvents() {
     const button=this;button.disabled=true;
     try{await levelupSetProfileRole(button.dataset.profileId,button.dataset.newRole);}
     catch(error){console.error(error);showToast(error.message||'No se pudo cambiar el rol.','error');}
+    finally{button.disabled=false;}
+  });
+  $document.on('click.levelupAdmin', '#adminToolsPanel [data-admin-finish-session]', async function(){
+    const button=this;button.disabled=true;
+    try{await levelupAdminFinishSession(button.dataset.adminFinishSession);}
+    catch(error){console.error(error);showToast(error.message||'No se pudo finalizar la sesión.','error');}
+    finally{button.disabled=false;}
+  });
+  $document.on('click.levelupAdmin', '#adminToolsPanel [data-admin-deliver-order]', async function(){
+    const button=this;button.disabled=true;
+    try{await levelupAdminMarkOrderDelivered(button.dataset.adminDeliverOrder);}
+    catch(error){console.error(error);showToast(error.message||'No se pudo actualizar el pedido.','error');}
     finally{button.disabled=false;}
   });
   $document.on('click.levelupAdmin', '#adminToolsPanel [data-recharge-review]', async function(){
