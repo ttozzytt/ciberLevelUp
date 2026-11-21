@@ -2083,24 +2083,23 @@ function setupPWA() {
 }
 
 /* Contacto: valida y prepara un WhatsApp real; no simula envío a una API. */
-function sendContactMessage() {
-  if (!validateContactForm()) {
-    $('#contactStatus').text('Revisa los campos marcados.').attr('class', 'form-status error');
+function sendContactMessage(){
+  if(!validateContactForm()){
+    $('#contactStatus').text('Revisa los campos marcados.').attr('class','form-status error');
     document.querySelector('#contactForm .form-field.invalid input, #contactForm .form-field.invalid textarea')?.focus();
     return;
   }
-  const name = $('#contactName').val().trim();
-  const phone = $('#contactPhone').val();
-  const message = $('#contactMessage').val().trim();
-  const text = `Hola, soy ${name}. Mi celular es ${phone}. Consulta para LevelUp: ${message}`;
-  const url = `https://wa.me/59164133234?text=${encodeURIComponent(text)}`;
-  if (state.networkState === 'offline') {
-    queueLocalAction('consulta-contacto', { name, phone, message });
-    $('#contactStatus').text('Sin conexión. La consulta quedó guardada en este navegador; abre WhatsApp cuando recuperes Internet.').attr('class', 'form-status error');
-    showToast('Consulta guardada localmente. No se envió todavía.');
+  const name=$('#contactName').val().trim();
+  const phone=$('#contactPhone').val();
+  const message=$('#contactMessage').val().trim();
+  const text=`Hola, soy ${name}. Mi celular es ${phone}. Consulta para LevelUp: ${message}`;
+  const url=`https://wa.me/59164133234?text=${encodeURIComponent(text)}`;
+  if(state.networkState==='offline'||navigator.onLine===false){
+    $('#contactStatus').text('Sin conexión. La consulta no se envió ni se guardó en el servidor. Vuelve a intentarlo cuando recuperes Internet.').attr('class','form-status error');
+    showToast('La consulta no se envió. Necesitas Internet para abrir WhatsApp.','error');
     return;
   }
-  $('#contactStatus').text('Abriendo WhatsApp con tu consulta. Confirma el envío desde esa aplicación.').attr('class', 'form-status success');
+  $('#contactStatus').text('Abriendo WhatsApp con tu consulta. Confirma el envío desde esa aplicación.').attr('class','form-status success');
   window.location.assign(url);
 }
 
