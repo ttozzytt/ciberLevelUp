@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./index.css?v=20261117-theme-1">
+  <link rel="stylesheet" href="./index.css?v=contrast-button-20261121-r1">
 </head>
 <body class="entry-body">
   <main class="entry-shell">
@@ -22,7 +22,7 @@
         <span class="brand-mark" aria-hidden="true">🎮</span>
         <span>LEVELUP<small>CIBERCAFÉ · LA PAZ</small></span>
         <span class="entry-network-status" id="entryNetworkStatus" data-state="checking"><i></i><b>Comprobando…</b></span>
-        <button class="theme-toggle entry-theme-toggle" id="entryThemeToggle" type="button" data-hidratado="false" disabled aria-label="Activar modo claro" title="Cambiar tema"><span class="theme-toggle__icon" aria-hidden="true">☀</span><span class="theme-toggle__label">Modo claro</span></button><button class="contrast-toggle" id="contrastToggle" type="button" aria-pressed="false" title="Activar o desactivar alto contraste">◐ Contraste</button><script>(function(){const b=document.getElementById('contrastToggle');if(!b)return;const k='contrast-mode-v1';function set(v){document.documentElement.classList.toggle('contraste-activo',v);try{localStorage.setItem(k,v?'1':'0')}catch(_){}b.setAttribute('aria-pressed',String(v));b.textContent=v?'◐ Desactivar contraste':'◐ Contraste'}let on=false;try{on=localStorage.getItem(k)==='1'}catch(_){}set(on);b.addEventListener('click',()=>set(!document.documentElement.classList.contains('contraste-activo')));})();</script>
+        <button class="theme-toggle entry-theme-toggle" id="entryThemeToggle" type="button" data-hidratado="false" disabled aria-label="Activar modo claro" title="Cambiar tema"><span class="theme-toggle__icon" aria-hidden="true">☀</span><span class="theme-toggle__label">Modo claro</span></button><button class="contrast-toggle" id="contrastToggle" type="button" aria-pressed="false" title="Activar o desactivar alto contraste">◐ Contraste</button><script>(function(){'use strict';const b=document.getElementById('contrastToggle');if(!b)return;const root=document.documentElement;const key='levelup-contrast-mode-v1';function setContrast(enabled){const active=Boolean(enabled);root.classList.toggle('contraste-activo',active);try{localStorage.setItem(key,active?'1':'0')}catch(_){}b.setAttribute('aria-pressed',String(active));b.setAttribute('aria-label',active?'Desactivar alto contraste':'Activar alto contraste');b.title=active?'Desactivar alto contraste':'Activar alto contraste';b.textContent=active?'◐ Desactivar contraste':'◐ Contraste'}let active=false;try{active=localStorage.getItem(key)==='1'}catch(_){}setContrast(active);b.addEventListener('click',()=>setContrast(!root.classList.contains('contraste-activo')));})();</script>
       </div>
       <p class="eyebrow">Juega · Conecta · Disfruta</p>
       <h1>Tu partida.<br><span>Tu próximo nivel.</span></h1>
