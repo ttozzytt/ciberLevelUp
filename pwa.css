@@ -832,3 +832,87 @@ button:disabled { opacity: .48; cursor: not-allowed ; transform: none ; box-shad
   width: 100%;
   min-width: 0;
 }
+
+
+/* Accesibilidad: simulación de alto contraste, sin alterar el contenido ni la navegación. */
+.contrast-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  min-width: 38px;
+  min-height: 36px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--panel-2);
+  font-size: 17px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.contrast-toggle:focus-visible {
+  outline: 3px solid var(--cyan);
+  outline-offset: 3px;
+}
+body.alto-contraste {
+  --bg: #000000;
+  --bg-soft: #000000;
+  --panel: #000000;
+  --panel-2: #111111;
+  --line: #ffffff;
+  --text: #ffffff;
+  --muted: #ffffff;
+  --soft: #eeeeee;
+  --cyan: #ffff00;
+  --purple: #ffff00;
+  --purple-2: #ffff00;
+  --green: #7fff00;
+  --red: #ff7070;
+  --gold: #ffff00;
+  --shadow: none;
+  color-scheme: dark;
+  color: #ffffff;
+  background: #000000;
+}
+body.alto-contraste .app-shell,
+body.alto-contraste .sidebar,
+body.alto-contraste .app-column,
+body.alto-contraste .topbar,
+body.alto-contraste .main-content,
+body.alto-contraste .bottom-nav,
+body.alto-contraste .panel,
+body.alto-contraste .pc-card,
+body.alto-contraste .console-card,
+body.alto-contraste .service-card,
+body.alto-contraste .accessory-card,
+body.alto-contraste .modal-panel,
+body.alto-contraste .balance-card {
+  color: #ffffff;
+  background: #000000;
+  border-color: #ffffff;
+  box-shadow: none;
+}
+body.alto-contraste button,
+body.alto-contraste input,
+body.alto-contraste select,
+body.alto-contraste textarea,
+body.alto-contraste a {
+  border-color: #ffffff;
+}
+body.alto-contraste button:focus-visible,
+body.alto-contraste a:focus-visible,
+body.alto-contraste input:focus-visible,
+body.alto-contraste select:focus-visible,
+body.alto-contraste textarea:focus-visible {
+  outline: 3px solid #ffff00;
+  outline-offset: 3px;
+}
+body.alto-contraste a,
+body.alto-contraste .eyebrow,
+body.alto-contraste .feature-icon,
+body.alto-contraste .history-amount.positive {
+  color: #ffff00;
+}
+body.alto-contraste img {
+  border-color: #ffffff;
+}
