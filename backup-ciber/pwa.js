@@ -1,6 +1,5 @@
 'use strict';
 
-/* Respaldo visual local: evita iconos rotos si una imagen falla al cargar. */
 document.addEventListener('error', event => {
   const image = event.target;
   if (!(image instanceof HTMLImageElement)) return;
@@ -18,7 +17,6 @@ document.addEventListener('error', event => {
   if (photoButton) photoButton.dataset.photo = fallback;
 }, true);
 
-/* LevelUp: SPA ligera, hidratación controlada y delegación de eventos. */
 const LEVELUP_VIEWS = ['inicio', 'computadoras', 'consolas', 'cuenta', 'servicios', 'snacks', 'turnos', 'reservas', 'informacion', 'simulacion', 'contacto'];
 const VIEW_LABELS = { inicio: 'Inicio', computadoras: 'Computadoras', consolas: 'PlayStation', cuenta: 'Mi cuenta', servicios: 'Servicios', snacks: 'Snacks', turnos: 'Turnos', reservas: 'Reservas', informacion: 'Información', simulacion: 'Simulación', contacto: 'Contacto' };
 const STORAGE = {
@@ -161,7 +159,6 @@ function isAvailable(machine) {
   return Boolean(machine.available && !isReserved(machine) && !getActiveScheduledReservation(machine));
 }
 
-/* Avisos: un solo temporizador, limpiado antes de mostrar el siguiente mensaje. */
 function showToast(message, type = 'success') {
   const toast = document.getElementById('toast');
   if (!toast) return;
@@ -172,7 +169,6 @@ function showToast(message, type = 'success') {
   state.toastTimer = window.setTimeout(() => toast.classList.remove('show'), 3200);
 }
 
-/* Navegación por vistas: equivalente al patrón del proyecto Personal. */
 function showView(name, updateHistory = true) {
   if (!LEVELUP_VIEWS.includes(name)) return;
   const target = document.getElementById(`view-${name}`);
@@ -229,7 +225,6 @@ function closeMobileMenu() {
   $('#mobileMenuToggle').attr({ 'aria-expanded': 'false', 'aria-label': 'Abrir menú' }).text('☰');
 }
 
-/* Catálogo asíncrono propio de LevelUp. El fetch informa rutas/HTTP y usa Cache Storage como respaldo offline. */
 async function readCatalogJSON(relativePath, label) {
   const url = new URL(relativePath, document.baseURI);
   let networkError = null;
@@ -259,7 +254,6 @@ async function readCatalogJSON(relativePath, label) {
     controller.abort();
   }
 
-  // Si no responde la red o el servidor devuelve 404/HTML, intenta la copia offline instalada.
   if ('caches' in window) {
     try {
       const cached = await caches.match(url.href, { ignoreSearch: true });
@@ -347,9 +341,6 @@ async function loadConsoleCatalog() {
   state.consoles = catalog.map(item => {
     const id = Number(item.id);
     if (!Number.isInteger(id) || id < 101 || id > 104 || ids.has(id)) throw new Error(`consolas.json: identificador no válido o repetido (${item.id}).`);
-    // La tarifa comercial de PlayStation se define aquí y en consolas.json.
-    // Si GitHub Pages o el navegador entrega un JSON antiguo sin precio (o con otra tarifa),
-    // se normaliza a la tarifa vigente en vez de bloquear las cuatro consolas.
     const suppliedRate = Number(item.price ?? item.hourlyRate ?? item.pricePerHour);
     if (!Number.isFinite(suppliedRate) || suppliedRate !== 15) {
       console.warn(`consolas.json: tarifa antigua/incompleta en la consola ${id - 100}; se aplicará Bs 15 por hora.`);
@@ -470,7 +461,6 @@ function renderConsoles() {
   grid.replaceChildren(fragment);
 }
 
-/* Filtros de tres capas: categoría -> procesador -> gráfica. */
 function fillSelect(select, placeholder, values, disabled = false) {
   const element = document.getElementById(select);
   if (!element) return;
@@ -711,7 +701,6 @@ async function initializeCatalog() {
   startSessionTicker();
 }
 
-/* Reservas futuras de turno: ejercicio local de validación y persistencia, separado del apartado de reserva inmediata. */
 const RESERVATION_DURATIONS = [1, 2, 3, 5, 8];
 function loadScheduledReservations() {
   try {
@@ -730,7 +719,6 @@ function loadScheduledReservations() {
         resourceKey: item.resourceKey.slice(0, 40), resourceLabel: String(item.resourceLabel || 'Equipo LevelUp').slice(0, 120),
         startsAt: item.startsAt, durationHours: Number(item.durationHours), createdAt: String(item.createdAt || '')
       }));
-    // Las solicitudes cuyo turno ya pasó dejan de aparecer en la lista activa.
     if (state.scheduledReservations.length !== source.length) {
       try {
         localStorage.setItem(STORAGE.scheduledReservations, JSON.stringify(state.scheduledReservations));
@@ -814,8 +802,6 @@ function getCurrentMinuteStart(now = new Date()) {
   return currentMinute;
 }
 function getNextReservationStart(now = new Date()) {
-  // Para una contratación inmediata, propone este mismo minuto, sin espera artificial.
-  // Si el local está fuera de horario, propone la próxima apertura.
   const candidate = getCurrentMinuteStart(now);
   if (candidate.getHours() < 8) candidate.setHours(8, 0, 0, 0);
   if (candidate.getHours() >= 23) {
@@ -830,8 +816,6 @@ function setReservationDateMinimum() {
   const minimum = getCurrentMinuteStart().getTime();
   input.min = localDateTimeInputValue(minimum);
   const selected = input.value ? new Date(input.value).getTime() : NaN;
-  // La fecha inicial es hoy y el horario puede comenzar inmediatamente.
-  // Solo se impiden minutos anteriores al minuto actual.
   if (!Number.isFinite(selected) || selected < minimum) {
     input.value = localDateTimeInputValue(getNextReservationStart().getTime());
   }
@@ -914,7 +898,6 @@ function validateScheduledReservation() {
   setReservationFieldError('recursoSelect', 'recursoSelectError', resourceError);
   setReservationFieldError('fechaTurno', 'fechaTurnoError', dateError);
   setReservationFieldError('duracionTurno', 'duracionTurnoError', durationError);
-  // Si se elige el minuto actual, comienza ahora mismo; no se añade ningún margen de espera.
   const effectiveStartAt = Number.isFinite(startAt) && startAt >= currentMinute && startAt <= Date.now()
     ? Date.now() : startAt;
   return { valid: !(nameError || resourceError || dateError || durationError), name, resource, startAt: effectiveStartAt, duration };
@@ -1118,7 +1101,6 @@ function cancelScheduledReservation(id) {
   showToast('Turno cancelado.');
 }
 
-/* Cuentas y actividad local. Se conservan las claves usadas por el prototipo anterior. */
 function loadAccounts() {
   try {
     const accounts = JSON.parse(localStorage.getItem(STORAGE.accounts) || '[]');
@@ -1416,7 +1398,6 @@ function validateContactForm() {
   return validName && validPhone && validMessage;
 }
 
-/* Almacenamiento local de solicitudes pendientes. Sin API de servidor no se afirma que hayan sido enviadas. */
 function readPendingActions() {
   try {
     const queue = JSON.parse(localStorage.getItem(STORAGE.pending) || '[]');
@@ -1440,7 +1421,6 @@ function queueLocalAction(type, payload) {
   } catch (error) { console.warn('No se pudo guardar la acción pendiente localmente.', error); }
 }
 
-/* Capas modales accesibles y visor de imágenes. */
 function openModal(selector) {
   const layer = document.querySelector(selector);
   if (!layer) return;
@@ -1478,7 +1458,6 @@ function closePhotoViewer() {
   $('#photoViewerImage').attr('src', '');
 }
 
-/* Reserva temporal y temporizadores. */
 function showBookingStep(step) {
   $('#bookingStep').prop('hidden', step !== 'booking');
   $('#paymentStep').prop('hidden', step !== 'payment');
@@ -1696,7 +1675,6 @@ function confirmSessionPayment() {
   user.history = Array.isArray(user.history) ? user.history : [];
   const isConsole = state.selectedResourceType === 'console';
   const resourceName = isConsole ? `PlayStation 5 · Consola #${machine.id - 100}` : `Estación #${pad(machine.id)} · ${machine.label}`;
-  // La fecha de contratación se asigna automáticamente al confirmar el servicio.
   const contractedAt = new Date();
   const contractedAtMs = contractedAt.getTime();
   const resourceKey = resourceKeyForEquipment(machine);
@@ -1762,7 +1740,6 @@ function closeBooking(release = true) {
   if (wasScheduledTurn) renderScheduledReservations();
 }
 
-/* Recargas: simulación local, sin procesar dinero real. */
 function openRecharge() {
   if (!state.activeUser) {
     showView('cuenta');
@@ -1786,7 +1763,6 @@ function confirmRecharge() {
   showToast(`${money(amount)} añadidos al saldo de tu cuenta en este navegador.`);
 }
 
-/* Temporizador único: se actualizan los textos, no se adjuntan listeners a cada tarjeta. */
 function tickSessions() {
   const now = Date.now();
   let changed = false;
@@ -1870,10 +1846,8 @@ function startSessionTicker() {
   state.sessionTimer = window.setInterval(tickSessions, 1000);
 }
 
-/* Visor de imágenes. */
 function handlePhotoOpen(target) { openPhotoViewer(target); }
 
-/* Conectividad real del propio sitio. El SW excluye la petición de health-check de la caché. */
 function paintNetwork(status) {
   state.networkState = status;
   const label = status === 'online' ? 'Online' : status === 'offline' ? 'Offline' : 'Comprobando…';
@@ -1912,7 +1886,6 @@ async function refreshNetworkStatus(initial = false) {
   paintNetwork(connected ? 'online' : 'offline');
 }
 
-/* PWA: manifest e instalación del Service Worker. La instalación se gestiona desde el navegador, sin botón propio. */
 function setupPWA() {
   if (!('serviceWorker' in navigator)) return;
   const registerWorker = () => navigator.serviceWorker.register('./sw.js', { scope: './' }).then(registration => {
@@ -1923,7 +1896,6 @@ function setupPWA() {
   else window.addEventListener('load', registerWorker, { once: true });
 }
 
-/* Contacto: valida y prepara un WhatsApp real; no simula envío a una API. */
 function sendContactMessage() {
   if (!validateContactForm()) {
     $('#contactStatus').text('Revisa los campos marcados.').attr('class', 'form-status error');
@@ -1945,7 +1917,6 @@ function sendContactMessage() {
   window.location.assign(url);
 }
 
-/* Hidratar: los controles nacen inactivos; se conectan los listeners y recién se habilitan. */
 function markHydrated() {
   const pending = document.querySelectorAll('[data-hidratado="false"]');
   pending.forEach(element => {
@@ -2166,7 +2137,6 @@ const SERVICE_DETAILS={basic:{title:'PC Básica · Bs 3 por hora',copy:'Seleccio
 function renderServiceSelectionSafe(type) { const target = document.getElementById('serviceSelectionInfo'); const detail = SERVICE_DETAILS[type]; if (!target || !detail) return; const title = document.createElement('strong'); title.className = 'service-selection__title'; title.textContent = String(detail.title ?? ''); const description = document.createElement('p'); description.className = 'service-selection__description'; description.textContent = String(detail.copy ?? ''); target.replaceChildren(title, description); }
 function reserveServiceDirect(type){renderServiceSelectionSafe(type);if(type==='console'){const item=state.consoles.find(x=>isAvailable(x));if(!item){showToast('No hay una PlayStation disponible en este momento.','error');return}openConsoleBooking(item.id);return}if(!['basic','standard','premium'].includes(type))return;const item=state.machines.find(x=>x.type===type&&isAvailable(x));if(!item){showToast('No hay equipos disponibles de esa categoría.','error');return}openBooking(item.id)}
 function bindLevelUpEvents() {
-  /* Limpieza previa: evita duplicar escuchadores si se ejecuta una segunda hidratación. */
   $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupValidation .levelupReservation .levelupAccessories .levelupSmokeTest');
   $(window).off('.levelupRuntime .levelupCarousel');
 
@@ -2184,10 +2154,6 @@ function bindLevelUpEvents() {
   });
   $document.on('click.levelupNavigation', '#brandHome', function (event) { event.preventDefault(); showView('inicio'); });
   $document.on('click.levelupServices', '[data-service-reserve]', function () { reserveServiceDirect(this.dataset.serviceReserve); });
-
-
-
-  /* El control global de alto contraste se inicializa junto al tema en setupLevelUpTheme(). */
 
   $document.off('click.levelupSmokeTest', '#btnSmokeTest')
     .on('click.levelupSmokeTest', '#btnSmokeTest', function () {
@@ -2208,7 +2174,6 @@ function bindLevelUpEvents() {
       $('#reporteA11Y').toggleClass('is-warning', sinAlt > 0 || zonas === 0);
     });
 
-  /* Filtros y navegación del carrusel. */
   $document.on('click.levelupFilters', '[data-filter]', function () {
     setQuickFilter(this.dataset.filter);
   });
@@ -2251,7 +2216,6 @@ function bindLevelUpEvents() {
   if (carousel) $(carousel).off('scroll.levelupCarousel').on('scroll.levelupCarousel', updateCarouselPosition);
   $(window).off('resize.levelupCarousel').on('resize.levelupCarousel', updateCarouselPosition);
 
-  /* Cuenta, formularios y validación progresiva input/blur. */
   $document.on('click.levelupAccount', '#showRegister', () => switchAccountTab('register'));
   $document.on('click.levelupAccount', '#showLogin', () => switchAccountTab('login'));
   $document.on('submit.levelupAccount', '#registerForm', function (event) {
@@ -2307,7 +2271,6 @@ function bindLevelUpEvents() {
   });
   $document.on('click.levelupAccount', '#openRechargeButton', openRecharge);
 
-  /* Recarga local: registra el método elegido sin procesar cobros bancarios. */
   $document.on('click.levelupAccount', '[data-recharge-amount]', function () {
     state.rechargeAmount = Number(this.dataset.rechargeAmount);
     $('[data-recharge-amount]').removeClass('active').attr('aria-pressed', 'false');
@@ -2322,7 +2285,6 @@ function bindLevelUpEvents() {
   $document.on('click.levelupAccount', '#confirmRecharge', confirmRecharge);
   $document.on('click.levelupAccount', '#cancelRecharge, #closeRecharge', () => closeModal('#rechargeModal'));
 
-  /* Reserva, pago y cancelación. */
   $document.on('submit.levelupBooking', '#bookingForm', function (event) { event.preventDefault(); startPaymentStep(); });
   $document.on('change.levelupBooking', '#sessionHours, #sessionMode', function () { updateBookingTotal(); $('#scheduledBookingConflict').text('').prop('hidden', true); });
   $document.on('change.levelupBooking', '#extraController', updateBookingTotal);
@@ -2347,7 +2309,6 @@ function bindLevelUpEvents() {
     if (event.target === this) closeModal('#rechargeModal');
   });
 
-  /* Lista de accesorios y bebidas: controles dinámicos mediante delegación de eventos. */
   $document.on('click.levelupAccessories', '[data-accessory-add]', function () {
     addAccessoryToQueue(this.dataset.accessoryAdd);
   });
@@ -2363,7 +2324,6 @@ function bindLevelUpEvents() {
   $document.on('click.levelupAccessories', '#clearAccessoryQueue', clearAccessoryQueue);
   $document.on('click.levelupAccessories', '#sendAccessoryOrder', sendAccessoryOrder);
 
-  /* Galería: evento delegado para fotos de la portada y para las tarjetas JSON que se generan después. */
   $document.on('click.levelupViewer', '[data-photo-open]', function () { handlePhotoOpen(this); });
   $document.on('click.levelupViewer', '#closePhotoViewer', closePhotoViewer);
   $document.on('click.levelupViewer', '#photoViewer', function (event) { if (event.target === this) closePhotoViewer(); });
@@ -2391,7 +2351,6 @@ function bindLevelUpEvents() {
     else closeMobileMenu();
   });
 
-  /* Contacto: validación y preparación del mensaje para WhatsApp. */
   $document.on('input.levelupValidation blur.levelupValidation', '#contactName', validateContactName);
   $document.on('input.levelupValidation blur.levelupValidation', '#contactMessage', function () {
     validateContactMessage();
@@ -2430,7 +2389,6 @@ function updateQuickFilterButtons(filter) {
 function setQuickFilter(filter) {
   state.currentFilter = filter;
   updateQuickFilterButtons(filter);
-  // Los chips rápidos y los selectores dependientes no deben contradecirse.
   if (['basic', 'standard', 'premium'].includes(filter)) {
     $('#filterCategory').val(filter);
     updateCpuOptions();
@@ -2489,7 +2447,6 @@ function hydrateLevelUp() {
   initializeCatalog();
 }
 
-/* Historial de vistas y ciclo de vida: no se acumulan temporizadores. */
 function syncViewFromLocation() {
   const name = location.hash.slice(1);
   if (LEVELUP_VIEWS.includes(name)) showView(name, false);
@@ -2576,12 +2533,10 @@ window.addEventListener('pageshow', event => {
   }
 });
 
-/* El DOM aparece estático primero. Después de la hidratación los controles se conectan y se habilitan. */
 $(function () {
   window.setTimeout(hydrateLevelUp, 420);
 });
 
-/* Evita que la navegación inferior tape formularios cuando aparece el teclado móvil. */
 if (window.visualViewport) {
   const updateKeyboardViewport = () => {
     const keyboardLikelyOpen = window.innerHeight - window.visualViewport.height > 140;
@@ -2591,8 +2546,6 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('scroll', updateKeyboardViewport);
 }
 
-/* Navegación direccional global: las flechas recorren controles visibles de toda la vista,
-   no solo el menú. No interfiere con campos de texto, selectores ni controles nativos. */
 (()=>{
   const selector='a[href],button:not(:disabled),input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),summary,[role="button"],[tabindex]:not([tabindex="-1"])';
   const editingSelector='input,textarea,select,[contenteditable="true"],[role="textbox"]';

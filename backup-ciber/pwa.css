@@ -1,4 +1,3 @@
-/* Estilos de la aplicación LevelUp: pwa.html */
 :root {
   --bg: #0b0c16;
   --bg-soft: #111321;
@@ -28,7 +27,6 @@ button { color: inherit; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
 [hidden] { display: none ; }
 
-/* Portada de entrada: no muestra el catálogo de equipos. */
 .entry-body { min-height: 100dvh; display: grid; place-items: center; padding: 28px; overflow-x: hidden; }
 .entry-shell { width: min(1160px, 100%); min-height: min(720px, calc(100dvh - 56px)); display: grid; grid-template-columns: 1.02fr .98fr; overflow: hidden; border: 1px solid var(--line); border-radius: 30px; background: linear-gradient(135deg, rgba(26,28,51,.97), rgba(12,14,27,.98)); box-shadow: var(--shadow); }
 .entry-copy { display: flex; flex-direction: column; justify-content: center; padding: clamp(28px, 5vw, 66px); }
@@ -60,7 +58,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .entry-visual-caption { align-self: end; padding: 11px 13px; border: 1px solid var(--line); border-radius: 13px; background: rgba(9,12,26,.83); color: #e3e2f4; font-size: 10px; }
 .entry-visual-caption strong { display: block; margin-bottom: 3px; color: var(--cyan); font-size: 11px; }
 
-/* Estructura de navegación por vistas, basada en el proyecto Personal. */
 .app-shell { display: flex; width: min(100%, 1720px); min-height: 100dvh; margin: 0 auto; background: linear-gradient(130deg, rgba(255,255,255,.012), transparent 50%); }
 .sidebar { width: 248px; flex: 0 0 248px; display: flex; flex-direction: column; padding: 27px 17px 20px; border-right: 1px solid var(--line); background: rgba(8,10,21,.72); }
 .app-brand { display: flex; align-items: center; gap: 11px; padding: 0 8px 37px; color: var(--text); text-decoration: none; }
@@ -135,7 +132,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .home-feature strong { display: block; font-size: 12px; }
 .home-feature p { margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.65; }
 
-/* Catálogo diferido desde JSON: las tarjetas solo existen al abrir esta vista. */
 .catalog-panel { padding: 17px; }
 .catalog-toolbar { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
 .catalog-heading h2 { margin: 0; font-size: 17px; }
@@ -191,7 +187,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .catalog-progress { height: 4px; flex: 1; max-width: 210px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.08); }
 .catalog-progress span { height: 100%; display: block; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--cyan), var(--purple)); transition: width .15s; }
 
-/* Mi cuenta, actividad local y saldo. */
 .account-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 14px; }
 .account-panel { padding: 20px; }
 .panel-heading { display: flex; align-items: center; gap: 11px; margin-bottom: 15px; }
@@ -220,7 +215,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .history-empty { padding: 18px; border: 1px dashed var(--line); border-radius: 10px; color: var(--muted); text-align: center; font-size: 10px; }
 .account-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
-/* Servicios y contacto como vistas independientes. */
 .price-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
 .price-card { padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(150deg, #1d2038, #141629); }
 .price-card.featured { border-color: rgba(77,231,238,.45); box-shadow: 0 0 27px rgba(77,231,238,.06); }
@@ -234,7 +228,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .social-links { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }.social-links a { display: inline-flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: #e7e4f6; background: #181b31; text-decoration: none; font-size: 9px; font-weight: 800; }.social-links a:hover { border-color: var(--cyan); color: var(--cyan); }
 .form-status { min-height: 18px; margin: 3px 0 0; font-size: 10px; }.form-status.success { color: var(--green); }.form-status.error { color: var(--red); }
 
-/* Ventanas y visor: cierre por botón, Escape o clic fuera. */
 .modal-backdrop, .photo-viewer { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; padding: 15px; background: rgba(4,5,14,.82); backdrop-filter: blur(9px); }
 .modal-backdrop.open, .photo-viewer.open { display: flex; animation: backdropIn .16s ease both; }
 @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
@@ -290,8 +283,6 @@ button:disabled { opacity: .48; cursor: not-allowed ; transform: none ; box-shad
 .occupancy-note { margin: 13px 0 0; color: var(--soft); font-size: 9px; }
 @media (max-width: 560px) { .occupancy-panel { padding: 13px; } .occupancy-row-head strong { font-size: 10px; } .occupancy-row-head span { font-size: 8px; } .occupancy-total { font-size: 8px; } }
 
-
-/* Categorías LevelUp: Básica, Estándar y Premium. */
 .pc-card[data-type="basic"] .pc-card-title strong { color: #b9c4d8; }
 .pc-card[data-type="standard"] .pc-card-title strong { color: var(--cyan); }
 .pc-card[data-type="premium"] { border-color: rgba(255,194,92,.38); background: linear-gradient(150deg, rgba(64,43,21,.38), rgba(19,20,37,.98)); }
@@ -302,7 +293,6 @@ button:disabled { opacity: .48; cursor: not-allowed ; transform: none ; box-shad
 .pc-card[data-type="premium"] .pc-photo img { background: #101018; }
 .pc-feature-pill { border: 1px solid rgba(77,231,238,.18); color: #c7faff ; background: rgba(77,231,238,.06) ; }
 
-/* Zona PlayStation: cuatro estaciones con reserva propia. */
 .console-rate-strip { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; padding: 15px; }
 .console-rate-strip > div { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 9px 11px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.025); }
 .console-rate-icon { width: 37px; height: 37px; flex: 0 0 37px; display: grid; place-items: center; border-radius: 11px; color: var(--cyan); background: rgba(77,231,238,.09); font-weight: 900; }
@@ -358,8 +348,6 @@ button:disabled { opacity: .48; cursor: not-allowed ; transform: none ; box-shad
 
 .console-rate-note { margin: -5px 0 9px; color: var(--muted); font-size: 8px; line-height: 1.4; }
 
-
-/* Bloque de reservas futuras adaptado a PC y PlayStation (Guía Parte 1). */
 .scheduled-reservation-panel { margin-top: 14px; padding: 19px; }
 .scheduled-reservation-panel > .panel-heading { align-items: center; }
 .reservation-count { display: grid; min-width: 30px; height: 30px; place-items: center; margin-left: auto; border: 1px solid rgba(77,231,238,.25); border-radius: 999px; color: var(--cyan); background: rgba(77,231,238,.07); font-size: 11px; font-weight: 900; }
@@ -386,7 +374,6 @@ button:disabled { opacity: .48; cursor: not-allowed ; transform: none ; box-shad
   .reservation-item { align-items: flex-start; }
 }
 
-/* Guía Parte 2: responsividad crítica y lista de accesorios adaptada de la cola Karaoke. */
 .accessory-panel { margin-top: 18px; }
 .accessory-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .accessory-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.025); }
@@ -432,11 +419,6 @@ button:disabled { opacity: .48; cursor: not-allowed ; transform: none ; box-shad
   body.keyboard-open .bottom-nav { display: none; }
 }
 
-
-
-
-
-/* Catálogo y pedido integrados en Servicios: compacto, sin un acceso separado de Snacks. */
 .service-product-panel { margin-top: 16px; }
 .service-order-layout { display: grid; grid-template-columns: minmax(0,1fr) 265px; align-items: stretch; gap: 12px; }
 .service-product-panel .accessory-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; min-width: 0; }
@@ -489,8 +471,6 @@ button:disabled { opacity: .48; cursor: not-allowed ; transform: none ; box-shad
   .service-product-panel .accessory-add { font-size: 9px; }
 }
 
-
-/* V20: controles del catálogo y del pedido con el estilo táctil de la Guía Parte 2. */
 .service-product-panel .btn-tactil {
   -webkit-appearance: none ;
   appearance: none ;
@@ -561,11 +541,8 @@ button:disabled { opacity: .48; cursor: not-allowed ; transform: none ; box-shad
   .service-product-panel .accessory-quantity-btn { width: 44px ; min-width: 44px ; height: 44px ; }
 }
 
-/* Mensaje de conflicto entre una sesión inmediata y un turno futuro. */
 .booking-conflict-message { margin: 9px 0 0; padding: 9px 11px; border-radius: 9px; background: rgba(255,113,140,.08); border: 1px solid rgba(255,113,140,.24); font-size: 11px; line-height: 1.45; }
 
-
-/* Acciones del turno reservado: el inicio convierte la reserva en una sesión del catálogo. */
 .reservation-actions { display: flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .reservation-state { display: inline-flex; width: fit-content; align-items: center; border-radius: 999px; padding: 3px 8px; color: var(--muted); background: rgba(255,255,255,.045); }
 .reservation-state.ready { color: var(--green); background: rgba(92,230,165,.09); }
@@ -577,8 +554,6 @@ button:disabled { opacity: .48; cursor: not-allowed ; transform: none ; box-shad
 .reservation-cancel:disabled { cursor: wait; opacity: .65; }
 @media (max-width: 680px) { .reservation-item { align-items: flex-start; flex-direction: column; } .reservation-actions { width: 100%; justify-content: flex-start; } }
 
-
-/* Mi sesión: reloj, consumo de tiempo y pedidos del cliente. */
 .balance-card > div { display:flex; flex-direction:column; align-items:flex-start; gap:4px; min-width:0; }
 .balance-card span { display:block; }
 .active-session-panel { margin: 16px 0; padding: 15px; border: 1px solid rgba(77,231,238,.28); border-radius: 15px; background: linear-gradient(145deg,rgba(77,231,238,.07),rgba(116,66,229,.08)); }
@@ -619,16 +594,12 @@ button:disabled { opacity: .48; cursor: not-allowed ; transform: none ; box-shad
 
 [hidden][hidden]{display:none}
 
-
-/* C3-A2 · Imágenes con nomenclatura BEM y espacio reservado antes de cargar. */
 .visual-photo__image { display:block; width:100%; height:100%; aspect-ratio:1 / 1; object-fit:cover; }
 .pc-photo__image { display:block; width:100%; height:100%; aspect-ratio:1 / 1; object-fit:cover; object-position:center 43%; }
 .console-photo__image { display:block; width:100%; height:100%; aspect-ratio:1 / 1; object-fit:contain; }
 .accessory-art__image { display:block; width:100%; height:100%; aspect-ratio:4 / 3; object-fit:contain; }
 .photo-viewer__image { display:block; width:100%; max-height:78dvh; aspect-ratio:auto; object-fit:contain; }
 
-
-/* Accesibilidad: alto contraste real (botón Contraste alto). */
 body.alto-contraste {
   --text: #ffffff;
   --muted: #e6e6e6;
@@ -645,24 +616,24 @@ body.alto-contraste {
   --gold: #ffff00;
 }
 body.alto-contraste :is(button,a,input,select,textarea,summary,.nav-item,.bottom-item,.filter-chip) {
-  border-color: #ffffff !important;
-  color: #ffffff !important;
+  border-color: #ffffff ;
+  color: #ffffff ;
 }
 body.alto-contraste :is(.primary-btn,.service-card__reserve,.active,.selected) {
-  background: #ffff00 !important;
-  color: #000000 !important;
+  background: #ffff00 ;
+  color: #000000 ;
 }
 body.alto-contraste :is(.network-status,.status-dot,.muted,.catalog-simulation-status,.entry-note) {
-  color: #ffffff !important;
+  color: #ffffff ;
 }
 body.alto-contraste :is(.pc-card,.console-card,.service-card,.panel,.modal,.toast,.service-selection,.service-more__details) {
-  background: #000000 !important;
-  border: 2px solid #ffffff !important;
-  box-shadow: none !important;
+  background: #000000 ;
+  border: 2px solid #ffffff ;
+  box-shadow: none ;
 }
 body.alto-contraste img { outline: 1px solid #ffffff; }
 body.alto-contraste a { text-decoration: underline; }
 body.alto-contraste :is(button,a,input,select,textarea):focus-visible {
-  outline: 4px solid #ffff00 !important;
+  outline: 4px solid #ffff00 ;
   outline-offset: 3px;
 }

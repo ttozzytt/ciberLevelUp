@@ -1,4 +1,3 @@
-// Respaldo visual local para las imágenes de la portada del backup.
 document.addEventListener('error', event => {
   const image = event.target;
   if (!(image instanceof HTMLImageElement)) return;
@@ -10,7 +9,6 @@ document.addEventListener('error', event => {
   image.src = './imagenes/imagen-respaldo.svg';
 }, true);
 
-// El indicador comprueba si este sitio responde por Internet; no se basa solo en navigator.onLine.
     const entryStatus = document.getElementById('entryNetworkStatus');
     let entryNetworkTimer = null;
     let entryNetworkSequence = 0;
@@ -54,8 +52,6 @@ document.addEventListener('error', event => {
       }
     });
 
-
-/* Tema claro/oscuro de la portada; comparte preferencia con la aplicación PWA. */
 (function hydrateEntryTheme(){
   const button=document.getElementById('entryThemeToggle');
   const meta=document.getElementById('themeColorMeta');

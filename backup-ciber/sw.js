@@ -1,16 +1,15 @@
 'use strict';
 
-// Caché exclusiva de la copia para no afectar al Cibercafé principal.
-const CACHE_NAME = 'levelup-backup-cibercafe-v15-a11y-audit-20261120';
+const CACHE_NAME = 'levelup-backup-cibercafe-v16-clean-layout-20261121';
 const APP_SHELL = [
   './',
   './index.html',
   './pwa.html',
   './index.css',
   './pwa.css',
-  './css/layout.css?v=parte2-flexbox-sidebar-hamburger-only-20261120-r13',
+  './css/layout.css?v=backup-ciber-final-layout-20261121',
   './index.js',
-  './pwa.js?v=backup-ciber-20261120-smoke-a11y-menu-r6',
+  './pwa.js?v=backup-ciber-clean-20261121',
   './theme.css',
   './card-simulation.css',
   './card-simulation.js',
@@ -48,7 +47,6 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys
-        // Limpiar solamente las versiones anteriores de esta copia.
         .filter(key => key.startsWith('levelup-backup-cibercafe-') && key !== CACHE_NAME)
         .map(key => caches.delete(key))))
       .then(() => self.clients.claim())
@@ -78,13 +76,11 @@ self.addEventListener('fetch', event => {
   }
   if (url.origin !== self.location.origin) return;
 
-  // El health-check debe salir a la red: nunca se responde desde Cache Storage.
   if (url.searchParams.has('__levelup_health')) {
     event.respondWith(fetch(request));
     return;
   }
 
-  // Navegación: primero intenta la versión publicada; si falla, usa la copia local.
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request).then(response => {
@@ -103,14 +99,11 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // JSON: red primero para recibir datos recientes y caché como respaldo offline.
   if (url.pathname.endsWith('/data/computadoras.json') || url.pathname.endsWith('/data/consolas.json')) {
     event.respondWith((async () => {
       try {
         const response = await fetch(request);
         if (response && response.ok) {
-          // Guarda cada JSON con su propia URL. Nunca uses computadoras.json como
-          // sustituto de consolas.json: ambos catálogos tienen esquemas distintos.
           try {
             const cache = await caches.open(CACHE_NAME);
             const cacheKey = new Request(url.href, { method: 'GET', credentials: 'same-origin' });
@@ -136,7 +129,6 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // CSS, JavaScript, iconos e imágenes: caché primero para mantener la interfaz disponible.
   event.respondWith(
     caches.match(request).then(cached => cached || fetch(request).then(response => {
       if (response && response.ok) {
