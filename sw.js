@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v35-c3a2-user-images-services';
+const CACHE_NAME = 'levelup-cibercafe-v36-landscape-mobile-scroll-light';
 const APP_SHELL = [
   './',
   './index.html',
