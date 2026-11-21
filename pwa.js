@@ -1194,19 +1194,17 @@ function loadAccounts() {
   try {
     const accounts = JSON.parse(localStorage.getItem(STORAGE.accounts) || '[]');
     state.accounts = Array.isArray(accounts) ? accounts : [];
-    const phone = localStorage.getItem(STORAGE.activePhone);
-    state.activeUser = state.accounts.find(account => account.phone === phone) || null;
   } catch (error) {
     state.accounts = [];
-    state.activeUser = null;
   }
+  // Los registros antiguos del navegador no son una sesión autenticada.
+  state.activeUser = null;
 }
 function saveAccounts() {
   try {
     localStorage.setItem(STORAGE.accounts, JSON.stringify(state.accounts));
-    if (state.activeUser) localStorage.setItem(STORAGE.activePhone, state.activeUser.phone);
-    else localStorage.removeItem(STORAGE.activePhone);
-  } catch (error) { showToast('El navegador no permitió guardar la cuenta.', 'error'); }
+    localStorage.removeItem(STORAGE.activePhone);
+  } catch (error) { showToast('No se pudo guardar la copia local del perfil.', 'error'); }
 }
 function saveActiveUser() {
   if (!state.activeUser) return;
@@ -1460,6 +1458,65 @@ function validateLoginPhone() {
   const value = $('#loginPhone').val();
   return setFieldError('loginPhone', 'loginPhoneError', /^\d{8}$/.test(value) ? '' : 'Ingresa los 8 dígitos del celular.');
 }
+function validateAccountPassword() {
+  const value = String($('#accountPassword').val() || '');
+  return setFieldError('accountPassword', 'accountPasswordError',
+    value.length < 8 ? 'La contraseña debe tener al menos 8 caracteres.'
+      : value.length > 72 ? 'La contraseña no puede superar 72 caracteres.' : '');
+}
+function validateLoginPassword() {
+  const value = String($('#loginPassword').val() || '');
+  return setFieldError('loginPassword', 'loginPasswordError',
+    !value ? 'Escribe tu contraseña.' : value.length > 72 ? 'La contraseña no puede superar 72 caracteres.' : '');
+}
+function levelUpAuthPhone(localPhone) {
+  return '+591' + String(localPhone || '').replace(/\D/g, '').slice(-8);
+}
+function localLevelUpPhone(authPhone) {
+  const value = String(authPhone || '').replace(/\D/g, '');
+  return value.startsWith('591') ? value.slice(3) : value.slice(-8);
+}
+function setAccountAuthNote(message, isError = false) {
+  const note = document.getElementById('accountAuthNote');
+  if (!note) return;
+  note.textContent = String(message || '');
+  note.classList.toggle('error', Boolean(isError));
+}
+async function activateLevelUpAuthUser(authUser) {
+  if (!authUser?.id || !window.levelupSupabase) throw new Error('No se pudo identificar la sesión autenticada.');
+  const { data: profile, error } = await window.levelupSupabase
+    .from('profiles')
+    .select('id, full_name, phone, balance')
+    .eq('id', authUser.id)
+    .maybeSingle();
+  if (error) throw error;
+  if (!profile) throw new Error('La cuenta se creó, pero no encontramos su perfil. Revisa el trigger de perfiles en Supabase.');
+  const name = String(profile.full_name || authUser.user_metadata?.full_name || 'Cliente LevelUp');
+  const phone = localLevelUpPhone(profile.phone || authUser.phone);
+  const legacyIndex = state.accounts.findIndex(item => item.phone === phone);
+  state.activeUser = {
+    id: authUser.id, name, phone,
+    balance: Number(profile.balance || 0),
+    history: [],
+    createdAt: authUser.created_at || new Date().toISOString(),
+    supabaseAuth: true
+  };
+  if (legacyIndex >= 0) {
+    state.accounts[legacyIndex] = { name, phone, balance: 0, history: [], createdAt: state.activeUser.createdAt, supabaseAuth: true };
+  } else {
+    state.accounts.push({ name, phone, balance: 0, history: [], createdAt: state.activeUser.createdAt, supabaseAuth: true });
+  }
+  renderAccount();
+  setAccountAuthNote('Acceso autenticado con Supabase. El saldo, las sesiones y los pedidos aún no están sincronizados con la base central.');
+}
+async function restoreLevelUpAuthSession() {
+  const client = window.levelupSupabase;
+  if (!client) return;
+  const { data, error } = await client.auth.getSession();
+  if (error) throw error;
+  if (data.session?.user) await activateLevelUpAuthUser(data.session.user);
+}
+
 function validateBookingName() {
   const value = $('#customerName').val().trim();
   return setFieldError('customerName', 'customerNameError', !value ? 'Escribe tu nombre.' : value.length < 3 ? 'Debe tener al menos 3 caracteres.' : containsBlacklistedTerms(value) ? 'Evita palabras ofensivas o insultos.' : '');
@@ -2279,40 +2336,85 @@ function bindLevelUpEvents() {
   /* Cuenta, formularios y validación progresiva input/blur. */
   $document.on('click.levelupAccount', '#showRegister', () => switchAccountTab('register'));
   $document.on('click.levelupAccount', '#showLogin', () => switchAccountTab('login'));
-  $document.on('submit.levelupAccount', '#registerForm', function (event) {
+  $document.on('submit.levelupAccount', '#registerForm', async function (event) {
     event.preventDefault();
     const validName = validateAccountName();
     const validPhone = validateAccountPhone();
-    if (!validName || !validPhone) { document.getElementById(!validName ? 'accountName' : 'accountPhone').focus(); return; }
-    const name = $('#accountName').val().trim();
-    const phone = $('#accountPhone').val();
-    if (state.accounts.some(account => account.phone === phone)) {
-      $('#accountPhoneError').text('');
-      switchAccountTab('login');
-      $('#loginPhone').val(phone);
-      $('#loginPhoneError').text('Este número ya tiene una cuenta. Inicia sesión.');
+    const validPassword = validateAccountPassword();
+    if (!validName || !validPhone || !validPassword) {
+      document.getElementById(!validName ? 'accountName' : !validPhone ? 'accountPhone' : 'accountPassword').focus();
       return;
     }
-    state.activeUser = { name, phone, balance: 0, history: [], createdAt: new Date().toISOString() };
-    state.accounts.push(state.activeUser);
-    saveAccounts();
-    renderAccount();
-    showToast(`Bienvenido, ${name.split(' ')[0]}. Tu cuenta LevelUp está lista.`);
-    continuePendingBooking();
+    const client = window.levelupSupabase;
+    if (!client) { setAccountAuthNote('No se pudo conectar con Supabase. Revisa tu conexión e inténtalo de nuevo.', true); return; }
+    const name = String($('#accountName').val() || '').trim();
+    const phone = String($('#accountPhone').val() || '');
+    const password = String($('#accountPassword').val() || '');
+    const submit = this.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = true;
+    setAccountAuthNote('Creando tu cuenta segura…');
+    try {
+      const { data, error } = await client.auth.signUp({
+        phone: levelUpAuthPhone(phone),
+        password,
+        options: { data: { full_name: name } }
+      });
+      if (error) throw error;
+      if (!data.user) throw new Error('Supabase no devolvió el usuario creado.');
+      if (!data.session) {
+        switchAccountTab('login');
+        $('#loginPhone').val(phone);
+        setAccountAuthNote('La cuenta fue registrada, pero no se inició sesión. Revisa que la confirmación telefónica esté desactivada y Phone Provider habilitado.', true);
+        return;
+      }
+      await activateLevelUpAuthUser(data.user);
+      $('#accountPassword').val('');
+      $('#registerForm')[0].reset();
+      showToast(`Bienvenido, ${name.split(' ')[0]}. Tu cuenta LevelUp está creada.`);
+      continuePendingBooking();
+    } catch (error) {
+      console.error('Error al registrar cuenta LevelUp en Supabase:', error);
+      setAccountAuthNote(error.message || 'No se pudo crear la cuenta. Revisa el celular y vuelve a intentarlo.', true);
+    } finally {
+      if (submit) submit.disabled = false;
+    }
   });
-  $document.on('submit.levelupAccount', '#loginForm', function (event) {
+  $document.on('submit.levelupAccount', '#loginForm', async function (event) {
     event.preventDefault();
-    if (!validateLoginPhone()) { document.getElementById('loginPhone').focus(); return; }
-    const found = state.accounts.find(account => account.phone === $('#loginPhone').val());
-    if (!found) { $('#loginPhoneError').text('No hay una cuenta con ese número. Regístrate primero.'); return; }
-    state.activeUser = found;
-    saveAccounts();
-    renderAccount();
-    showToast(`Bienvenido nuevamente, ${found.name.split(' ')[0]}.`);
-    continuePendingBooking();
+    const validPhone = validateLoginPhone();
+    const validPassword = validateLoginPassword();
+    if (!validPhone || !validPassword) {
+      document.getElementById(!validPhone ? 'loginPhone' : 'loginPassword').focus();
+      return;
+    }
+    const client = window.levelupSupabase;
+    if (!client) { setAccountAuthNote('No se pudo conectar con Supabase. Revisa tu conexión e inténtalo de nuevo.', true); return; }
+    const phone = String($('#loginPhone').val() || '');
+    const password = String($('#loginPassword').val() || '');
+    const submit = this.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = true;
+    setAccountAuthNote('Verificando tus datos…');
+    try {
+      const { data, error } = await client.auth.signInWithPassword({
+        phone: levelUpAuthPhone(phone),
+        password
+      });
+      if (error) throw error;
+      await activateLevelUpAuthUser(data.user);
+      $('#loginPassword').val('');
+      showToast(`Bienvenido nuevamente, ${state.activeUser.name.split(' ')[0]}.`);
+      continuePendingBooking();
+    } catch (error) {
+      console.error('Error al iniciar sesión en LevelUp:', error);
+      setAccountAuthNote('No pudimos iniciar sesión. Comprueba tu celular y contraseña.', true);
+    } finally {
+      if (submit) submit.disabled = false;
+    }
   });
   $document.on('input.levelupValidation', '#accountName', validateAccountName);
   $document.on('blur.levelupValidation', '#accountName', validateAccountName);
+  $document.on('input.levelupValidation blur.levelupValidation', '#accountPassword', validateAccountPassword);
+  $document.on('blur.levelupValidation', '#loginPassword', validateLoginPassword);
   $document.on('input.levelupValidation', '#accountPhone, #loginPhone, #customerPhone, #contactPhone', function () {
     normalizePhone(this);
     if (this.id === 'accountPhone') validateAccountPhone();
@@ -2324,11 +2426,21 @@ function bindLevelUpEvents() {
   $document.on('blur.levelupValidation', '#loginPhone', validateLoginPhone);
   $document.on('input.levelupValidation blur.levelupValidation', '#customerName', validateBookingName);
   $document.on('blur.levelupValidation', '#customerPhone', validateBookingPhone);
-  $document.on('click.levelupAccount', '#logoutButton', function () {
-    state.activeUser = null;
-    saveAccounts();
-    renderAccount();
-    showToast('Sesión cerrada.');
+  $document.on('click.levelupAccount', '#logoutButton', async function () {
+    try {
+      if (window.levelupSupabase) {
+        const { error } = await window.levelupSupabase.auth.signOut();
+        if (error) throw error;
+      }
+      state.activeUser = null;
+      localStorage.removeItem(STORAGE.activePhone);
+      renderAccount();
+      setAccountAuthNote('Sesión cerrada correctamente.');
+      showToast('Sesión cerrada.');
+    } catch (error) {
+      console.error('Error al cerrar sesión en Supabase:', error);
+      showToast('No se pudo cerrar la sesión. Inténtalo de nuevo.', 'error');
+    }
   });
   $document.on('click.levelupAccount', '#openRechargeButton', openRecharge);
 
@@ -2505,6 +2617,12 @@ function hydrateLevelUp() {
   renderScheduledReservations();
   loadAccessoryQueue();
   renderAccount();
+  restoreLevelUpAuthSession().catch(error => {
+    console.error('No se pudo restaurar la sesión de Supabase:', error);
+    state.activeUser = null;
+    renderAccount();
+    setAccountAuthNote('No se pudo recuperar tu sesión de Supabase. Inicia sesión nuevamente.', true);
+  });
   const initialView = location.hash.slice(1);
   showView(LEVELUP_VIEWS.includes(initialView) ? initialView : 'inicio', false);
   setupPWA();
