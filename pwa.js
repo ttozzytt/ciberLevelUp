@@ -2350,7 +2350,7 @@ function renderServiceSelectionSafe(type){const target=document.getElementById('
 function reserveServiceDirect(type){renderServiceSelectionSafe(type);if(type==='console'){const item=state.consoles.find(x=>isAvailable(x));if(!item){showToast('No hay una PlayStation disponible en este momento.','error');return}openConsoleBooking(item.id);return}if(!['basic','standard','premium'].includes(type))return;const item=state.machines.find(x=>x.type===type&&isAvailable(x));if(!item){showToast('No hay equipos disponibles de esa categoría.','error');return}openBooking(item.id)}
 function bindLevelUpEvents() {
   /* Limpieza previa: evita duplicar escuchadores si se ejecuta una segunda hidratación. */
-  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupValidation .levelupReservation .levelupAccessories .levelupAdmin .levelupQueue');
+  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupValidation .levelupReservation .levelupAccessories .levelupAdmin .levelupQueue .levelupA11y');
   $(window).off('.levelupRuntime .levelupCarousel');
   $(window).on('online.levelupRuntime',function(){
     refreshNetworkStatus(true);
@@ -2641,6 +2641,51 @@ function bindLevelUpEvents() {
     else if ($('#rechargeModal').hasClass('open')) closeModal('#rechargeModal');
     else if ($('#bookingModal').hasClass('open')) closeBooking(true);
     else closeMobileMenu();
+  });
+
+  /* Smoke Test y auditoría semántica: pruebas de demostración en vivo. */
+  $document.on('click.levelupA11y', '#btnSmokeTest', async function(){
+    const output=document.getElementById('salidaAudit');
+    if(!output)return;
+    const images=document.querySelectorAll('img');
+    const missingAlt=document.querySelectorAll('img:not([alt]), img[alt=""]').length;
+    const emptyLinks=document.querySelectorAll('a[href=""], a:not([href])').length;
+    const buttonCount=document.querySelectorAll('button').length;
+    const manifest=Boolean(document.querySelector('link[rel="manifest"]'));
+    let swRegistered=false;
+    try{
+      if('serviceWorker' in navigator){
+        const registration=await navigator.serviceWorker.getRegistration();
+        swRegistered=Boolean(registration);
+      }
+    }catch(error){console.warn('No se pudo consultar el Service Worker:',error);}
+    const passed=missingAlt===0&&emptyLinks===0&&manifest&&swRegistered;
+    output.textContent=(passed?'Smoke Test OK':'Smoke Test: revisar')+
+      ' · Botones: '+buttonCount+
+      ' · Imágenes sin alt: '+missingAlt+
+      ' · Enlaces vacíos: '+emptyLinks+
+      ' · Manifest: '+(manifest?'sí':'no')+
+      ' · Service Worker: '+(swRegistered?'registrado':'no registrado')+
+      ' · Imágenes totales: '+images.length;
+  });
+  $document.on('click.levelupA11y', '#btnAuditarA11Y', function(){
+    const output=document.getElementById('reporteA11Y');
+    if(!output)return;
+    const semanticZones=document.querySelectorAll('header, nav, main, article, footer').length;
+    const missingAlt=document.querySelectorAll('img:not([alt]), img[alt=""]').length;
+    const labelsWithoutControl=[...document.querySelectorAll('label')].filter(label=>{
+      if(label.htmlFor)return !document.getElementById(label.htmlFor);
+      return !label.querySelector('input,select,textarea');
+    }).length;
+    const iconButtonsWithoutName=[...document.querySelectorAll('button')].filter(button=>
+      !button.disabled&&!button.hidden&&
+      !String(button.innerText||'').trim()&&
+      !button.getAttribute('aria-label')&&!button.getAttribute('title')
+    ).length;
+    output.textContent='Auditoría HTML5: '+semanticZones+
+      ' zonas semánticas · Imágenes sin alt: '+missingAlt+
+      ' · Labels sin control: '+labelsWithoutControl+
+      ' · Botones sin nombre accesible: '+iconButtonsWithoutName+'.';
   });
 
   /* Contacto: validación y preparación del mensaje para WhatsApp. */
