@@ -1,12 +1,12 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v50-snacks-buttons-no-contrast';
+const CACHE_NAME = 'levelup-cibercafe-v51-snacks-queue-controls';
 const APP_SHELL = [
   './',
   './index.html',
   './pwa.html',
   './index.css',
-  './pwa.css?v=c3a2-snacks-buttons-20261121-r7',
+  './pwa.css?v=c3a2-snacks-buttons-20261121-r8',
   './index.js',
   './pwa.js?v=levelup-supabase-production-r14',
   './theme.css?v=snacks-buttons-20261121-r2',
