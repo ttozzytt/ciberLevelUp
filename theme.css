@@ -524,10 +524,10 @@ body { height: 100dvh; min-height: 0; }
   outline-offset: 3px;
 }
 #view-snacks .accessory-add:disabled {
-  color: #e2e8f0;
-  background: #34445c;
-  border-color: #64748b;
-  border-bottom-color: #71839a;
+  color: #f1f7ff;
+  background: #26364b;
+  border-color: #64839d;
+  border-bottom-color: #526b83;
   box-shadow: none;
   opacity: 1;
   cursor: not-allowed;
