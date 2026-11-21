@@ -1,1 +1,108 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#315d4d"><title>Pata Andina Vet · Laboratorio jQuery</title><link rel="stylesheet" href="styles.css"><script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script><script src="script.js" defer></script></head><body><header><a href="../proyecto-grupal/fase-ui-pwa/index.html" class="brand"><span>🐾</span><b>Pata Andina Vet<small>LABORATORIO JQUERY</small></b></a><button id="themeToggle" type="button">◐ Tema</button></header><main><section class="intro"><small>DISEÑO WEB II · INTERFAZ Y COMPONENTES</small><h1>Pata Andina Vet: <em>laboratorio práctico.</em></h1><p>Catálogo de demostración de atención veterinaria responsable. Los datos de esta práctica no se envían a una clínica.</p></section><section class="layout"><article class="panel catalog"><div class="panel-head"><div><small>CATÁLOGO / TARJETAS</small><h2>Explora la demostración</h2></div><input id="catalogFilter" type="search" placeholder="Filtrar…" aria-label="Filtrar tarjetas"></div><div class="tabs"><button class="tab active" data-group="all" type="button">Todos</button><button class="tab" data-group="a" type="button">Opción A</button><button class="tab" data-group="b" type="button">Opción B</button></div><div class="cards" id="cards"><article data-group="a"><b>Consulta canina</b><p>Ejemplo de tarjeta de consulta y prevención.</p><button class="details" type="button">Ver detalles</button><p class="detail" hidden>Detalle expandible mediante slideToggle; solo demostración académica.</p></article><article data-group="b"><b>Consulta felina</b><p>Ejemplo de atención para gatos y bienestar.</p><button class="details" type="button">Ver detalles</button><p class="detail" hidden>Detalle expandible mediante slideToggle; solo demostración académica.</p></article></div><p id="emptyState" hidden class="muted">No hay coincidencias.</p></article><article class="panel order"><small>CALCULADOR / RESUMEN</small><h2>Calculador de referencia</h2><label>Cantidad <input id="qty" type="number" min="1" max="10" value="1"></label><label>Opción <select id="unitPrice"><option value="30">Básico · Bs 30</option><option value="50">Estándar · Bs 50</option><option value="70">Completo · Bs 70</option></select></label><div class="total">Total ilustrativo: <strong id="total">Bs 30</strong></div><button class="primary" id="openModal" type="button">Revisar resumen</button><div class="safe-form"><small>VALIDACIÓN / DOM SEGURO</small><form id="safeForm"><input id="contactName" maxlength="60" placeholder="Nombre del tutor" required><button type="submit">Agregar al resumen</button></form><div id="safeResult" aria-live="polite" class="safe-result">La salida dinámica se insertará como texto.</div></div><p id="toast" role="status" class="toast"></p></article></section><section class="actions"><a href="ejercicios/">Abrir las 7 prácticas independientes ↗</a><a class="muted-link" href="../proyecto-grupal/fase-ui-pwa/index.html">Volver a la fase PWA</a></section></main><div id="modal" class="modal" aria-hidden="true"><div class="modal-card"><button id="closeModal" type="button" class="close">×</button><small>CONFIRMACIÓN DE DEMOSTRACIÓN</small><h2>Revisa el resumen</h2><p id="modalSummary"></p><button id="confirm" class="primary" type="button">Confirmar</button></div></div><footer>Pata Andina Vet · Laboratorio complementario · Datos de muestra.</footer></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0c16">
+  <meta name="description" content="Laboratorio jQuery de LevelUp Cibercafé para Diseño Web II.">
+  <title>LevelUp · Laboratorio jQuery</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./jquery.min.js" defer></script>
+  <script src="./script.js" defer></script>
+</head>
+<body>
+  <header class="lab-header">
+    <a href="../pwa.html#inicio" class="brand"><span class="brand-mark">🎮</span><span><strong>LEVELUP</strong><small>CIBERCAFÉ · LABORATORIO JQUERY</small></span></a>
+    <button id="themeToggle" type="button" aria-pressed="false">Cambiar tema</button>
+  </header>
+  <main>
+    <section class="intro">
+      <small>DISEÑO WEB II · PRÁCTICA COMPLEMENTARIA</small>
+      <h1>LevelUp: <em>laboratorio jQuery.</em></h1>
+      <p>Ejercicios independientes de filtros, eventos, acordeones, calculadora, modal y validación. Los datos de muestra no generan una reserva ni un cobro real.</p>
+    </section>
+    <section class="layout">
+      <article class="panel catalog">
+        <div class="panel-head">
+          <div><small>CATÁLOGO DE MUESTRA</small><h2>Equipos LevelUp</h2></div>
+          <input id="catalogFilter" type="search" placeholder="Buscar equipo…" aria-label="Buscar equipos">
+        </div>
+        <div class="tabs" role="group" aria-label="Filtrar categorías">
+          <button class="tab active" data-group="all" type="button">Todos</button>
+          <button class="tab" data-group="pc" type="button">Computadoras</button>
+          <button class="tab" data-group="console" type="button">PlayStation</button>
+        </div>
+        <div class="cards" id="cards">
+          <article data-group="pc">
+            <b>PC Básica</b><p>Intel Core i3 · GTX 1050 Ti · 8 GB RAM.</p>
+            <span class="tag">Bs 3 / hora</span>
+            <button class="details" type="button" aria-expanded="false">Ver detalles</button>
+            <p class="detail" hidden>Opción económica para eSports ligeros, estudio y navegación. Media hora: Bs 2.</p>
+          </article>
+          <article data-group="pc">
+            <b>PC Estándar</b><p>Ryzen 5 · RTX 3050 · 16 GB RAM.</p>
+            <span class="tag">Bs 6 / hora</span>
+            <button class="details" type="button" aria-expanded="false">Ver detalles</button>
+            <p class="detail" hidden>Equipo para jugar a 1080p con pantalla de 144 Hz. Media hora: Bs 3.</p>
+          </article>
+          <article data-group="pc">
+            <b>PC Premium</b><p>Ryzen 9 · RTX 5090 · zona streaming.</p>
+            <span class="tag">Bs 10 / hora</span>
+            <button class="details" type="button" aria-expanded="false">Ver detalles</button>
+            <p class="detail" hidden>Configuración premium para gaming y transmisión. Media hora: Bs 5.</p>
+          </article>
+          <article data-group="console">
+            <b>PlayStation 5</b><p>Consola con un mando incluido.</p>
+            <span class="tag">Bs 15 / hora</span>
+            <button class="details" type="button" aria-expanded="false">Ver detalles</button>
+            <p class="detail" hidden>Segundo mando opcional por Bs 6 por sesión.</p>
+          </article>
+        </div>
+        <p id="emptyState" hidden class="muted">No hay coincidencias.</p>
+      </article>
+      <article class="panel order">
+        <small>CALCULADORA / MODAL / TEMPORIZADOR</small>
+        <h2>Calcula una sesión</h2>
+        <label for="qty">Horas
+          <input id="qty" type="number" min="1" max="8" value="1">
+        </label>
+        <label for="unitPrice">Equipo
+          <select id="unitPrice">
+            <option value="3">PC Básica · Bs 3/h</option>
+            <option value="6">PC Estándar · Bs 6/h</option>
+            <option value="10">PC Premium · Bs 10/h</option>
+            <option value="15">PlayStation · Bs 15/h</option>
+          </select>
+        </label>
+        <div class="total">Total de muestra: <strong id="total">Bs 3</strong></div>
+        <button class="primary" id="openModal" type="button">Revisar resumen</button>
+        <div class="safe-form">
+          <small>VALIDACIÓN / DOM SEGURO</small>
+          <form id="safeForm">
+            <label for="contactName">Nombre de prueba</label>
+            <input id="contactName" maxlength="60" placeholder="Escribe un nombre" required>
+            <button type="submit">Mostrar como texto seguro</button>
+          </form>
+          <div id="safeResult" aria-live="polite" class="safe-result">La salida de prueba aparecerá aquí.</div>
+        </div>
+        <p id="toast" role="status" class="toast"></p>
+      </article>
+    </section>
+    <section class="actions">
+      <a href="./ejercicios/">Abrir las 7 prácticas independientes →</a>
+      <a class="muted-link" href="../pwa.html#turnos">Ir a las reservas de LevelUp</a>
+    </section>
+  </main>
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button id="closeModal" type="button" class="close" aria-label="Cerrar">×</button>
+      <small>CONFIRMACIÓN DE DEMOSTRACIÓN</small>
+      <h2 id="modalTitle">Revisa el resumen</h2>
+      <p id="modalSummary"></p>
+      <p class="muted">Este laboratorio no registra reservas ni descuenta saldo.</p>
+      <button id="confirm" class="primary" type="button">Cerrar demostración</button>
+    </div>
+  </div>
+  <footer>LevelUp Cibercafé · Laboratorio jQuery · Datos de muestra</footer>
+</body>
+</html>
