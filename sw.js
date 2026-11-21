@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v42-supabase-offline-queue';
+const CACHE_NAME = 'levelup-cibercafe-v43-supabase-offline-sdk-queue';
 const APP_SHELL = [
   './',
   './index.html',
