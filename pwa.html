@@ -347,11 +347,21 @@
             </section>
             <section class="panel info-panel"><h3>Qué debes saber</h3><div class="service-points">
               <div class="service-point"><span class="feature-icon">◷</span><div><strong>Horario de atención</strong><p>Lunes a domingo · 08:00 a 24:00.</p></div></div>
-              <div class="service-point"><span class="feature-icon">◎</span><div><strong>Disponibilidad</strong><p>El catálogo muestra estados de ejemplo y cambios guardados en el dispositivo.</p></div></div>
+              <div class="service-point"><span class="feature-icon">◎</span><div><strong>Disponibilidad</strong><p>El estado de las PC y consolas se consulta desde Supabase. Las reservas confirmadas quedan en la base de datos.</p></div></div>
               <div class="service-point"><span class="feature-icon">▣</span><div><strong>Comodidad según la categoría</strong><p>La comodidad aumenta por categoría: silla estándar acolchada en Básica, silla ergonómica con apoyo lumbar en Estándar y silla gamer premium con soporte lumbar y cervical en Premium. PlayStation dispone de sofá gamer.</p></div></div>
               <div class="service-point"><span class="feature-icon">🎙</span><div><strong>Streaming en Premium</strong><p>Las estaciones Premium incluyen Ryzen 9 9950X3D2 Dual Edition, RTX 5090 de 32 GB, 32 GB de RAM, dos monitores y micrófono para jugar y transmitir.</p></div></div>
-              <div class="service-point"><span class="feature-icon">▣</span><div><strong>Métodos de pago</strong><p>Puedes elegir QR o efectivo para registrar una recarga. Esta versión todavía no genera cobros bancarios ni se conecta con una pasarela de pago.</p></div></div>
-            </div><button class="primary-btn" style="margin-top:15px" type="button" data-view-target="computadoras" data-hidratado="false" disabled>Ver computadoras →</button></section>
+              <div class="service-point"><span class="feature-icon">▣</span><div><strong>Métodos de pago</strong><p>Puedes solicitar una recarga por QR o efectivo. El personal debe verificar el pago y aprobar la solicitud antes de acreditar el saldo. No se simula un cobro bancario.</p></div></div>
+            </div>
+              <section class="diagnostic-tools" aria-labelledby="diagnosticTitle">
+                <div><strong id="diagnosticTitle">Diagnóstico rápido</strong><p>Pruebas del DOM para la revisión del proyecto.</p></div>
+                <div class="diagnostic-tools__actions">
+                  <button class="secondary-btn" id="btnSmokeTest" type="button" data-hidratado="false" disabled>Ejecutar Smoke Test</button>
+                  <button class="secondary-btn" id="btnAuditarA11Y" type="button" data-hidratado="false" disabled>Auditar HTML5</button>
+                </div>
+                <p id="salidaAudit" class="diagnostic-tools__result" role="status" aria-live="polite">Estado: listo para verificar.</p>
+                <p id="reporteA11Y" class="diagnostic-tools__result" role="status" aria-live="polite">Accesibilidad: listo para auditar.</p>
+              </section>
+            <button class="primary-btn" style="margin-top:15px" type="button" data-view-target="computadoras" data-hidratado="false" disabled>Ver computadoras →</button></section>
           </div>
         </section>
 <section class="view" id="view-contacto" aria-labelledby="contactTitle" aria-hidden="true">
