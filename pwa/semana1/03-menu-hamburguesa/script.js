@@ -1,0 +1,1 @@
+(()=>{const btn=document.getElementById('menuButton'),menu=document.getElementById('demoMenu'),status=document.getElementById('menuStatus');btn?.addEventListener('click',()=>{const open=menu.hidden;menu.hidden=!open;btn.setAttribute('aria-expanded',String(open));status.textContent=open?'Menú abierto.':'Menú cerrado.';});})();
