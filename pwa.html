@@ -173,7 +173,7 @@
                 <div class="form-field" id="fieldLoginPassword"><label for="loginPassword">Contraseña</label><input id="loginPassword" name="password" type="password" maxlength="72" autocomplete="current-password" placeholder="Tu contraseña" data-hidratado="false" disabled><small id="loginPasswordError"></small></div>
                 <button class="primary-btn" type="submit" data-hidratado="false" disabled>Entrar a mi cuenta →</button>
               </form>
-              <p class="account-note" id="accountAuthNote" role="status" aria-live="polite">El acceso se verifica con Supabase. El saldo, las sesiones y los pedidos todavía están en proceso de conexión y por ahora no se comparten entre dispositivos.</p>
+              <p class="account-note" id="accountAuthNote" role="status" aria-live="polite">Tu cuenta usa Supabase. El saldo, las reservas, las sesiones y los pedidos se consultan desde la base de datos.</p>
             </section>
             <section class="panel account-panel account-dashboard" id="accountDashboard" hidden>
               <div class="panel-heading"><span class="feature-icon">👤</span><div><h2>Resumen de cuenta</h2><p>Tu información guardada en este dispositivo.</p></div></div>
@@ -200,6 +200,7 @@
                 <section class="admin-subsection"><h4>Sesiones activas</h4><div id="adminActiveSessions" class="admin-list"></div></section>
                 <section class="admin-subsection"><h4>Reservas</h4><div id="adminReservations" class="admin-list"></div></section>
                 <section class="admin-subsection"><h4>Pedidos recientes</h4><div id="adminOrders" class="admin-list"></div></section>
+                <section class="admin-subsection"><h4>Clientes y personal</h4><p class="payment-note">Solo los administradores pueden asignar o retirar el rol de personal.</p><div id="adminCustomers" class="admin-list"></div></section>
               </section>
               <div class="account-actions"><button class="secondary-btn" id="logoutButton" type="button" data-hidratado="false" disabled>Cerrar sesión</button></div>
             </section>
