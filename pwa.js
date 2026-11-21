@@ -678,7 +678,7 @@ async function initializeCatalog(){
   setCatalogLoadingState('pcGrid','Preparando las estaciones…','Consultando el catálogo de Supabase.');
   setCatalogLoadingState('consoleGrid','Preparando las consolas…','Consultando el catálogo de Supabase.');
   const [machinesResult,consolesResult]=await Promise.allSettled([loadMachineCatalog(),loadConsoleCatalog()]);
-  loadProductsFromSupabase().catch(error=>console.warn('No se pudo leer el catálogo de productos de Supabase:',error));
+  await loadProductsFromSupabase().catch(error=>console.warn('No se pudo leer el catálogo de productos de Supabase; las operaciones seguirán validándose con precios de servidor:',error));
   if(machinesResult.status==='fulfilled'){
     fillSelect('filterCategory','Todas las categorías',['basic','standard','premium'],false);
     const labels={basic:'Básica',standard:'Estándar',premium:'Premium'};
