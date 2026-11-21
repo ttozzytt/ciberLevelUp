@@ -450,6 +450,19 @@
   <script src="./js/security-and-vitals.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="./js/supabase-client.js?v=levelup-supabase-auth-phone-password-r2" defer></script>
-  <script src="./pwa.js?v=levelup-supabase-staff-controls-r9" defer></script>
+  <script src="./pwa.js?v=levelup-supabase-staff-pwa-registration-r10" defer></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js')
+          .then(function (registration) {
+            console.info('Service Worker LevelUp registrado:', registration.scope);
+          })
+          .catch(function (error) {
+            console.error('No se pudo registrar el Service Worker LevelUp:', error);
+          });
+      });
+    }
+  </script>
 </body>
 </html>
