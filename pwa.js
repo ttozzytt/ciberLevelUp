@@ -1210,7 +1210,7 @@ async function levelupLoadAdminDashboard() {
       const roleLabel=profile.role==='admin'?'Administrador':profile.role==='staff'?'Personal':'Cliente';
       copy.append(createTextElement('small','',roleLabel));
       item.append(copy);
-      if(profile.role!=='admin'&&profile.id!==state.activeUser.id){
+      if(state.activeUser.role==='admin'&&profile.role!=='admin'&&profile.id!==state.activeUser.id){
         const actions=createTextElement('div','admin-list-item__actions');
         const button=createTextElement('button','secondary-btn',profile.role==='staff'?'Quitar personal':'Hacer personal');
         button.type='button';button.dataset.roleChange='true';button.dataset.profileId=profile.id;
