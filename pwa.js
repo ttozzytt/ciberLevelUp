@@ -2320,7 +2320,31 @@ function normalizeModerationText(v){return String(v||'').normalize('NFD').replac
 function containsBlacklistedTerms(v){return normalizeModerationText(v).split(' ').some(w=>LEVELUP_BLACKLIST.has(w))}
 const LEVELUP_THEME_KEY='levelup-pwa-theme-v1';
 function applyLevelUpTheme(t){const light=t==='light';document.documentElement.dataset.theme=light?'light':'dark';try{localStorage.setItem(LEVELUP_THEME_KEY,light?'light':'dark')}catch(_){}const m=document.getElementById('themeColorMeta');if(m)m.content=light?'#f5f7fb':'#0b0c16';const b=document.getElementById('themeToggle');if(b){b.querySelector('.theme-toggle__icon').textContent=light?'☾':'☀';b.querySelector('.theme-toggle__label').textContent=light?'Modo oscuro':'Modo claro';b.setAttribute('aria-label',light?'Activar modo oscuro':'Activar modo claro');b.setAttribute('aria-pressed',String(light))}}
-function setupLevelUpTheme(){applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'light':'dark');const b=document.getElementById('themeToggle');if(b&&b.dataset.themeReady!=='true'){b.addEventListener('click',()=>applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));b.dataset.themeReady='true'}}
+function setupLevelUpTheme(){
+  applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'light':'dark');
+  const themeButton=document.getElementById('themeToggle');
+  if(themeButton&&themeButton.dataset.themeReady!=='true'){
+    themeButton.addEventListener('click',()=>applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));
+    themeButton.dataset.themeReady='true';
+  }
+  let contrastEnabled=false;
+  try{contrastEnabled=localStorage.getItem('levelup_high_contrast_v1')==='true';}catch(_){}
+  document.body.classList.toggle('alto-contraste',contrastEnabled);
+  const contrastButton=document.getElementById('contrastToggle');
+  if(contrastButton){
+    contrastButton.setAttribute('aria-pressed',String(contrastEnabled));
+    contrastButton.setAttribute('aria-label',contrastEnabled?'Desactivar alto contraste':'Activar alto contraste');
+    if(contrastButton.dataset.contrastReady!=='true'){
+      contrastButton.addEventListener('click',()=>{
+        const enabled=document.body.classList.toggle('alto-contraste');
+        contrastButton.setAttribute('aria-pressed',String(enabled));
+        contrastButton.setAttribute('aria-label',enabled?'Desactivar alto contraste':'Activar alto contraste');
+        try{localStorage.setItem('levelup_high_contrast_v1',String(enabled));}catch(_){}
+      });
+      contrastButton.dataset.contrastReady='true';
+    }
+  }
+}
 const SERVICE_DETAILS={basic:{title:'PC Básica · Bs 3 por hora',copy:'Selecciona una PC Básica libre. El precio se calcula según la duración.'},standard:{title:'PC Estándar · Bs 6 por hora',copy:'Selecciona una PC Estándar libre. El precio se calcula según la duración.'},premium:{title:'PC Premium · Bs 10 por hora',copy:'Selecciona una PC Premium libre. El precio se calcula según la duración.'},console:{title:'PlayStation 5 · Bs 15 por hora',copy:'Una PS5 libre con un mando incluido. Segundo mando opcional: Bs 6 por sesión.'}};
 function renderServiceSelectionSafe(type){const target=document.getElementById('serviceSelectionInfo'),d=SERVICE_DETAILS[type];if(!target||!d)return;const markup='<strong class="service-selection__title">'+d.title+'</strong><p class="service-selection__description">'+d.copy+'</p>';if(window.DOMPurify&&typeof window.DOMPurify.sanitize==='function')target.innerHTML=window.DOMPurify.sanitize(markup,{USE_PROFILES:{html:true}});else{const title=document.createElement('strong');title.className='service-selection__title';title.textContent=d.title;const p=document.createElement('p');p.className='service-selection__description';p.textContent=d.copy;target.replaceChildren(title,p)}}
 function reserveServiceDirect(type){renderServiceSelectionSafe(type);if(type==='console'){const item=state.consoles.find(x=>isAvailable(x));if(!item){showToast('No hay una PlayStation disponible en este momento.','error');return}openConsoleBooking(item.id);return}if(!['basic','standard','premium'].includes(type))return;const item=state.machines.find(x=>x.type===type&&isAvailable(x));if(!item){showToast('No hay equipos disponibles de esa categoría.','error');return}openBooking(item.id)}
