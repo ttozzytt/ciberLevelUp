@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v32-c3a2-entry-cwv';
+const CACHE_NAME = 'levelup-cibercafe-v33-supabase-catalog';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const APP_SHELL = [
   './pwa.js',
   './theme.css',
   './js/security-and-vitals.js',
+  './js/supabase-client.js',
   './manifest.json',
   './data/computadoras.json?v=16',
   './data/consolas.json?v=16',
