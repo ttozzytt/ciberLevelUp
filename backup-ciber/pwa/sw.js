@@ -1,0 +1,24 @@
+'use strict';
+const CACHE='levelup-backup-practicas-v1';
+const SHELL=[
+ './','./index.html','./styles.css','./app.js','./tarjeta.js','./manifest.json',
+ '../icons/icon-192.png','../icons/icon-512.png',
+ './semana1/01-modo-oscuro/index.html',
+ './semana1/02-filtro-catalogo/index.html',
+ './semana1/03-menu-hamburguesa/index.html',
+ './semana1/04-validacion-formulario/index.html',
+ './semana1/05-bitacora-dia1/index.html',
+ './semana1/06-bitacora-dia2/index.html',
+ './semana2/01-jquery-acordeon-temas/index.html',
+ './semana2/02-calculadora-modal-timer/index.html',
+ './semana2/03-fetch-lazyloading/index.html',
+ './semana2/04-arquitectura-pwa-offline/index.html',
+ './semana2/05-seguridad-xss-responsividad-login/index.html',
+ './semana3/01-componentes-encapsulamiento/index.html',
+ './semana3/02-mobile-first-grid-flexbox/index.html',
+ './semana3/03-cwv-bem-dompurify-sw/index.html',
+ './semana2/03-fetch-lazyloading/data/catalogo.json'
+];
+self.addEventListener('install',event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE);await cache.addAll(SHELL);await self.skipWaiting();})()));
+self.addEventListener('activate',event=>event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>key.startsWith('levelup-backup-practicas-')&&key!==CACHE).map(key=>caches.delete(key)));await self.clients.claim();})()));
+self.addEventListener('fetch',event=>{if(event.request.method!=='GET')return;const url=new URL(event.request.url);if(url.origin!==self.location.origin)return;event.respondWith((async()=>{const cache=await caches.open(CACHE);const saved=await cache.match(event.request);if(saved)return saved;try{const response=await fetch(event.request);if(response.ok)cache.put(event.request,response.clone());return response;}catch(error){if(event.request.mode==='navigate')return(await cache.match('./index.html'))||Response.error();return Response.error();}})());});
