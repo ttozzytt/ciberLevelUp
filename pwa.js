@@ -1702,7 +1702,40 @@ function startPaymentStep() {
   showBookingStep('payment');
   updatePaymentState();
 }
-async function confirmSessionPayment(){const machine=state.selectedMachine,user=state.activeUser,booking=state.booking,scheduledId=booking?.scheduledReservationId||null;const scheduledEntry=scheduledId?state.scheduledReservations.find(x=>x.id===scheduledId):null;const validHold=machine?.reservationExpiresAt&&machine.reservationExpiresAt>Date.now();if(!machine||!user||!booking||(scheduledId?!scheduledEntry:!validHold)){showToast('Reserva temporal o turno ya no disponible.','error');return;}try{const c=await levelupRequireClient();const {data,error}=await c.rpc('levelup_start_session',{p_resource_id:levelupResourceId(resourceKeyForEquipment(machine)),p_billing_mode:booking.billingMode,p_duration_minutes:booking.billingMode==='open'?30:Number(booking.durationMinutes),p_has_extra_controller:Boolean(booking.hasExtraController),p_scheduled_reservation_id:scheduledId});if(error)throw error;await levelupRefreshWalletAndSessions();await levelupLoadMyScheduledReservations();machine.available=false;machine.reservationExpiresAt=null;$('#successText').text('Sesión registrada en Supabase. Saldo restante: '+money(data.balance));showBookingStep('success');showToast('Sesión y cobro confirmados en Supabase.');}catch(e){console.error(e);$('#scheduledBookingConflict').text(e.message||'Error al iniciar').prop('hidden',false);showToast(e.message||'No se inició la sesión.','error');}}
+async function confirmSessionPayment(){
+  const machine=state.selectedMachine,user=state.activeUser,booking=state.booking;
+  const scheduledId=booking?.scheduledReservationId||null;
+  const scheduledEntry=scheduledId?state.scheduledReservations.find(item=>item.id===scheduledId):null;
+  const validHold=machine?.reservationExpiresAt&&machine.reservationExpiresAt>Date.now();
+  if(!machine||!user||!booking||(scheduledId?!scheduledEntry:!validHold)){showToast('La reserva temporal o el turno ya no está disponible.','error');return;}
+  const button=document.getElementById('confirmPayment');
+  if(button?.disabled)return;
+  if(button)button.disabled=true;
+  try{
+    const client=await levelupRequireClient();
+    const {data,error}=await client.rpc('levelup_start_session',{
+      p_resource_id:levelupResourceId(resourceKeyForEquipment(machine)),
+      p_billing_mode:booking.billingMode,
+      p_duration_minutes:booking.billingMode==='open'?30:Number(booking.durationMinutes),
+      p_has_extra_controller:Boolean(booking.hasExtraController),
+      p_scheduled_reservation_id:scheduledId
+    });
+    if(error)throw error;
+    await levelupRefreshWalletAndSessions();
+    await levelupLoadMyScheduledReservations();
+    await levelupRefreshResourceAvailability();
+    state.activeScheduledReservationId='';
+    $('#successText').text('Sesión registrada y cobrada en Supabase. Saldo restante: '+money(data.balance));
+    $('#contractedAtLabel').text('Contratado el '+new Date().toLocaleString('es-BO',{dateStyle:'medium',timeStyle:'short'}));
+    $('#syncNote').text('La base de datos confirmó la sesión y el movimiento de saldo.');
+    showBookingStep('success');
+    showToast('Sesión y cobro confirmados en Supabase.');
+  }catch(error){
+    console.error(error);
+    $('#scheduledBookingConflict').text(error.message||'Error al iniciar').prop('hidden',false);
+    showToast(error.message||'No se inició ni cobró la sesión.','error');
+  }finally{if(button)button.disabled=false;}
+}
 function closeBooking(release = true) {
   const wasScheduledTurn = Boolean(state.activeScheduledReservationId);
   if (release) releaseReservation(false);
@@ -2021,7 +2054,7 @@ function renderServiceSelectionSafe(type){const target=document.getElementById('
 function reserveServiceDirect(type){renderServiceSelectionSafe(type);if(type==='console'){const item=state.consoles.find(x=>isAvailable(x));if(!item){showToast('No hay una PlayStation disponible en este momento.','error');return}openConsoleBooking(item.id);return}if(!['basic','standard','premium'].includes(type))return;const item=state.machines.find(x=>x.type===type&&isAvailable(x));if(!item){showToast('No hay equipos disponibles de esa categoría.','error');return}openBooking(item.id)}
 function bindLevelUpEvents() {
   /* Limpieza previa: evita duplicar escuchadores si se ejecuta una segunda hidratación. */
-  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupValidation .levelupReservation .levelupAccessories');
+  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupValidation .levelupReservation .levelupAccessories .levelupAdmin');
   $(window).off('.levelupRuntime .levelupCarousel');
 
   $document.on('click.levelupNavigation', '[data-view-target]', function (event) {
@@ -2064,6 +2097,18 @@ function bindLevelUpEvents() {
   /* Cuenta, formularios y validación progresiva input/blur. */
   $document.on('click.levelupAccount', '#showRegister', () => switchAccountTab('register'));
   $document.on('click.levelupAccount', '#showLogin', () => switchAccountTab('login'));
+  $document.on('click.levelupAdmin', '#adminRefreshButton', async function(){
+    this.disabled=true;
+    try{await levelupLoadAdminDashboard();await levelupRefreshResourceAvailability();showToast('Panel actualizado desde Supabase.');}
+    catch(error){console.error(error);showToast(error.message||'No se pudo actualizar el panel.','error');}
+    finally{this.disabled=false;}
+  });
+  $document.on('click.levelupAdmin', '#adminToolsPanel [data-recharge-review]', async function(){
+    const button=this;button.disabled=true;
+    try{await levelupResolveRechargeRequest(button.dataset.requestId,button.dataset.decision);}
+    catch(error){console.error(error);showToast(error.message||'No se pudo resolver la recarga.','error');}
+    finally{button.disabled=false;}
+  });
   $document.on('submit.levelupAccount', '#registerForm', async function (event) {
     event.preventDefault();
     const validName = validateAccountName();
