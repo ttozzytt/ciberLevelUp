@@ -1,12 +1,12 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v34-supabase-phone-auth';
+const CACHE_NAME = 'levelup-cibercafe-v35-c3a2-user-images-services';
 const APP_SHELL = [
   './',
   './index.html',
   './pwa.html',
   './index.css',
-  './pwa.css',
+  './pwa.css?v=c3a2-user-images-services-20261121-r1',
   './index.js',
   './pwa.js?v=levelup-supabase-auth-phone-password-r2',
   './theme.css',
@@ -55,22 +55,7 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  const isPexelsPhoto = request.destination === 'image' && url.hostname === 'images.pexels.com';
-  if (isPexelsPhoto) {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE_NAME);
-      const saved = await cache.match(request);
-      if (saved) return saved;
-      try {
-        const live = await fetch(request);
-        if (live.ok || live.type === 'opaque') await cache.put(request, live.clone());
-        return live;
-      } catch (_) {
-        return (await caches.match(new URL('./imagenes/pc-gamer.webp', self.location.href).href)) || Response.error();
-      }
-    })());
-    return;
-  }
+  // Las imágenes propias se incluyen en el CSS local y quedan disponibles Offline.
   if (url.origin !== self.location.origin) return;
 
   // El health-check debe salir a la red: nunca se responde desde Cache Storage.
