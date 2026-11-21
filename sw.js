@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v33-supabase-catalog';
+const CACHE_NAME = 'levelup-cibercafe-v34-supabase-phone-auth';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,7 +11,7 @@ const APP_SHELL = [
   './pwa.js',
   './theme.css',
   './js/security-and-vitals.js',
-  './js/supabase-client.js',
+  './js/supabase-client.js?v=levelup-supabase-auth-phone-password-r2',
   './manifest.json',
   './data/computadoras.json?v=16',
   './data/consolas.json?v=16',
