@@ -1104,8 +1104,233 @@ function activeScheduledSignature(now = Date.now()) {
 }
 async function levelupRequireClient(){const c=window.levelupSupabase;if(!c||!state.activeUser?.id)throw new Error('Inicia sesión para operar con Supabase.');return c;}
 function levelupResourceId(key){const m=/^(pc|console):(\d+)$/.exec(String(key||''));if(!m)throw new Error('Equipo inválido.');return Number(m[2]);}
-async function levelupRefreshWalletAndSessions(){const c=await levelupRequireClient();const sync=await c.rpc('levelup_sync_my_sessions');if(sync.error)throw sync.error;const q=await Promise.all([c.from('profiles').select('id,full_name,phone,balance').eq('id',state.activeUser.id).single(),c.from('sessions').select('*').eq('customer_id',state.activeUser.id).eq('status','active'),c.from('wallet_transactions').select('*').eq('customer_id',state.activeUser.id).order('created_at',{ascending:false}).limit(30),c.from('orders').select('id,session_id,total_amount,status,created_at,order_items(product_id,item_name,quantity,unit_price,line_total)').eq('customer_id',state.activeUser.id).order('created_at',{ascending:false}).limit(20)]);q.forEach(x=>{if(x.error)throw x.error;});state.activeUser.balance=Number(q[0].data.balance||0);state.activeSessions=q[1].data.map(r=>({id:r.id,resourceKey:r.resource_id>=101?'console:'+r.resource_id:'pc:'+r.resource_id,resourceType:r.resource_id>=101?'console':'pc',machine:r.resource_id,resourceLabel:'Equipo '+r.resource_id,ownerPhone:state.activeUser.phone,ownerName:state.activeUser.name,billingMode:r.billing_mode,startedAt:new Date(r.started_at).getTime(),endsAt:r.planned_end_at?new Date(r.planned_end_at).getTime():null,durationMinutes:r.planned_end_at?Math.round((new Date(r.planned_end_at)-new Date(r.started_at))/60000):null,ratePerHour:Number(r.hourly_rate_snapshot),halfHourRate:0,timeAmount:Number(r.time_amount),snacksTotal:Number(r.snacks_total),extraController:r.extra_controller,paidUntil:r.paid_until?new Date(r.paid_until).getTime():null,nextChargeAt:r.next_charge_at?new Date(r.next_charge_at).getTime():null,orders:q[3].data.filter(o=>o.session_id===r.id).map(o=>({id:o.id,date:o.created_at,total:Number(o.total_amount),items:o.order_items.map(i=>({id:i.product_id,name:i.item_name,quantity:i.quantity,price:Number(i.unit_price)}))}))}));state.activeUser.history=q[2].data.map(t=>({type:t.reason,amount:t.direction==='credit'?Number(t.amount):-Number(t.amount),date:t.created_at,method:t.payment_method,details:t.reason}));renderMachines();renderConsoles();renderAccount();updatePaymentState();return sync.data;}
-async function levelupLoadMyScheduledReservations(){const c=await levelupRequireClient();const q=await c.from('reservations').select('*').eq('customer_id',state.activeUser.id).in('status',['pending','confirmed','active']).order('starts_at');if(q.error)throw q.error;state.scheduledReservations=(q.data||[]).map(r=>({id:r.id,name:r.customer_name,resourceKey:r.resource_id>=101?'console:'+r.resource_id:'pc:'+r.resource_id,resourceLabel:'Equipo '+r.resource_id,startsAt:r.starts_at,durationHours:r.duration_hours,createdAt:r.created_at,db:true}));renderScheduledReservations();populateReservationResources();renderMachines();renderConsoles();}
+async function levelupRefreshWalletAndSessions(){
+  const client=await levelupRequireClient();
+  const sync=await client.rpc('levelup_sync_my_sessions');
+  if(sync.error)throw sync.error;
+  const q=await Promise.all([
+    client.from('profiles').select('id,full_name,phone,balance,role').eq('id',state.activeUser.id).single(),
+    client.from('sessions').select('*').eq('customer_id',state.activeUser.id).eq('status','active').order('started_at',{ascending:false}),
+    client.from('wallet_transactions').select('*').eq('customer_id',state.activeUser.id).order('created_at',{ascending:false}).limit(30),
+    client.from('orders').select('id,session_id,total_amount,status,created_at,order_items(product_id,item_name,quantity,unit_price,line_total)').eq('customer_id',state.activeUser.id).order('created_at',{ascending:false}).limit(20),
+    client.from('recharge_requests').select('id,amount,payment_method,status,created_at').eq('customer_id',state.activeUser.id).order('created_at',{ascending:false}).limit(12)
+  ]);
+  q.forEach(item=>{if(item.error)throw item.error;});
+  const profile=q[0].data;
+  state.activeUser.name=String(profile.full_name||state.activeUser.name);
+  state.activeUser.phone=localLevelUpPhone(profile.phone||state.activeUser.phone);
+  state.activeUser.role=profile.role;
+  state.activeUser.balance=Number(profile.balance||0);
+  state.activeSessions=q[1].data.map(row=>{
+    const key=row.resource_id>=101?'console:'+row.resource_id:'pc:'+row.resource_id;
+    const found=getReservationResource(key);
+    return {id:row.id,resourceKey:key,resourceType:row.resource_id>=101?'console':'pc',machine:row.resource_id,
+      resourceLabel:found?.label||('Equipo '+row.resource_id),ownerPhone:state.activeUser.phone,ownerName:state.activeUser.name,
+      billingMode:row.billing_mode,startedAt:new Date(row.started_at).getTime(),
+      endsAt:row.planned_end_at?new Date(row.planned_end_at).getTime():null,
+      durationMinutes:row.planned_end_at?Math.round((new Date(row.planned_end_at)-new Date(row.started_at))/60000):null,
+      ratePerHour:Number(row.hourly_rate_snapshot),halfHourRate:found?.item?.halfHourRate||0,
+      timeAmount:Number(row.time_amount),snacksTotal:Number(row.snacks_total),extraController:row.extra_controller,
+      paidUntil:row.paid_until?new Date(row.paid_until).getTime():null,nextChargeAt:row.next_charge_at?new Date(row.next_charge_at).getTime():null,
+      orders:q[3].data.filter(order=>order.session_id===row.id).map(order=>({id:order.id,date:order.created_at,total:Number(order.total_amount),
+        items:order.order_items.map(item=>({id:item.product_id,name:item.item_name,quantity:item.quantity,price:Number(item.unit_price)}))}))
+    };
+  });
+  state.activeUser.history=q[2].data.map(row=>({type:row.reason,amount:row.direction==='credit'?Number(row.amount):-Number(row.amount),date:row.created_at,method:row.payment_method,details:row.reason}));
+  levelupRenderMyRechargeRequests(q[4].data||[]);
+  renderMachines();renderConsoles();renderAccount();updatePaymentState();
+  if(['admin','staff'].includes(state.activeUser.role))await levelupLoadAdminDashboard();
+  return sync.data;
+}
+async function levelupLoadMyScheduledReservations(){
+  const client=await levelupRequireClient();
+  const result=await client.from('reservations').select('*').eq('customer_id',state.activeUser.id).in('status',['pending','confirmed','active']).order('starts_at');
+  if(result.error)throw result.error;
+  state.scheduledReservations=(result.data||[]).map(row=>{
+    const key=row.resource_id>=101?'console:'+row.resource_id:'pc:'+row.resource_id;
+    const resource=getReservationResource(key);
+    return {id:row.id,name:row.customer_name,resourceKey:key,resourceLabel:resource?.label||('Equipo '+row.resource_id),startsAt:row.starts_at,durationHours:row.duration_hours,createdAt:row.created_at,db:true};
+  });
+  renderScheduledReservations();populateReservationResources();renderMachines();renderConsoles();
+}
+
+function levelupRequestKey(stateKey) {
+  if (state[stateKey]) return state[stateKey];
+  let value = '';
+  try { value = window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : ''; } catch (_) {}
+  if (!value) value = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 3 | 8)).toString(16);
+  });
+  state[stateKey] = value;
+  return value;
+}
+async function levelupRefreshResourceAvailability() {
+  const client = window.levelupSupabase;
+  if (!client) return [];
+  const result = await client.rpc('levelup_resource_availability');
+  if (result.error) throw result.error;
+  (result.data || []).forEach(row => {
+    const resource = Number(row.resource_id) >= 101 ? getConsole(Number(row.resource_id)) : getMachine(Number(row.resource_id));
+    if (!resource) return;
+    resource.available = Boolean(row.available_now);
+    const sessionEnd = row.current_session_ends_at ? new Date(row.current_session_ends_at).getTime() : 0;
+    const reservationEnd = row.current_reservation_ends_at ? new Date(row.current_reservation_ends_at).getTime() : 0;
+    resource.sessionEndsAt = sessionEnd > Date.now() ? sessionEnd : reservationEnd > Date.now() ? reservationEnd : null;
+    resource.reservationExpiresAt = null;
+    if (!resource.available && !resource.sessionEndsAt && !resource.sessionStartedAt) resource.sessionStartedAt = Date.now();
+    if (resource.available) resource.sessionStartedAt = null;
+    resource.nextReservationAt = row.next_reservation_starts_at || null;
+  });
+  renderMachines();
+  renderConsoles();
+  return result.data || [];
+}
+function levelupRenderMyRechargeRequests(rows) {
+  const container = document.getElementById('myRechargeRequests');
+  if (!container) return;
+  container.replaceChildren();
+  if (!rows || !rows.length) {
+    container.append(createTextElement('p','history-empty','Todavía no tienes solicitudes de recarga.'));
+    return;
+  }
+  rows.forEach(row => {
+    const item=createTextElement('article','recharge-request-item');
+    const copy=createTextElement('div','recharge-request-item__copy');
+    const date=new Date(row.created_at);
+    const when=Number.isNaN(date.getTime())?'Fecha no disponible':date.toLocaleString('es-BO',{dateStyle:'short',timeStyle:'short'});
+    copy.append(createTextElement('strong','',money(row.amount)+' · '+row.payment_method));
+    copy.append(createTextElement('small','',when));
+    const status=createTextElement('span','recharge-request-item__status',
+      row.status==='approved'?'Aprobada':row.status==='rejected'?'Rechazada':'Pendiente de aprobación');
+    status.dataset.status=row.status;
+    item.append(copy,status);
+    container.append(item);
+  });
+}
+async function levelupLoadMyRechargeRequests() {
+  if (!state.activeUser?.id) return;
+  const client=await levelupRequireClient();
+  const result=await client.from('recharge_requests')
+    .select('id,amount,payment_method,status,created_at')
+    .eq('customer_id',state.activeUser.id)
+    .order('created_at',{ascending:false}).limit(12);
+  if(result.error)throw result.error;
+  levelupRenderMyRechargeRequests(result.data||[]);
+}
+function levelupAdminEmpty(message) {
+  return createTextElement('p','admin-empty',message);
+}
+async function levelupLoadAdminDashboard() {
+  const panel=document.getElementById('adminToolsPanel');
+  if(!panel)return;
+  const user=state.activeUser;
+  const allowed=Boolean(user&&['admin','staff'].includes(user.role));
+  panel.hidden=!allowed;
+  if(!allowed)return;
+  const client=await levelupRequireClient();
+  const queries=await Promise.all([
+    client.from('recharge_requests').select('id,customer_id,amount,payment_method,status,created_at').order('created_at',{ascending:false}).limit(25),
+    client.from('profiles').select('id,full_name,phone,balance,role').order('created_at',{ascending:false}).limit(100),
+    client.from('sessions').select('id,customer_id,resource_id,billing_mode,started_at,planned_end_at,time_amount,snacks_total,status').eq('status','active').order('started_at',{ascending:false}).limit(50),
+    client.from('reservations').select('id,customer_id,customer_name,resource_id,starts_at,ends_at,duration_hours,status').in('status',['pending','confirmed','active']).order('starts_at').limit(50),
+    client.from('orders').select('id,customer_id,session_id,total_amount,status,created_at,order_items(item_name,quantity,line_total)').order('created_at',{ascending:false}).limit(12)
+  ]);
+  queries.forEach(q=>{if(q.error)throw q.error;});
+  const requests=queries[0].data||[],profiles=queries[1].data||[],sessions=queries[2].data||[],reservations=queries[3].data||[],orders=queries[4].data||[];
+  const profileMap=new Map(profiles.map(p=>[p.id,p]));
+  const pending=requests.filter(r=>r.status==='pending').length;
+  const summary=document.getElementById('adminSummary');
+  if(summary){
+    summary.replaceChildren();
+    [['Clientes',profiles.length],['Recargas pendientes',pending],['Sesiones activas',sessions.length],['Reservas activas',reservations.length]].forEach(pair=>{
+      const box=createTextElement('div','admin-summary__item');
+      box.append(createTextElement('strong','',String(pair[1])),createTextElement('small','',pair[0]));
+      summary.append(box);
+    });
+  }
+  const rechargeList=document.getElementById('adminRechargeRequests');
+  if(rechargeList){
+    rechargeList.replaceChildren();
+    if(!requests.length)rechargeList.append(levelupAdminEmpty('No hay solicitudes de recarga.'));
+    requests.forEach(row=>{
+      const profile=profileMap.get(row.customer_id)||{};
+      const item=createTextElement('article','admin-list-item');
+      const copy=createTextElement('div','admin-list-item__copy');
+      const when=new Date(row.created_at);
+      copy.append(createTextElement('strong','',money(row.amount)+' · '+row.payment_method));
+      copy.append(createTextElement('small','',(profile.full_name||'Cliente')+' · '+(profile.phone||'Sin celular')));
+      copy.append(createTextElement('small','',when.toLocaleString('es-BO')+' · '+(row.status==='approved'?'Aprobada':row.status==='rejected'?'Rechazada':'Pendiente')));
+      item.append(copy);
+      if(row.status==='pending'){
+        const actions=createTextElement('div','admin-list-item__actions');
+        const approve=createTextElement('button','primary-btn','Aprobar');
+        approve.type='button';approve.dataset.rechargeReview='true';approve.dataset.requestId=row.id;approve.dataset.decision='approved';approve.dataset.hidratado='true';
+        const reject=createTextElement('button','secondary-btn','Rechazar');
+        reject.type='button';reject.dataset.rechargeReview='true';reject.dataset.requestId=row.id;reject.dataset.decision='rejected';reject.dataset.hidratado='true';
+        actions.append(approve,reject);item.append(actions);
+      }
+      rechargeList.append(item);
+    });
+  }
+  const activeList=document.getElementById('adminActiveSessions');
+  if(activeList){
+    activeList.replaceChildren();
+    if(!sessions.length)activeList.append(levelupAdminEmpty('No hay sesiones activas.'));
+    sessions.forEach(row=>{
+      const profile=profileMap.get(row.customer_id)||{};
+      const resource=row.resource_id>=101?'PlayStation #'+(row.resource_id-100):'PC #'+String(row.resource_id).padStart(2,'0');
+      const item=createTextElement('article','admin-list-item');
+      const copy=createTextElement('div','admin-list-item__copy');
+      copy.append(createTextElement('strong','',resource+' · '+(profile.full_name||'Cliente')));
+      copy.append(createTextElement('small','',(row.billing_mode==='open'?'Sin límite':'Tiempo definido')+' · Inicio '+new Date(row.started_at).toLocaleString('es-BO')));
+      copy.append(createTextElement('small','', 'Tiempo Bs '+Number(row.time_amount||0).toFixed(2)+' · Pedidos Bs '+Number(row.snacks_total||0).toFixed(2)));
+      item.append(copy);activeList.append(item);
+    });
+  }
+  const reservationList=document.getElementById('adminReservations');
+  if(reservationList){
+    reservationList.replaceChildren();
+    if(!reservations.length)reservationList.append(levelupAdminEmpty('No hay reservas pendientes ni activas.'));
+    reservations.forEach(row=>{
+      const profile=profileMap.get(row.customer_id)||{};
+      const resource=row.resource_id>=101?'PlayStation #'+(row.resource_id-100):'PC #'+String(row.resource_id).padStart(2,'0');
+      const item=createTextElement('article','admin-list-item');
+      const copy=createTextElement('div','admin-list-item__copy');
+      copy.append(createTextElement('strong','',resource+' · '+(row.customer_name||profile.full_name||'Cliente')));
+      copy.append(createTextElement('small','',new Date(row.starts_at).toLocaleString('es-BO')+' · '+row.duration_hours+' h'));
+      copy.append(createTextElement('small','',row.status==='active'?'En curso':row.status==='confirmed'?'Confirmada':'Pendiente'));
+      item.append(copy);reservationList.append(item);
+    });
+  }
+  const orderList=document.getElementById('adminOrders');
+  if(orderList){
+    orderList.replaceChildren();
+    if(!orders.length)orderList.append(levelupAdminEmpty('Todavía no hay pedidos.'));
+    orders.forEach(row=>{
+      const profile=profileMap.get(row.customer_id)||{};
+      const items=(row.order_items||[]).map(i=>i.quantity+' × '+i.item_name).join(', ');
+      const item=createTextElement('article','admin-list-item');
+      const copy=createTextElement('div','admin-list-item__copy');
+      copy.append(createTextElement('strong','',money(row.total_amount)+' · '+(profile.full_name||'Cliente')));
+      copy.append(createTextElement('small','',items||'Pedido sin detalle'));
+      copy.append(createTextElement('small','',new Date(row.created_at).toLocaleString('es-BO')+' · '+row.status));
+      item.append(copy);orderList.append(item);
+    });
+  }
+}
+async function levelupResolveRechargeRequest(requestId,decision) {
+  if(!state.activeUser||!['admin','staff'].includes(state.activeUser.role))throw new Error('Solo el personal autorizado puede validar recargas.');
+  if(!['approved','rejected'].includes(decision))throw new Error('Decisión no válida.');
+  if(decision==='approved'&&!window.confirm('¿Ya comprobaste que el pago ingresó? Solo aprueba después de verificar el efectivo o el QR.'))return;
+  const client=await levelupRequireClient();
+  const result=await client.rpc('levelup_resolve_recharge_request',{p_request_id:requestId,p_decision:decision});
+  if(result.error)throw result.error;
+  await levelupRefreshWalletAndSessions();
+  await levelupLoadAdminDashboard();
+  showToast(decision==='approved'?'Recarga aprobada y saldo acreditado.':'Solicitud de recarga rechazada.');
+}
+
 async function submitScheduledReservation(event){event.preventDefault();const result=validateScheduledReservation();const status=$('#reservationFormStatus');status.text('').attr('class','form-status');if(!result.valid){status.text('Revisa los campos marcados antes de guardar.').attr('class','form-status error');return;}const endAt=result.startAt+result.duration*3600000;const endMinusOne=new Date(endAt-1);const startDate=new Date(result.startAt);if(startDate.getHours()<8||endMinusOne.getDate()!==startDate.getDate()){status.text('El turno debe estar entre las 08:00 y las 24:00 y terminar el mismo día.').attr('class','form-status error');return;}try{const c=await levelupRequireClient();const {data,error}=await c.rpc('levelup_create_scheduled_reservation',{p_resource_id:levelupResourceId(result.resource.key),p_customer_name:result.name,p_starts_at:new Date(result.startAt).toISOString(),p_duration_hours:result.duration});if(error)throw error;await levelupLoadMyScheduledReservations();event.currentTarget.reset();setReservationDateMinimum();status.text('Turno guardado en Supabase.').attr('class','form-status success');showToast('Reserva guardada en Supabase.');}catch(e){console.error(e);status.text(e.message||'Error guardando en Supabase.').attr('class','form-status error');showToast(e.message||'No se guardó.','error');}}
 async function cancelScheduledReservation(id){if(id===state.activeScheduledReservationId){showToast('Cierra el proceso de inicio antes de cancelar este turno.','error');return;}try{const c=await levelupRequireClient();const {error}=await c.rpc('levelup_cancel_scheduled_reservation',{p_reservation_id:id});if(error)throw error;await levelupLoadMyScheduledReservations();$('#reservationFormStatus').text('Turno cancelado en Supabase.').attr('class','form-status success');showToast('Turno cancelado.');}catch(e){console.error(e);showToast(e.message||'No se pudo cancelar.','error');}}
 
@@ -1241,51 +1466,30 @@ function updateActiveSessionPanel() {
 async function finishOpenSession(sessionId,reason='manual'){try{const c=await levelupRequireClient();const {error}=await c.rpc('levelup_finish_open_session',{p_session_id:sessionId});if(error)throw error;await levelupRefreshWalletAndSessions();await levelupLoadMyScheduledReservations();renderMachines();renderConsoles();populateReservationResources();showToast('Sesión finalizada en Supabase.');}catch(e){console.error(e);showToast(e.message||'No se pudo finalizar.','error');}}
 function processOpenSessionCharges(now){return [];}
 
-function renderAccount() {
+function renderAccount(){
   renderPendingActions();
-  const loggedIn = Boolean(state.activeUser);
-  $('#accountAccessPanel').prop('hidden', loggedIn);
-  $('#accountDashboard').prop('hidden', !loggedIn);
-  if (!loggedIn) return;
-  const user = state.activeUser;
-  $('#accountDisplayName').text(user.name);
-  $('#accountDisplayPhone').text(`Celular · ${user.phone}`);
-  $('#accountDisplayBalance').text(money(user.balance));
+  const loggedIn=Boolean(state.activeUser);
+  $('#accountAccessPanel').prop('hidden',loggedIn);$('#accountDashboard').prop('hidden',!loggedIn);
+  const adminPanel=document.getElementById('adminToolsPanel');
+  if(adminPanel)adminPanel.hidden=!loggedIn||!['admin','staff'].includes(state.activeUser.role);
+  if(!loggedIn)return;
+  const user=state.activeUser;
+  $('#accountDisplayName').text(user.name);$('#accountDisplayPhone').text('Celular · '+user.phone);$('#accountDisplayBalance').text(money(user.balance));
   renderActiveSessionPanel();
-  const history = Array.isArray(user.history) ? [...user.history].reverse().slice(0, 8) : [];
-  const historyContainer = document.getElementById('accountHistory');
-  if (historyContainer) {
-    if (!history.length) {
-      historyContainer.replaceChildren(createTextElement('div', 'history-empty', 'Todavía no tienes movimientos. Cuando recargues o completes una sesión aparecerán aquí.'));
-    } else {
-      const fragment = document.createDocumentFragment();
-      history.forEach(entry => {
-        if (!entry || typeof entry !== 'object') return;
-        const row = createTextElement('div', 'history-item');
-        const detailsBox = document.createElement('div');
-        const dateValue = entry.date ? new Date(entry.date) : null;
-        const date = dateValue && !Number.isNaN(dateValue.getTime())
-          ? dateValue.toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' })
-          : 'Fecha no disponible';
-        const amountValue = Number(entry.amount || 0);
-        const amount = Number.isFinite(amountValue) ? amountValue : 0;
-        const resourceLabel = entry.resource === 'console' ? `PlayStation #${Number(entry.machine) - 100}` : `Estación #${pad(entry.machine)}`;
-        const sessionLabel = entry.durationLabel || (entry.type && entry.type.startsWith('Pedido') ? 'Pedido' : (entry.minutes ? durationLabel(entry.minutes) : `${entry.hours || 1} h`));
-        const details = entry.machine ? `${resourceLabel} · ${sessionLabel}` : (entry.method || entry.details || 'Movimiento local');
-        const entryType = entry.type === 'Recarga simulada' ? 'Recarga de saldo' : (entry.type || 'Movimiento');
-        detailsBox.append(
-          createTextElement('strong', '', entryType),
-          createTextElement('small', '', `${details} · ${date}`)
-        );
-        row.append(
-          detailsBox,
-          createTextElement('span', `history-amount ${amount >= 0 ? 'positive' : 'negative'}`, `${amount >= 0 ? '+' : '−'}${money(Math.abs(amount))}`)
-        );
-        fragment.append(row);
-      });
-      historyContainer.replaceChildren(fragment);
-    }
-  }
+  const history=Array.isArray(user.history)?[...user.history].reverse().slice(0,8):[];
+  const container=document.getElementById('accountHistory');if(!container)return;container.replaceChildren();
+  if(!history.length){container.append(createTextElement('div','history-empty','Todavía no tienes movimientos confirmados en Supabase.'));return;}
+  history.forEach(entry=>{
+    if(!entry||typeof entry!=='object')return;
+    const row=createTextElement('div','history-item'),copy=createTextElement('div','');
+    const dateValue=entry.date?new Date(entry.date):null;
+    const date=dateValue&&!Number.isNaN(dateValue.getTime())?dateValue.toLocaleString('es-BO',{dateStyle:'short',timeStyle:'short'}):'Fecha no disponible';
+    const amount=Number(entry.amount||0);
+    copy.append(createTextElement('strong','',entry.type||'Movimiento'));
+    copy.append(createTextElement('small','',(entry.details||entry.method||'Movimiento confirmado')+' · '+date));
+    row.append(copy,createTextElement('span','history-amount '+(amount>=0?'positive':'negative'),(amount>=0?'+':'−')+money(Math.abs(amount))));
+    container.append(row);
+  });
 }
 function switchAccountTab(tab) {
   const register = tab === 'register';
@@ -1342,7 +1546,22 @@ function setAccountAuthNote(message, isError = false) {
   note.textContent = String(message || '');
   note.classList.toggle('error', Boolean(isError));
 }
-async function activateLevelUpAuthUser(authUser){if(!authUser?.id||!window.levelupSupabase)throw new Error('No se pudo identificar la sesión.');const c=window.levelupSupabase;const {data:profile,error}=await c.from('profiles').select('id,full_name,phone,balance').eq('id',authUser.id).maybeSingle();if(error)throw error;if(!profile)throw new Error('No encontramos el perfil.');state.activeUser={id:authUser.id,name:String(profile.full_name||authUser.user_metadata?.full_name||'Cliente LevelUp'),phone:localLevelUpPhone(profile.phone||authUser.phone),balance:Number(profile.balance||0),history:[],createdAt:authUser.created_at||new Date().toISOString(),supabaseAuth:true};renderAccount();await levelupRefreshWalletAndSessions();await levelupLoadMyScheduledReservations();setAccountAuthNote('Datos cargados desde Supabase.');}
+async function activateLevelUpAuthUser(authUser){
+  if(!authUser?.id||!window.levelupSupabase)throw new Error('No se pudo identificar la sesión.');
+  const client=window.levelupSupabase;
+  const {data:profile,error}=await client.from('profiles').select('id,full_name,phone,balance,role').eq('id',authUser.id).maybeSingle();
+  if(error)throw error;
+  if(!profile)throw new Error('No encontramos el perfil.');
+  state.activeUser={id:authUser.id,name:String(profile.full_name||authUser.user_metadata?.full_name||'Cliente LevelUp'),
+    phone:localLevelUpPhone(profile.phone||authUser.phone),balance:Number(profile.balance||0),role:profile.role,
+    history:[],createdAt:authUser.created_at||new Date().toISOString(),supabaseAuth:true};
+  renderAccount();
+  await levelupRefreshWalletAndSessions();
+  await levelupLoadMyScheduledReservations();
+  await levelupLoadMyRechargeRequests();
+  if(['admin','staff'].includes(state.activeUser.role))await levelupLoadAdminDashboard();
+  setAccountAuthNote('Perfil, saldo, historial, sesiones y reservas cargados desde Supabase.');
+}
 async function restoreLevelUpAuthSession() {
   const client = window.levelupSupabase;
   if (!client) return;
