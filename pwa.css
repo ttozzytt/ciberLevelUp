@@ -682,6 +682,10 @@ button:disabled { opacity: .48; cursor: not-allowed ; transform: none ; box-shad
 }
 @media (max-width: 560px) {
   .service-price-grid { grid-template-columns: 1fr; }
-  .service-price-card__visual { max-width: 100%; }
+  .service-price-card__visual { max-width: 192px; }
   .snacks-view__visual { width: 104px; flex-basis: 104px; }
+}
+.visual-photo--local .levelup-user-image {
+  background-size: auto 200%;
+  background-position: 85% 0;
 }
