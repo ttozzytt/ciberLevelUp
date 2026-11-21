@@ -90,10 +90,10 @@
                 <img class="visual-photo__image" src="./imagenes/playstation.webp" alt="Consola PlayStation" width="225" height="225" loading="eager" decoding="async">
                 <span>GAMING & MÁS</span>
               </button>
-              <button class="visual-photo" type="button" data-photo-open data-photo="https://images.pexels.com/photos/33888375/pexels-photo-33888375.jpeg?cs=srgb&dl=pexels-atahandemir-33888375.jpg&fm=jpg" data-caption="Setup gamer con doble monitor e iluminación RGB · Foto de Atahan Demir / Pexels" data-hidratado="false" disabled>
-                <img class="visual-photo__image" src="https://images.pexels.com/photos/33888375/pexels-photo-33888375.jpeg?cs=srgb&dl=pexels-atahandemir-33888375.jpg&fm=jpg" alt="Setup gamer con doble monitor, PC e iluminación RGB; foto de Atahan Demir" width="225" height="225" loading="lazy" decoding="async">
-                <span>SETUP RGB · PEXELS</span>
-              </button>
+              <div class="visual-photo visual-photo--local" role="img" aria-label="Setup gamer y streaming enviado por el usuario">
+                <span class="visual-photo__art levelup-user-image levelup-user-image--streaming" aria-hidden="true"></span>
+                <span>SETUP & STREAMING</span>
+              </div>
 
             </div>
 
@@ -195,11 +195,11 @@
           <div class="view-heading"><div><p class="eyebrow">ELIGE SEGÚN TU PARTIDA</p><h1 id="servicesTitle">Servicios y <span style="color:var(--cyan)">tarifas.</span></h1><p>Consulta las categorías y cómo funciona una sesión antes de reservar.</p></div></div>
           <div class="service-selection" id="serviceSelectionInfo" aria-live="polite"><strong class="service-selection__title">Elige una categoría para reservar</strong><p class="service-selection__description">Desde cada tarifa puedes iniciar la reserva sin salir de este apartado.</p></div>
           <div class="price-grid service-price-grid">
-            <article class="price-card"><small>GAMING DE ENTRADA</small><h3>Básica</h3><p>Intel Core i3-10100 (4 núcleos / 8 hilos) · GTX 1050 Ti 4 GB · 8 GB DDR4 · SSD 480 GB. Silla estándar acolchada.</p><strong>Bs 3 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="basic" data-hidratado="false" disabled>Reservar esta categoría →</button></article>
-            <article class="price-card featured"><small>MEJOR EQUILIBRIO</small><h3>Estándar</h3><p>AMD Ryzen 5 5600 (6 núcleos / 12 hilos) · RTX 3050 8 GB · 16 GB DDR4 · NVMe 512 GB. Silla ergonómica con apoyo lumbar.</p><strong>Bs 6 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="standard" data-hidratado="false" disabled>Reservar esta categoría →</button></article>
-            <article class="price-card"><small>GAMING & STREAMING</small><h3>Premium</h3><p>AMD Ryzen 9 9950X3D2 Dual Edition (16 núcleos / 32 hilos) · RTX 5090 con 32 GB GDDR7 · 32 GB DDR5 · NVMe 2 TB. Dos monitores para juego y streaming, micrófono y silla gamer premium con soporte lumbar y cervical.</p><strong>Bs 10 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="premium" data-hidratado="false" disabled>Reservar esta categoría →</button></article>
+            <article class="price-card service-price-card"><span class="service-price-card__visual levelup-user-image levelup-user-image--headset" role="img" aria-label="Auriculares gamer con iluminación RGB"></span><small>GAMING DE ENTRADA</small><h3>Básica</h3><p>Intel Core i3-10100 (4 núcleos / 8 hilos) · GTX 1050 Ti 4 GB · 8 GB DDR4 · SSD 480 GB. Silla estándar acolchada.</p><strong>Bs 3 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="basic" data-hidratado="false" disabled>Reservar esta categoría →</button></article>
+            <article class="price-card price-card--featured featured service-price-card"><span class="service-price-card__visual levelup-user-image levelup-user-image--streaming" role="img" aria-label="Setup gamer para jugar y hacer streaming"></span><small>MEJOR EQUILIBRIO</small><h3>Estándar</h3><p>AMD Ryzen 5 5600 (6 núcleos / 12 hilos) · RTX 3050 8 GB · 16 GB DDR4 · NVMe 512 GB. Silla ergonómica con apoyo lumbar.</p><strong>Bs 6 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="standard" data-hidratado="false" disabled>Reservar esta categoría →</button></article>
+            <article class="price-card service-price-card"><span class="service-price-card__visual levelup-user-image levelup-user-image--esports" role="img" aria-label="Zona de computadoras para gaming competitivo"></span><small>GAMING & STREAMING</small><h3>Premium</h3><p>AMD Ryzen 9 9950X3D2 Dual Edition (16 núcleos / 32 hilos) · RTX 5090 con 32 GB GDDR7 · 32 GB DDR5 · NVMe 2 TB. Dos monitores para juego y streaming, micrófono y silla gamer premium con soporte lumbar y cervical.</p><strong>Bs 10 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="premium" data-hidratado="false" disabled>Reservar esta categoría →</button></article>
           
-            <article class="price-card console-price-card"><small>ZONA CONSOLE</small><h3>PlayStation 5</h3><p>Cuatro PS5. Incluye un mando DualSense por consola. Segundo mando opcional: Bs 6 por sesión; no se cobra por hora.</p><strong>Bs 15 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="console" data-hidratado="false" disabled>Reservar PS5 →</button></article>
+            <article class="price-card console-price-card service-price-card"><span class="service-price-card__visual service-price-card__visual--console"><img src="./imagenes/playstation.webp" width="225" height="225" loading="lazy" decoding="async" alt="PlayStation 5 con mando DualSense"></span><small>ZONA CONSOLE</small><h3>PlayStation 5</h3><p>Cuatro PS5. Incluye un mando DualSense por consola. Segundo mando opcional: Bs 6 por sesión; no se cobra por hora.</p><strong>Bs 15 <span>/ hora</span></strong><button class="service-card__reserve" type="button" data-service-reserve="console" data-hidratado="false" disabled>Reservar PS5 →</button></article>
           </div>
           
           </section>
@@ -213,6 +213,7 @@
               <p>Elige tus productos y consulta el total de tu pedido.</p>
             </div>
             <div class="view-count"><span>8</span><small>PRODUCTOS</small></div>
+            <div class="snacks-view__visual levelup-user-image levelup-user-image--snacks" role="img" aria-label="Vitrina de snacks, bebidas y productos del cibercafé"></div>
           </div>
           <section class="panel accessory-panel snacks-panel" aria-labelledby="accessoryTitle">
             <div class="panel-heading">
