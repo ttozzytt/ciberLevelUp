@@ -1443,9 +1443,19 @@ async function levelupResolveRechargeRequest(requestId,decision) {
   const client=await levelupRequireClient();
   const result=await client.rpc('levelup_resolve_recharge_request',{p_request_id:requestId,p_decision:decision});
   if(result.error)throw result.error;
-  await levelupRefreshWalletAndSessions();
-  await levelupLoadAdminDashboard();
-  showToast(decision==='approved'?'Recarga aprobada y saldo acreditado.':'Solicitud de recarga rechazada.');
+  // La decisión ya quedó confirmada por PostgreSQL. Un fallo de lectura posterior
+  // no debe hacer creer al personal que el crédito no se aplicó.
+  let refreshFailed=false;
+  try {
+    await levelupRefreshWalletAndSessions();
+    await levelupLoadAdminDashboard();
+  } catch (refreshError) {
+    refreshFailed=true;
+    console.error('La recarga se resolvió, pero no se pudo refrescar el panel:',refreshError);
+  }
+  showToast(decision==='approved'
+    ?(refreshFailed?'Recarga aprobada y saldo acreditado en Supabase. Actualiza el panel para ver el saldo.':'Recarga aprobada y saldo acreditado.')
+    :(refreshFailed?'Solicitud rechazada en Supabase. Actualiza el panel.':'Solicitud de recarga rechazada.'));
 }
 
 async function submitScheduledReservation(event){
@@ -2028,25 +2038,37 @@ async function confirmRecharge(){
   if(button)button.disabled=true;
   const requestKey=levelupRequestKey('pendingRechargeRequestId');
   const payload={p_amount:amount,p_payment_method:state.rechargeMethod,p_request_key:requestKey};
+  let requestConfirmed=false;
   try{
     const client=await levelupRequireClient();
     const {error}=await client.rpc('levelup_create_recharge_request',payload);
     if(error)throw error;
-    state.pendingRechargeRequestId=null;closeModal('#rechargeModal');
-    await levelupLoadMyRechargeRequests();
-    await levelupRefreshWalletAndSessions();
-    showToast('Solicitud registrada en Supabase. Tu saldo se conserva y solo aumentará cuando el personal apruebe el pago.');
+    requestConfirmed=true;
+    // La clave solo se libera después de que el RPC devuelve éxito. Si se pierde
+    // la respuesta de red, el reintento reutiliza la misma clave idempotente.
+    state.pendingRechargeRequestId=null;
+    closeModal('#rechargeModal');
   }catch(error){
     console.error(error);
-    // Una recarga no se encola offline: solo se acepta cuando Supabase confirma
-    // que la solicitud quedó registrada. La misma clave se conserva al reintentar
-    // por si el servidor recibió la petición y la respuesta se perdió.
+    // Nunca encolamos pagos offline ni afirmamos que una solicitud sin respuesta
+    // del servidor fue registrada.
     if(levelupIsTransportFailure(error)){
-      showToast('Sin conexión con Supabase. La recarga no se registró ni cambió tu saldo. Vuelve a intentarlo online.','error');
+      showToast('No pudimos confirmar la solicitud con Supabase. Tu saldo no cambió. Vuelve a intentarlo online.','error');
     }else{
       showToast(error.message||'No se registró la solicitud de recarga.','error');
     }
-  }finally{if(button)button.disabled=false;}
+  }
+  if(requestConfirmed){
+    try{
+      await levelupLoadMyRechargeRequests();
+      await levelupRefreshWalletAndSessions();
+      showToast('Solicitud registrada en Supabase. Tu saldo actual se conserva y solo aumentará cuando el personal apruebe el pago.');
+    }catch(refreshError){
+      console.error('La solicitud sí se registró, pero no se pudo actualizar la pantalla:',refreshError);
+      showToast('Solicitud registrada en Supabase. El saldo no cambia hasta que el personal apruebe el pago. Actualiza la cuenta para ver el estado.');
+    }
+  }
+  if(button)button.disabled=false;
 }
 
 /* Temporizador único: se actualizan los textos, no se adjuntan listeners a cada tarjeta. */
