@@ -108,7 +108,7 @@
 
           <section class="home-lower">
             <article class="panel home-feature"><span class="feature-icon">⚡</span><div><strong>Encuentra tu equipo</strong><p>Compara Básica, Estándar y Premium; o visita la zona PlayStation. Los detalles y la disponibilidad están en sus apartados.</p><button class="text-btn" type="button" data-view-target="computadoras" data-hidratado="false" disabled>Ver catálogo <span>→</span></button></div></article>
-            <article class="panel home-feature"><span class="feature-icon">◉</span><div><strong>Tu cuenta y tu saldo</strong><p>Registra un número, consulta tu saldo y revisa la actividad guardada en este navegador.</p><button class="text-btn" type="button" data-view-target="cuenta" data-hidratado="false" disabled>Ir a mi cuenta <span>→</span></button></div></article>
+            <article class="panel home-feature"><span class="feature-icon">◉</span><div><strong>Tu cuenta y tu saldo</strong><p>Registra tu cuenta, consulta tu saldo y revisa la actividad sincronizada con Supabase.</p><button class="text-btn" type="button" data-view-target="cuenta" data-hidratado="false" disabled>Ir a mi cuenta <span>→</span></button></div></article>
             <article class="panel home-feature"><span class="feature-icon">🎮</span><div><strong>Zona PlayStation</strong><p>Cuatro consolas PS5, un mando incluido por consola y opción de sumar otro por Bs 6.</p><button class="text-btn" type="button" data-view-target="consolas" data-hidratado="false" disabled>Ver consolas <span>→</span></button></div></article>
           </section>
         </section>
@@ -128,6 +128,7 @@
                 <button class="filter-chip" type="button" data-filter="premium" aria-pressed="false" data-hidratado="false" disabled>Premium · Bs 10</button>
               </div>
             </div>
+            <div class="catalog-demo-toolbar"><button class="secondary-btn demo-view-toggle" id="btnSimularVista" type="button" aria-pressed="false" data-hidratado="false" disabled>Simular vista móvil</button></div>
             <div class="search-filter-row">
               <label class="search-wrap"><span aria-hidden="true">⌕</span><input id="searchPC" class="search-input" type="search" placeholder="Buscar estación, procesador o gráfica…" aria-label="Buscar computadoras" data-hidratado="false" disabled></label>
               <label class="form-field"><span class="side-caption">CATEGORÍA</span><select id="filterCategory" class="field-control" data-hidratado="false" disabled><option value="">Todas</option></select></label>
@@ -176,7 +177,7 @@
               <p class="account-note" id="accountAuthNote" role="status" aria-live="polite">Tu cuenta usa Supabase. El saldo, las reservas, las sesiones y los pedidos se consultan desde la base de datos.</p>
             </section>
             <section class="panel account-panel account-dashboard" id="accountDashboard" hidden>
-              <div class="panel-heading"><span class="feature-icon">👤</span><div><h2>Resumen de cuenta</h2><p>Tu información guardada en este dispositivo.</p></div></div>
+              <div class="panel-heading"><span class="feature-icon">👤</span><div><h2>Resumen de cuenta</h2><p>Tu cuenta y movimientos consultados desde Supabase.</p></div></div>
               <div class="account-profile"><span class="avatar">👤</span><div><strong id="accountDisplayName">Usuario</strong><small id="accountDisplayPhone">Celular registrado</small></div></div>
               <div class="balance-card"><div><span>Saldo disponible</span><strong id="accountDisplayBalance">Bs 0</strong></div><button class="primary-btn" id="openRechargeButton" type="button" data-hidratado="false" disabled>＋ Recargar</button></div>
               <section class="account-recharge-requests panel" aria-labelledby="myRechargeTitle">
