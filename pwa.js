@@ -1042,7 +1042,7 @@ function levelupIsTransportFailure(error){
 }
 async function levelupEnqueueOffline(type,payload,requestKey){
   if(!state.activeUser?.id)throw new Error('Inicia sesión para guardar una operación pendiente.');
-  if(!['reservation_create','order_create'].includes(type))throw new Error('Esta operación no admite cola offline.');
+  if(!['reservation_create','order_create','recharge_request'].includes(type))throw new Error('Esta operación no admite cola offline.');
   const record={
     id:requestKey,user_id:state.activeUser.id,type,payload,
     status:'pending',created_at:new Date().toISOString(),last_error:''
@@ -1443,19 +1443,9 @@ async function levelupResolveRechargeRequest(requestId,decision) {
   const client=await levelupRequireClient();
   const result=await client.rpc('levelup_resolve_recharge_request',{p_request_id:requestId,p_decision:decision});
   if(result.error)throw result.error;
-  // La decisión ya quedó confirmada por PostgreSQL. Un fallo de lectura posterior
-  // no debe hacer creer al personal que el crédito no se aplicó.
-  let refreshFailed=false;
-  try {
-    await levelupRefreshWalletAndSessions();
-    await levelupLoadAdminDashboard();
-  } catch (refreshError) {
-    refreshFailed=true;
-    console.error('La recarga se resolvió, pero no se pudo refrescar el panel:',refreshError);
-  }
-  showToast(decision==='approved'
-    ?(refreshFailed?'Recarga aprobada y saldo acreditado en Supabase. Actualiza el panel para ver el saldo.':'Recarga aprobada y saldo acreditado.')
-    :(refreshFailed?'Solicitud rechazada en Supabase. Actualiza el panel.':'Solicitud de recarga rechazada.'));
+  await levelupRefreshWalletAndSessions();
+  await levelupLoadAdminDashboard();
+  showToast(decision==='approved'?'Recarga aprobada y saldo acreditado.':'Solicitud de recarga rechazada.');
 }
 
 async function submitScheduledReservation(event){
@@ -1475,27 +1465,24 @@ async function submitScheduledReservation(event){
     const client=await levelupRequireClient();
     const {error}=await client.rpc('levelup_create_scheduled_reservation',payload);
     if(error)throw error;
-    // El RPC es la confirmación de PostgreSQL; no guardamos la reserva en el navegador.
     state.pendingReservationRequestId=null;
-    form.reset();setReservationDateMinimum();
-    status.text('Turno guardado en Supabase.').attr('class','form-status success');
-    showToast('Reserva registrada en la base de datos.');
+    await levelupLoadMyScheduledReservations();await levelupRefreshResourceAvailability();
+    form.reset();setReservationDateMinimum();status.text('Turno guardado en Supabase.').attr('class','form-status success');
+    showToast('Reserva confirmada en la base de datos.');
   }catch(error){
     console.error(error);
-    const message=levelupIsTransportFailure(error)
-      ?'Sin conexión con Supabase. El turno NO se guardó ni quedó reservado. Vuelve a conectarte e inténtalo otra vez.'
-      :(error.message||'Error guardando el turno en Supabase.');
-    status.text(message).attr('class','form-status error');
-    showToast(message,'error');
-    return;
+    if(levelupIsTransportFailure(error)){
+      try{
+        await levelupEnqueueOffline('reservation_create',payload,requestKey);
+        state.pendingReservationRequestId=null;form.reset();setReservationDateMinimum();
+        status.text('Turno guardado en este dispositivo y pendiente de sincronizar. Todavía no está reservado.').attr('class','form-status');
+        showToast('Turno pendiente de enviar a Supabase cuando vuelva Internet.');
+      }catch(queueError){status.text(queueError.message||'No se pudo guardar la solicitud pendiente.').attr('class','form-status error');showToast(queueError.message||'No se pudo guardar la solicitud.','error');}
+    }else{
+      status.text(error.message||'Error guardando en Supabase.').attr('class','form-status error');
+      showToast(error.message||'No se guardó el turno.','error');
+    }
   }finally{if(button)button.disabled=false;}
-  try{
-    await levelupLoadMyScheduledReservations();
-    await levelupRefreshResourceAvailability();
-  }catch(refreshError){
-    console.error('El turno sí quedó guardado en Supabase, pero no se pudo refrescar la vista:',refreshError);
-    showToast('Reserva guardada en Supabase. Actualiza la pantalla para refrescar la disponibilidad.','error');
-  }
 }
 async function cancelScheduledReservation(id){
   if(id===state.activeScheduledReservationId){showToast('Cierra el proceso de inicio antes de cancelar un turno.','error');return;}
@@ -2017,23 +2004,15 @@ function closeBooking(release = true) {
   if (wasScheduledTurn) renderScheduledReservations();
 }
 
-/* Recargas: la solicitud se registra en Supabase; el crédito solo llega tras aprobar el pago. */
-async function openRecharge() {
+/* Recargas: simulación local, sin procesar dinero real. */
+function openRecharge() {
   if (!state.activeUser) {
     showView('cuenta');
     showToast('Primero crea tu cuenta o inicia sesión.');
     return;
   }
-  try {
-    // El saldo se muestra siempre desde el perfil real de Supabase.
-    await levelupRefreshWalletAndSessions();
-    $('#rechargeCurrentBalance').text(money(state.activeUser.balance));
-    $('#rechargeAmountLabel').text(money(state.rechargeAmount));
-    openModal('#rechargeModal');
-  } catch (error) {
-    console.error('No se pudo consultar el saldo antes de solicitar una recarga:', error);
-    showToast('No pudimos consultar tu saldo en Supabase. No se envió ninguna recarga.', 'error');
-  }
+  $('#rechargeAmountLabel').text(money(state.rechargeAmount));
+  openModal('#rechargeModal');
 }
 async function confirmRecharge(){
   if(!state.activeUser)return;const button=document.getElementById('confirmRecharge');if(button?.disabled)return;
@@ -2041,37 +2020,23 @@ async function confirmRecharge(){
   if(button)button.disabled=true;
   const requestKey=levelupRequestKey('pendingRechargeRequestId');
   const payload={p_amount:amount,p_payment_method:state.rechargeMethod,p_request_key:requestKey};
-  let requestConfirmed=false;
   try{
     const client=await levelupRequireClient();
     const {error}=await client.rpc('levelup_create_recharge_request',payload);
     if(error)throw error;
-    requestConfirmed=true;
-    // La clave solo se libera después de que el RPC devuelve éxito. Si se pierde
-    // la respuesta de red, el reintento reutiliza la misma clave idempotente.
-    state.pendingRechargeRequestId=null;
-    closeModal('#rechargeModal');
+    state.pendingRechargeRequestId=null;closeModal('#rechargeModal');
+    await levelupLoadMyRechargeRequests();
+    showToast('Solicitud registrada. El saldo solo cambiará tras la aprobación del personal.');
   }catch(error){
     console.error(error);
-    // Nunca encolamos pagos offline ni afirmamos que una solicitud sin respuesta
-    // del servidor fue registrada.
     if(levelupIsTransportFailure(error)){
-      showToast('No pudimos confirmar la solicitud con Supabase. Tu saldo no cambió. Vuelve a intentarlo online.','error');
-    }else{
-      showToast(error.message||'No se registró la solicitud de recarga.','error');
-    }
-  }
-  if(requestConfirmed){
-    try{
-      await levelupLoadMyRechargeRequests();
-      await levelupRefreshWalletAndSessions();
-      showToast('Solicitud registrada en Supabase. Tu saldo actual se conserva y solo aumentará cuando el personal apruebe el pago.');
-    }catch(refreshError){
-      console.error('La solicitud sí se registró, pero no se pudo actualizar la pantalla:',refreshError);
-      showToast('Solicitud registrada en Supabase. El saldo no cambia hasta que el personal apruebe el pago. Actualiza la cuenta para ver el estado.');
-    }
-  }
-  if(button)button.disabled=false;
+      try{
+        await levelupEnqueueOffline('recharge_request',payload,requestKey);
+        state.pendingRechargeRequestId=null;closeModal('#rechargeModal');
+        showToast('Solicitud guardada como pendiente local. El saldo no ha cambiado ni se ha acreditado.');
+      }catch(queueError){showToast(queueError.message||'No se pudo guardar la solicitud pendiente.','error');}
+    }else showToast(error.message||'No se registró la solicitud.','error');
+  }finally{if(button)button.disabled=false;}
 }
 
 /* Temporizador único: se actualizan los textos, no se adjuntan listeners a cada tarjeta. */
@@ -2330,24 +2295,18 @@ async function sendAccessoryOrder(){
     const client=await levelupRequireClient();
     const {error}=await client.rpc('levelup_create_order',payload);
     if(error)throw error;
-    // Solo vaciamos el carrito tras confirmación exitosa del RPC en Supabase.
-    state.pendingOrderRequestId=null;
-    state.accessoryQueue=[];saveAccessoryQueue();renderAccessoryQueue();
-    showToast('Pedido, artículos y cobro confirmados en Supabase.');
+    state.pendingOrderRequestId=null;state.accessoryQueue=[];saveAccessoryQueue();renderAccessoryQueue();
+    await levelupRefreshWalletAndSessions();showToast('Pedido, artículos y cobro confirmados en Supabase.');
   }catch(error){
     console.error(error);
-    const message=levelupIsTransportFailure(error)
-      ?'Sin conexión con Supabase. El pedido NO se guardó ni se cobró. El carrito sigue como borrador; reconéctate e inténtalo otra vez.'
-      :(error.message||'No se guardó el pedido en Supabase.');
-    showToast(message,'error');
-    return;
+    if(levelupIsTransportFailure(error)){
+      try{
+        await levelupEnqueueOffline('order_create',payload,requestKey);
+        state.pendingOrderRequestId=null;state.accessoryQueue=[];saveAccessoryQueue();renderAccessoryQueue();
+        showToast('Pedido guardado como pendiente local. No se ha cobrado ni confirmado aún.');
+      }catch(queueError){showToast(queueError.message||'No se pudo guardar el pedido pendiente.','error');}
+    }else showToast(error.message||'No se guardó el pedido.','error');
   }finally{if(button)button.disabled=false;}
-  try{
-    await levelupRefreshWalletAndSessions();
-  }catch(refreshError){
-    console.error('El pedido sí quedó guardado y cobrado en Supabase, pero el panel no se pudo actualizar:',refreshError);
-    showToast('El pedido sí quedó confirmado y cobrado en Supabase. Actualiza tu cuenta para ver el saldo.','error');
-  }
 }
 function clearAccessoryQueue() {
   state.accessoryQueue = [];

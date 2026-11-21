@@ -1,1 +1,0 @@
-(()=>{const form=document.getElementById('safeForm'),input=document.getElementById('safeName'),out=document.getElementById('safeOutput');form?.addEventListener('submit',e=>{e.preventDefault();out.textContent='Entrada mostrada como texto plano: '+input.value.trim();});})();

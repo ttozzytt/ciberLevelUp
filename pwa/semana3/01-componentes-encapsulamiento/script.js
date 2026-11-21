@@ -1,1 +1,0 @@
-(()=>{document.querySelectorAll('app-tarjeta').forEach(el=>el.setAttribute('role','group'));})();
