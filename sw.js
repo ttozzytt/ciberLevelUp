@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'levelup-cibercafe-v37-supabase-db-admin-idempotency';
+const CACHE_NAME = 'levelup-cibercafe-v38-supabase-db-admin-staff';
 const APP_SHELL = [
   './',
   './index.html',
@@ -8,7 +8,7 @@ const APP_SHELL = [
   './index.css',
   './pwa.css?v=c3a2-user-images-services-20261121-r2',
   './index.js',
-  './pwa.js?v=levelup-supabase-db-admin-idempotency-r3',
+  './pwa.js?v=levelup-supabase-db-admin-staff-r4',
   './theme.css',
   './js/security-and-vitals.js',
   './js/supabase-client.js?v=levelup-supabase-auth-phone-password-r2',
