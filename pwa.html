@@ -179,12 +179,28 @@
               <div class="panel-heading"><span class="feature-icon">👤</span><div><h2>Resumen de cuenta</h2><p>Tu información guardada en este dispositivo.</p></div></div>
               <div class="account-profile"><span class="avatar">👤</span><div><strong id="accountDisplayName">Usuario</strong><small id="accountDisplayPhone">Celular registrado</small></div></div>
               <div class="balance-card"><div><span>Saldo disponible</span><strong id="accountDisplayBalance">Bs 0</strong></div><button class="primary-btn" id="openRechargeButton" type="button" data-hidratado="false" disabled>＋ Recargar</button></div>
+              <section class="account-recharge-requests panel" aria-labelledby="myRechargeTitle">
+                <div class="panel-heading"><div><h3 id="myRechargeTitle">Mis solicitudes de recarga</h3><p>El saldo se acredita cuando el personal confirma el pago.</p></div></div>
+                <div id="myRechargeRequests" class="recharge-request-list" aria-live="polite"><p class="history-empty">Todavía no tienes solicitudes.</p></div>
+              </section>
               <section class="active-session-panel" id="activeSessionPanel" aria-labelledby="activeSessionTitle" hidden>
                 <div class="active-session-heading"><div><p class="eyebrow">EN JUEGO</p><h3 id="activeSessionTitle">Mi sesión actual</h3></div><span class="active-session-badge">ACTIVA</span></div>
                 <div id="activeSessionList" class="active-session-list" aria-live="polite"></div>
               </section>
               <div class="panel-heading" style="margin:5px 0 0"><div><h3>Actividad reciente</h3><p>Recargas, sesiones y pedidos.</p></div></div>
               <div class="history-list" id="accountHistory"><div class="history-empty">Todavía no hay movimientos.</div></div>
+              <section class="panel levelup-admin-panel" id="adminToolsPanel" aria-labelledby="adminToolsTitle" hidden>
+                <div class="panel-heading levelup-admin-heading">
+                  <div><p class="eyebrow">SOLO PERSONAL AUTORIZADO</p><h3 id="adminToolsTitle">Administración LevelUp</h3><p>Revisa pagos y actividad desde la base de datos.</p></div>
+                  <button class="secondary-btn" id="adminRefreshButton" type="button" data-hidratado="false" disabled>Actualizar</button>
+                </div>
+                <p class="payment-note">Aprueba una recarga únicamente después de comprobar el pago recibido. Una solicitud no añade saldo automáticamente.</p>
+                <div id="adminSummary" class="admin-summary" aria-live="polite"></div>
+                <section class="admin-subsection"><h4>Solicitudes de recarga</h4><div id="adminRechargeRequests" class="admin-list"></div></section>
+                <section class="admin-subsection"><h4>Sesiones activas</h4><div id="adminActiveSessions" class="admin-list"></div></section>
+                <section class="admin-subsection"><h4>Reservas</h4><div id="adminReservations" class="admin-list"></div></section>
+                <section class="admin-subsection"><h4>Pedidos recientes</h4><div id="adminOrders" class="admin-list"></div></section>
+              </section>
               <div class="account-actions"><button class="secondary-btn" id="logoutButton" type="button" data-hidratado="false" disabled>Cerrar sesión</button></div>
             </section>
           </div>
@@ -406,7 +422,7 @@
       <div class="recharge-grid" role="group" aria-label="Seleccionar monto"><button class="pay-option" type="button" data-recharge-amount="10" data-hidratado="false" disabled>Bs 10</button><button class="pay-option active" type="button" data-recharge-amount="20" data-hidratado="false" disabled>Bs 20</button><button class="pay-option" type="button" data-recharge-amount="50" data-hidratado="false" disabled>Bs 50</button><button class="pay-option" type="button" data-recharge-amount="100" data-hidratado="false" disabled>Bs 100</button></div>
       <div class="form-field"><label>Método de pago</label><div class="payment-methods"><button class="pay-option active" type="button" data-recharge-method="QR" data-hidratado="false" disabled>QR</button><button class="pay-option" type="button" data-recharge-method="Efectivo" data-hidratado="false" disabled>Efectivo</button></div></div>
       <div class="total-card"><span>Importe elegido</span><strong id="rechargeAmountLabel">Bs 20</strong></div>
-      <p class="payment-note">La selección de QR o efectivo queda registrada como método elegido. Esta versión actualiza el saldo en este navegador, pero todavía no genera un QR bancario ni procesa un cobro real.</p>
+      <p class="payment-note">Esta acción registra una solicitud en Supabase. El saldo no cambia hasta que el personal verifique y apruebe el pago. No se genera un QR bancario ni se procesa un cobro automático.</p>
       <div class="modal-actions"><button class="secondary-btn" id="cancelRecharge" type="button" data-hidratado="false" disabled>Cancelar</button><button class="primary-btn" id="confirmRecharge" type="button" data-hidratado="false" disabled>Confirmar recarga →</button></div>
     </section>
   </div>
