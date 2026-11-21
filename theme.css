@@ -348,3 +348,144 @@ body { height: 100dvh; min-height: 0; }
 @media (max-width:380px) {
   #view-turnos .reservation-form-grid { grid-template-columns:minmax(0,1fr); }
 }
+
+
+/* C3-A3 · Móvil horizontal: menú lateral compacto y contenido con scroll propio. */
+@media screen and (orientation: landscape) and (max-height: 620px) and (max-width: 1100px) {
+  .app-shell {
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .sidebar {
+    display: flex;
+    width: clamp(132px, 18vw, 160px);
+    flex: 0 0 clamp(132px, 18vw, 160px);
+    height: 100dvh;
+    min-height: 0;
+    padding: 10px 7px calc(10px + env(safe-area-inset-bottom));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  .app-brand {
+    gap: 7px;
+    padding: 0 4px 13px;
+  }
+  .app-brand .brand-mark {
+    width: 33px;
+    height: 33px;
+    flex: 0 0 33px;
+    border-radius: 9px;
+    font-size: 15px;
+  }
+  .app-brand strong { font-size: 9px; letter-spacing: .5px; }
+  .app-brand small { display: none; }
+  .side-caption { padding: 0 8px 7px; font-size: 8px; }
+  .nav-list { gap: 4px; }
+  .nav-item {
+    min-height: 36px;
+    gap: 7px;
+    padding: 6px 7px;
+    border-radius: 8px;
+    font-size: 9px;
+  }
+  .nav-icon { width: 16px; font-size: 14px; }
+  .sidebar-bottom {
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 12px;
+    padding: 9px 4px 0;
+    font-size: 7px;
+  }
+  .sidebar-version { display: none; }
+  .app-column {
+    width: 0;
+    height: 100dvh;
+    min-width: 0;
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+  .topbar {
+    height: 50px;
+    min-height: 50px;
+    flex: 0 0 50px;
+    gap: 8px;
+    padding: 4px 10px;
+  }
+  .mobile-brand { display: flex; font-size: 10px; }
+  .breadcrumb, .mobile-menu-toggle { display: none; }
+  .top-actions { gap: 5px; }
+  .network-status { min-height: 27px; padding: 4px 7px; font-size: 7px; }
+  .top-action-btn { min-height: 34px; padding: 6px 8px; font-size: 8px; }
+  .main-content {
+    width: 0;
+    height: 0;
+    min-height: 0;
+    flex: 1 1 auto;
+    padding: 9px 10px calc(14px + env(safe-area-inset-bottom));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-bottom: 14px;
+  }
+  .view, .view.active {
+    width: 100%;
+    height: auto;
+    min-height: 100%;
+    max-height: none;
+    overflow: visible;
+  }
+  .view.active {
+    flex: 0 0 auto;
+    gap: 9px;
+  }
+  .view.active > * { flex-shrink: 0; }
+  .bottom-nav { display: none; }
+  .home-hero {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1.15fr) minmax(170px, .85fr);
+    gap: 12px;
+    padding: 14px;
+  }
+  .home-copy h1 { font-size: clamp(24px, 4vw, 36px); }
+  .home-visual { grid-template-rows: 90px 58px; }
+}
+
+/* C3-A3 · El tema claro también ilumina los marcos de las fotos de portada. */
+:root[data-theme="light"] .home-hero {
+  border-color: var(--line);
+  background:
+    radial-gradient(ellipse at 85% 15%, rgba(8,125,139,.08), transparent 42%),
+    linear-gradient(115deg, #ffffff, #eef3fa 64%, #e6f1f5);
+  box-shadow: var(--shadow);
+}
+:root[data-theme="light"] .visual-photo {
+  border-color: var(--line);
+  background: #e8eef6;
+  box-shadow: 0 10px 24px rgba(27,44,75,.10);
+}
+:root[data-theme="light"] .visual-photo img,
+:root[data-theme="light"] .visual-photo:nth-child(2) img {
+  background: #e8eef6;
+}
+:root[data-theme="light"] .entry-visual {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(8,125,139,.10), transparent 56%),
+    linear-gradient(145deg, #f0f4fa, #e7edf5);
+}
+:root[data-theme="light"] .entry-photo-main,
+:root[data-theme="light"] .entry-photo-small,
+:root[data-theme="light"] .entry-photo-small img {
+  background: #e8eef6;
+  box-shadow: 0 10px 24px rgba(27,44,75,.08);
+}
+:root[data-theme="light"] .entry-visual-caption {
+  border-color: var(--line);
+  background: rgba(255,255,255,.94);
+  color: var(--text);
+}
