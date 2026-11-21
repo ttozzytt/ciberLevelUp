@@ -984,6 +984,175 @@ function activeScheduledSignature(now = Date.now()) {
 }
 async function levelupRequireClient(){const c=window.levelupSupabase;if(!c||!state.activeUser?.id)throw new Error('Inicia sesión para operar con Supabase.');return c;}
 function levelupResourceId(key){const m=/^(pc|console):(\d+)$/.exec(String(key||''));if(!m)throw new Error('Equipo inválido.');return Number(m[2]);}
+
+const LEVELUP_QUEUE_DATABASE='levelup-pending-operations-v1';
+const LEVELUP_QUEUE_STORE='operations';
+function levelupOpenQueueDatabase(){
+  return new Promise((resolve,reject)=>{
+    if(!window.indexedDB){reject(new Error('Este navegador no permite guardar operaciones pendientes.'));return;}
+    const request=window.indexedDB.open(LEVELUP_QUEUE_DATABASE,1);
+    request.onupgradeneeded=()=>{
+      const database=request.result;
+      if(!database.objectStoreNames.contains(LEVELUP_QUEUE_STORE)){
+        const store=database.createObjectStore(LEVELUP_QUEUE_STORE,{keyPath:'id'});
+        store.createIndex('user_id','user_id',{unique:false});
+        store.createIndex('status','status',{unique:false});
+      }
+    };
+    request.onsuccess=()=>resolve(request.result);
+    request.onerror=()=>reject(request.error||new Error('No se pudo abrir la cola local.'));
+    request.onblocked=()=>reject(new Error('Cierra otra pestaña de LevelUp y vuelve a intentarlo.'));
+  });
+}
+async function levelupQueueStore(record){
+  const database=await levelupOpenQueueDatabase();
+  return new Promise((resolve,reject)=>{
+    const transaction=database.transaction(LEVELUP_QUEUE_STORE,'readwrite');
+    transaction.objectStore(LEVELUP_QUEUE_STORE).put(record);
+    transaction.oncomplete=()=>{database.close();resolve(true);};
+    transaction.onerror=()=>{const error=transaction.error;database.close();reject(error||new Error('No se pudo guardar la operación pendiente.'));};
+    transaction.onabort=()=>{const error=transaction.error;database.close();reject(error||new Error('Se canceló el guardado de la operación pendiente.'));};
+  });
+}
+async function levelupQueueReadAll(){
+  const database=await levelupOpenQueueDatabase();
+  return new Promise((resolve,reject)=>{
+    const transaction=database.transaction(LEVELUP_QUEUE_STORE,'readonly');
+    const request=transaction.objectStore(LEVELUP_QUEUE_STORE).getAll();
+    request.onsuccess=()=>resolve(Array.isArray(request.result)?request.result:[]);
+    request.onerror=()=>reject(request.error||new Error('No se pudo leer la cola local.'));
+    transaction.oncomplete=()=>database.close();
+    transaction.onerror=()=>{const error=transaction.error;database.close();reject(error||new Error('No se pudo leer la cola local.'));};
+  });
+}
+async function levelupQueueDelete(id){
+  const database=await levelupOpenQueueDatabase();
+  return new Promise((resolve,reject)=>{
+    const transaction=database.transaction(LEVELUP_QUEUE_STORE,'readwrite');
+    transaction.objectStore(LEVELUP_QUEUE_STORE).delete(id);
+    transaction.oncomplete=()=>{database.close();resolve(true);};
+    transaction.onerror=()=>{const error=transaction.error;database.close();reject(error||new Error('No se pudo retirar la operación.'));};
+  });
+}
+function levelupIsTransportFailure(error){
+  const message=String(error?.message||error||'');
+  return navigator.onLine===false
+    || error?.name==='TypeError'
+    || /failed to fetch|network error|network request|offline|timed? ?out|connection (?:lost|closed|refused)|failed to send a request/i.test(message);
+}
+async function levelupEnqueueOffline(type,payload,requestKey){
+  if(!state.activeUser?.id)throw new Error('Inicia sesión para guardar una operación pendiente.');
+  if(!['reservation_create','order_create','recharge_request'].includes(type))throw new Error('Esta operación no admite cola offline.');
+  const record={
+    id:requestKey,user_id:state.activeUser.id,type,payload,
+    status:'pending',created_at:new Date().toISOString(),last_error:''
+  };
+  await levelupQueueStore(record);
+  await levelupRenderOfflineQueue();
+  return record;
+}
+async function levelupRenderOfflineQueue(){
+  const panel=document.getElementById('offlinePendingPanel');
+  const list=document.getElementById('offlinePendingList');
+  if(!panel||!list)return;
+  if(!state.activeUser?.id){panel.hidden=true;list.replaceChildren();return;}
+  try{
+    const all=await levelupQueueReadAll();
+    const records=all.filter(item=>item.user_id===state.activeUser.id)
+      .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    panel.hidden=records.length===0;
+    list.replaceChildren();
+    records.forEach(record=>{
+      const item=createTextElement('article','recharge-request-item');
+      const copy=createTextElement('div','recharge-request-item__copy');
+      let title='Operación pendiente';
+      let detail='';
+      if(record.type==='reservation_create'){
+        title='Reserva · PC/PlayStation '+record.payload.p_resource_id;
+        detail=new Date(record.payload.p_starts_at).toLocaleString('es-BO')+' · '+record.payload.p_duration_hours+' h';
+      }else if(record.type==='order_create'){
+        title='Pedido de snacks y accesorios';
+        detail=(record.payload.p_items||[]).map(entry=>entry.quantity+' × '+entry.product_id).join(', ');
+      }else if(record.type==='recharge_request'){
+        title='Solicitud de recarga · '+money(record.payload.p_amount);
+        detail='Método: '+record.payload.p_payment_method;
+      }
+      copy.append(createTextElement('strong','',title));
+      copy.append(createTextElement('small','',detail));
+      if(record.status==='failed')copy.append(createTextElement('small','',record.last_error||'El servidor no aceptó la operación.'));
+      const status=createTextElement('span','recharge-request-item__status',
+        record.status==='failed'?'No enviada': 'Pendiente de sincronizar');
+      status.dataset.status=record.status==='failed'?'rejected':'pending';
+      item.append(copy,status);
+      if(record.status==='failed'){
+        const actions=createTextElement('div','admin-list-item__actions');
+        const retry=createTextElement('button','secondary-btn','Reintentar');
+        retry.type='button';retry.dataset.retryOffline=record.id;retry.dataset.hidratado='true';
+        const remove=createTextElement('button','secondary-btn','Quitar');
+        remove.type='button';remove.dataset.removeOffline=record.id;remove.dataset.hidratado='true';
+        actions.append(retry,remove);item.append(actions);
+      }
+      list.append(item);
+    });
+  }catch(error){
+    console.warn('No se pudo mostrar la cola de operaciones pendientes:',error);
+    panel.hidden=false;
+    list.replaceChildren(createTextElement('p','admin-empty','No se pudo consultar la cola local de operaciones.'));
+  }
+}
+async function levelupProcessPendingTransactions(){
+  if(!state.activeUser?.id||!window.levelupSupabase||navigator.onLine===false||state.levelupQueueSyncing)return;
+  state.levelupQueueSyncing=true;
+  let synced=0;
+  try{
+    const records=await levelupQueueReadAll();
+    for(const record of records){
+      if(record.user_id!==state.activeUser.id||record.status!=='pending')continue;
+      if(navigator.onLine===false)break;
+      try{
+        const client=await levelupRequireClient();
+        let result;
+        if(record.type==='reservation_create'){
+          result=await client.rpc('levelup_create_scheduled_reservation',record.payload);
+        }else if(record.type==='order_create'){
+          result=await client.rpc('levelup_create_order',record.payload);
+        }else if(record.type==='recharge_request'){
+          result=await client.rpc('levelup_create_recharge_request',record.payload);
+        }else{
+          throw new Error('Tipo de operación desconocido.');
+        }
+        if(result.error)throw result.error;
+        await levelupQueueDelete(record.id);
+        synced++;
+      }catch(error){
+        if(levelupIsTransportFailure(error))break;
+        await levelupQueueStore({...record,status:'failed',last_error:String(error.message||'El servidor no aceptó la operación.')});
+      }
+    }
+    await levelupRenderOfflineQueue();
+    if(synced>0){
+      await levelupRefreshWalletAndSessions();
+      await levelupLoadMyScheduledReservations();
+      await levelupLoadMyRechargeRequests();
+      await levelupRefreshResourceAvailability();
+      showToast(synced+' operación(es) sincronizada(s) con Supabase.');
+    }
+  }catch(error){
+    console.warn('No se pudo sincronizar la cola offline:',error);
+  }finally{
+    state.levelupQueueSyncing=false;
+    await levelupRenderOfflineQueue();
+  }
+}
+async function levelupRetryOfflineOperation(id){
+  const all=await levelupQueueReadAll();
+  const record=all.find(item=>item.id===id&&item.user_id===state.activeUser?.id);
+  if(!record)return;
+  await levelupQueueStore({...record,status:'pending',last_error:''});
+  await levelupRenderOfflineQueue();
+  await levelupProcessPendingTransactions();
+}
+
 async function levelupRefreshWalletAndSessions(){
   const client=await levelupRequireClient();
   const sync=await client.rpc('levelup_sync_my_sessions');
