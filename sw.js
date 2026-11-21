@@ -31,13 +31,27 @@ const APP_SHELL = [
   './imagenes/accesorio-mousepad-gamer.jpg',
   './imagenes/mando-adicional-ps5.jpg'
 ];
+const OPTIONAL_CDN_ASSETS = [
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+];
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.addAll(APP_SHELL);
+    // El SDK es opcional para completar la instalación. Si hay red, queda en caché
+    // para restaurar la sesión mientras la PWA está offline; las llamadas a Supabase
+    // esperan a que vuelva Internet.
+    for (const asset of OPTIONAL_CDN_ASSETS) {
+      try {
+        const response = await fetch(new Request(asset, { mode: 'cors', cache: 'reload' }));
+        if (response && response.ok) await cache.put(asset, response.clone());
+      } catch (error) {
+        console.warn('No se pudo precargar el SDK de Supabase; la instalación PWA continúa.', error);
+      }
+    }
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', event => {
@@ -55,6 +69,27 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
+  // SDK de Supabase: sirve la copia local offline y actualiza la caché cuando hay red.
+  if (OPTIONAL_CDN_ASSETS.includes(url.href)) {
+    event.respondWith((async () => {
+      const cached = await caches.match(request);
+      if (cached) return cached;
+      try {
+        const response = await fetch(request);
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+        }
+        return response;
+      } catch (error) {
+        return new Response('El SDK de Supabase todavía no está almacenado en este dispositivo.', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' }
+        });
+      }
+    })());
+    return;
+  }
   // Las imágenes propias se incluyen en el CSS local y quedan disponibles Offline.
   if (url.origin !== self.location.origin) return;
 
