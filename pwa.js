@@ -2123,6 +2123,17 @@ function bindLevelUpEvents() {
   });
   $document.on('change.levelupFilters', '#filterCPU', updateGpuOptions);
   $document.on('change.levelupFilters', '#filterGPU', () => applyMachineFilters(true));
+  $document.on('click.levelupCatalog', '#btnSimularVista', function(){
+    const carousel=document.getElementById('pcCarousel');
+    const track=document.getElementById('pcGrid');
+    if(!carousel||!track)return;
+    const compact=carousel.classList.toggle('sim-movil');
+    track.classList.toggle('sim-movil',compact);
+    this.setAttribute('aria-pressed',String(compact));
+    this.textContent=compact?'Volver al carrusel':'Simular vista móvil';
+    if(compact)carousel.scrollTo({top:0,left:0,behavior:'smooth'});
+    else carousel.scrollTo({top:0,left:0,behavior:'smooth'});
+  });
   $document.on('click.levelupCatalog', '#pcScrollPrev', () => scrollCarousel(-1));
   $document.on('click.levelupCatalog', '#pcScrollNext', () => scrollCarousel(1));
   $document.on('click.levelupCatalog', '[data-select-machine]', function () { openBooking(Number(this.dataset.selectMachine)); });
