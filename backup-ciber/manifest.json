@@ -2,7 +2,7 @@
   "id": "./pwa.html",
   "name": "LevelUp Cibercafé | La Paz",
   "short_name": "LevelUp",
-  "description": "Aplicación de LevelUp Cibercafé para consultar estaciones, servicios y reservar sesiones de demostración.",
+  "description": "Aplicación de LevelUp Cibercafé para consultar estaciones, gestionar saldo y reservar sesiones en LevelUp Cibercafé.",
   "start_url": "./pwa.html#inicio",
   "scope": "./",
   "display": "standalone",
