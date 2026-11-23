@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b0c16" id="themeColorMeta">
-  <script>try{document.documentElement.dataset.theme=localStorage.getItem("levelup-backup-ciber-theme-v1")==="light"?"light":"dark"}catch(_){document.documentElement.dataset.theme="dark"}</script>
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem("levelup-pwa-theme-v1")==="light"?"light":"dark"}catch(_){document.documentElement.dataset.theme="dark"}</script>
   <meta name="description" content="LevelUp Cibercafé en La Paz. Explora nuestros equipos gamer, consulta precios y reserva tu próxima sesión.">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,7 +13,7 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./index.css?v=20261117-theme-1">
+  <link rel="stylesheet" href="./index.css?v=backup-ciber-no-image-text-20261122">
 </head>
 <body class="entry-body">
   <main class="entry-shell">
@@ -22,7 +22,7 @@
         <span class="brand-mark" aria-hidden="true">🎮</span>
         <span>LEVELUP<small>CIBERCAFÉ · LA PAZ</small></span>
         <span class="entry-network-status" id="entryNetworkStatus" data-state="checking"><i></i><b>Comprobando…</b></span>
-        <button class="theme-toggle entry-theme-toggle" id="entryThemeToggle" type="button" data-hidratado="false" disabled aria-label="Activar modo claro" title="Cambiar tema"><span class="theme-toggle__icon" aria-hidden="true">☀</span><span class="theme-toggle__label">Modo claro</span></button>
+        <button class="theme-toggle entry-theme-toggle" id="entryThemeToggle" type="button" data-hidratado="false" disabled aria-label="Activar modo claro" title="Cambiar tema"><span class="theme-toggle__icon" aria-hidden="true">☀</span><span class="theme-toggle__label">Modo claro</span></button><button class="contrast-toggle" id="contrastToggle" type="button" aria-pressed="false" title="Activar o desactivar alto contraste">◐ Contraste</button><script>(function(){'use strict';const b=document.getElementById('contrastToggle');if(!b)return;const root=document.documentElement;const key='levelup-contrast-mode-v1';function setContrast(enabled){const active=Boolean(enabled);root.classList.toggle('contraste-activo',active);try{localStorage.setItem(key,active?'1':'0')}catch(_){}b.setAttribute('aria-pressed',String(active));b.setAttribute('aria-label',active?'Desactivar alto contraste':'Activar alto contraste');b.title=active?'Desactivar alto contraste':'Activar alto contraste';b.textContent=active?'◐ Desactivar contraste':'◐ Contraste'}let active=false;try{active=localStorage.getItem(key)==='1'}catch(_){}setContrast(active);b.addEventListener('click',()=>setContrast(!root.classList.contains('contraste-activo')));})();</script>
       </div>
       <p class="eyebrow">Juega · Conecta · Disfruta</p>
       <h1>Tu partida.<br><span>Tu próximo nivel.</span></h1>
@@ -31,18 +31,19 @@
         <a class="primary-btn" href="./pwa.html#inicio">Entrar a LevelUp <span aria-hidden="true">→</span></a>
         <a class="secondary-btn" href="./pwa.html#servicios">Conocer el servicio</a>
       </div>
-      <p class="entry-note">LevelUp Cibercafé · Proyecto de microempresa · Diseño Web II</p>
+      
     </section>
     <section class="entry-visual" aria-label="Equipamiento gamer de LevelUp">
       <div class="entry-photo-main">
-        <img src="./imagenes/pc-gamer.webp" alt="Gabinete gamer con iluminación RGB" width="225" height="225">
+        <img src="./imagenes/pc-gamer.webp" alt="Gabinete gamer con iluminación RGB" width="225" height="225" loading="eager" fetchpriority="high" decoding="async">
       </div>
       <div class="entry-photo-row">
-        <div class="entry-photo-small"><img src="./imagenes/playstation.webp" alt="Consola PlayStation" width="225" height="225"></div>
-        <div class="entry-visual-caption"><strong>PREPARA TU SIGUIENTE PARTIDA</strong>Equipos por categoría, sesiones y atención en un solo lugar.</div>
+        <div class="entry-photo-small"><img src="./imagenes/playstation.webp" alt="Consola PlayStation" width="225" height="225" loading="eager" decoding="async"></div>
+        
       </div>
     </section>
   </main>
+  <script src="./js/security-and-vitals.js" defer></script>
   <script src="./index.js" defer></script>
 </body>
 </html>
