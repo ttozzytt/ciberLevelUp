@@ -1,14 +1,4 @@
-document.addEventListener('error', event => {
-  const image = event.target;
-  if (!(image instanceof HTMLImageElement)) return;
-  if (image.dataset.imageFallbackApplied === 'true') {
-    image.hidden = true;
-    return;
-  }
-  image.dataset.imageFallbackApplied = 'true';
-  image.src = './imagenes/imagen-respaldo.svg';
-}, true);
-
+// El indicador comprueba si este sitio responde por Internet; no se basa solo en navigator.onLine.
     const entryStatus = document.getElementById('entryNetworkStatus');
     let entryNetworkTimer = null;
     let entryNetworkSequence = 0;
@@ -52,11 +42,13 @@ document.addEventListener('error', event => {
       }
     });
 
+
+/* Tema claro/oscuro de la portada; comparte preferencia con la aplicación PWA. */
 (function hydrateEntryTheme(){
   const button=document.getElementById('entryThemeToggle');
   const meta=document.getElementById('themeColorMeta');
   if(!button||button.dataset.hidratado==='true')return;
-  const key='levelup-backup-ciber-theme-v1';
+  const key='levelup-pwa-theme-v1';
   function apply(theme){
     const light=theme==='light';
     document.documentElement.dataset.theme=light?'light':'dark';
