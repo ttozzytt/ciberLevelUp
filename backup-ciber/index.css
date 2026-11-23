@@ -1,3 +1,4 @@
+/* Estilos de la portada LevelUp: index.html */
 :root {--bg: #0b0c16;
   --bg-soft: #111321;
   --panel: #171a2b;
@@ -44,14 +45,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .secondary-btn:hover {border-color: rgba(77,231,238,.48); color: var(--cyan);}
 .entry-note {margin-top: 34px; color: var(--soft); font-size: 10px;}
 .entry-visual {position: relative; display: grid; align-content: center; gap: 15px; padding: 35px; background: radial-gradient(circle at 50% 42%, rgba(126,86,255,.31), transparent 56%), linear-gradient(145deg, #151934, #0c1022);}
-.entry-visual::before {content: "LEVEL UP"; position: absolute; top: 35px; right: 34px; color: rgba(255,255,255,.055); font-size: clamp(35px, 6vw, 76px); font-weight: 900; letter-spacing: -4px;}
+
 .entry-photo-main {position: relative; z-index: 1; overflow: hidden; min-height: 320px; border: 1px solid rgba(77,231,238,.28); border-radius: 24px; background: #080b15; box-shadow: 0 22px 48px rgba(0,0,0,.38);}
 .entry-photo-main img {width: 100%; height: 100%; min-height: 320px; display: block; object-fit: cover;}
-.entry-photo-row {position: relative; z-index: 1; display: grid; grid-template-columns: .78fr 1.22fr; gap: 12px;}
+.entry-photo-row {position: relative; z-index: 1; display: grid; grid-template-columns:1fr; gap: 12px;}
 .entry-photo-small {overflow: hidden; height: 165px; border: 1px solid var(--line); border-radius: 15px; background: #11162c;}
 .entry-photo-small img {width: 100%; height: 100%; display: block; object-fit: contain; background: #fff;}
-.entry-visual-caption {align-self: end; padding: 11px 13px; border: 1px solid var(--line); border-radius: 13px; background: rgba(9,12,26,.83); color: #e3e2f4; font-size: 10px;}
-.entry-visual-caption strong {display: block; margin-bottom: 3px; color: var(--cyan); font-size: 11px;}
+
+
 @media (max-width: 560px) {
   .entry-body {display: block; padding: 10px;}
   .entry-shell {min-height: calc(100dvh - 20px); grid-template-columns: 1fr; border-radius: 21px;}
@@ -61,9 +62,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .entry-lead {font-size: 12px;}
   .entry-visual {padding: 13px; grid-template-columns: 1fr; gap: 9px;}
   .entry-photo-main, .entry-photo-main img {min-height: 190px;}
-  .entry-photo-row {grid-template-columns: .75fr 1.25fr;}
+  .entry-photo-row {grid-template-columns:1fr;}
   .entry-photo-small {height: 124px;}
-  .entry-visual-caption {font-size: 9px;}
+  
   .home-actions .primary-btn, .home-actions .secondary-btn {flex: 1; min-height: 42px; padding: 9px 10px; font-size: 10px;}
 }
 @media (prefers-reduced-motion: reduce) {
@@ -80,6 +81,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .entry-network-status {margin-left: auto; font-size: 8px; padding: 6px 8px;}
 }
 
+
+/* Tema persistente de la portada, compartido con la PWA LevelUp. */
 .theme-toggle { display:inline-flex; min-width:44px; min-height:44px; align-items:center; justify-content:center; gap:7px; margin-left:auto; padding:7px 10px; border:1px solid var(--line); border-radius:10px; color:var(--text); background:rgba(255,255,255,.06); font:800 10px/1.2 Inter,system-ui,sans-serif; cursor:pointer; }
 .theme-toggle__icon { display:inline-grid; place-items:center; font-size:16px; }
 .theme-toggle__label { white-space:nowrap; }
@@ -98,8 +101,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 :root[data-theme="light"] .entry-copy h1 span, :root[data-theme="light"] .eyebrow { color:var(--cyan); }
 :root[data-theme="light"] .entry-lead, :root[data-theme="light"] .entry-note { color:var(--muted); }
 :root[data-theme="light"] .entry-visual { background:radial-gradient(circle at 50% 42%,rgba(112,71,189,.12),transparent 56%),linear-gradient(145deg,#eaf0f7,#dfe9f2); }
-:root[data-theme="light"] .entry-visual::before { color:rgba(24,36,58,.055); }
-:root[data-theme="light"] .entry-visual-caption { color:#26364d; background:rgba(255,255,255,.91); border-color:var(--line); }
+:root[data-theme="light"] 
+:root[data-theme="light"] 
 :root[data-theme="light"] .entry-photo-small { background:#fff; }
 :root[data-theme="light"] .theme-toggle { color:#25384b; background:#fff; border-color:var(--line); }
 @media (max-width:560px) {
@@ -107,3 +110,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .theme-toggle__label { display:none; }
   .entry-brand { gap:8px; }
 }
+
+/* Alto contraste: alternancia reversible. */
+html.contraste-activo { --text:#fff; --muted:#fff; --line:#fff; --bg:#000; --panel:#000; --panel-2:#000; --bg-soft:#000; }
+html.contraste-activo body { background:#000!important; color:#fff!important; }
+html.contraste-activo body * { text-shadow:none!important; border-color:#fff!important; }
+html.contraste-activo body a, html.contraste-activo body button, html.contraste-activo body input, html.contraste-activo body select, html.contraste-activo body textarea { background:#000!important; color:#fff!important; }
+html.contraste-activo body button:focus-visible, html.contraste-activo body a:focus-visible, html.contraste-activo body input:focus-visible { outline:3px solid #ff0!important; }
+html.contraste-activo body img { filter:contrast(1.15); }
+.contrast-toggle{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;color:var(--text);background:var(--panel-2);font-size:11px;line-height:1;font-weight:800;white-space:nowrap;cursor:pointer;transition:background .18s ease,border-color .18s ease,color .18s ease}.contrast-toggle:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(77,231,238,.08)}.contrast-toggle[aria-pressed="true"]{border-color:var(--cyan);color:var(--cyan);background:rgba(77,231,238,.12)}.contrast-toggle:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
