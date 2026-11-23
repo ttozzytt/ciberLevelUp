@@ -1,17 +1,33 @@
 'use strict';
 
-/* LevelUp: SPA ligera, hidratación controlada y delegación de eventos. */
-const LEVELUP_VIEWS = ['inicio', 'computadoras', 'consolas', 'cuenta', 'servicios', 'snacks', 'turnos', 'reservas', 'informacion', 'contacto'];
-const VIEW_LABELS = { inicio: 'Inicio', computadoras: 'Computadoras', consolas: 'PlayStation', cuenta: 'Mi cuenta', servicios: 'Servicios', snacks: 'Snacks', turnos: 'Turnos', reservas: 'Reservas', informacion: 'Información', contacto: 'Contacto' };
+document.addEventListener('error', event => {
+  const image = event.target;
+  if (!(image instanceof HTMLImageElement)) return;
+
+  if (image.dataset.imageFallbackApplied === 'true') {
+    image.hidden = true;
+    return;
+  }
+
+  const fallback = image.dataset.fallbackSrc || './imagenes/imagen-respaldo.svg';
+  image.dataset.imageFallbackApplied = 'true';
+  image.src = fallback;
+
+  const photoButton = image.closest('[data-photo-open]');
+  if (photoButton) photoButton.dataset.photo = fallback;
+}, true);
+
+const LEVELUP_VIEWS = ['inicio', 'computadoras', 'consolas', 'cuenta', 'servicios', 'snacks', 'turnos', 'reservas', 'informacion', 'simulacion', 'contacto'];
+const VIEW_LABELS = { inicio: 'Inicio', computadoras: 'Computadoras', consolas: 'PlayStation', cuenta: 'Mi cuenta', servicios: 'Servicios', snacks: 'Snacks', turnos: 'Turnos', reservas: 'Reservas', informacion: 'Información', simulacion: 'Simulación', contacto: 'Contacto' };
 const STORAGE = {
-  accounts: 'levelup_accounts_v1',
-  activePhone: 'levelup_active_phone_v1',
-  machines: 'levelup_machine_states_v3',
-  consoles: 'levelup_console_states_v1',
-  pending: 'levelup_pending_actions_v1',
-  scheduledReservations: 'levelup_scheduled_reservations_v1',
-  accessoryQueue: 'levelup_accessory_queue_v1',
-  activeSessions: 'levelup_active_sessions_v1'
+  accounts: 'levelup_backup_ciber_accounts_v1',
+  activePhone: 'levelup_backup_ciber_active_phone_v1',
+  machines: 'levelup_backup_ciber_machine_states_v3',
+  consoles: 'levelup_backup_ciber_console_states_v1',
+  pending: 'levelup_backup_ciber_pending_actions_v1',
+  scheduledReservations: 'levelup_backup_ciber_scheduled_reservations_v1',
+  accessoryQueue: 'levelup_backup_ciber_accessory_queue_v1',
+  activeSessions: 'levelup_backup_ciber_active_sessions_v1'
 };
 const state = {
   machines: [], consoles: [], accounts: [], scheduledReservations: [], accessoryQueue: [], activeSessions: [], activeUser: null, currentFilter: 'all',
@@ -34,7 +50,7 @@ function createTextElement(tag, className = '', text = '') {
 }
 function safeCatalogImage(path, fallback) {
   const value = String(path || '');
-  return /^\.\/imagenes\/[a-z0-9._-]+\.(?:webp|png|jpe?g)$/i.test(value) ? value : fallback;
+  return /^\.\/imagenes\/[a-z0-9._-]+\.(?:webp|png|jpe?g|svg)$/i.test(value) ? value : fallback;
 }
 function createUsageTimer(label, id, attribute, value) {
   const wrapper = createTextElement('div', 'pc-usage');
@@ -45,19 +61,22 @@ function createUsageTimer(label, id, attribute, value) {
 }
 function createPhotoButton({ className, path, fallback, caption, alt, width, height, label }) {
   const button = createTextElement('button', className);
+  const safeFallback = safeCatalogImage(fallback, './imagenes/imagen-respaldo.svg');
   button.type = 'button';
   button.dataset.photoOpen = '';
-  button.dataset.photo = safeCatalogImage(path, fallback);
+  button.dataset.photo = safeCatalogImage(path, safeFallback);
   button.dataset.caption = String(caption || 'Fotografía LevelUp');
   button.setAttribute('aria-label', String(label || 'Ampliar fotografía'));
   button.dataset.hidratado = 'true';
+
   const image = document.createElement('img');
   image.className = `${className}__image`;
   image.src = button.dataset.photo;
+  image.dataset.fallbackSrc = image.src === safeFallback ? './imagenes/imagen-respaldo.svg' : safeFallback;
   image.alt = String(alt || 'Imagen representativa de LevelUp');
   image.width = width;
   image.height = height;
-  image.loading = 'lazy';
+  image.loading = 'eager';
   image.decoding = 'async';
   button.append(image);
   return button;
@@ -128,23 +147,18 @@ function getActiveScheduledReservation(resourceOrKey, now = Date.now()) {
       && ((start <= now && now < end) || item.id === state.activeScheduledReservationId);
   }) || null;
 }
-function getNextScheduledReservation(resourceOrKey,now=Date.now()){
-  const resourceKey=typeof resourceOrKey==='string'?resourceOrKey:resourceKeyForEquipment(resourceOrKey);
-  if(!resourceKey)return null;
-  const local=state.scheduledReservations
-    .filter(item=>item.resourceKey===resourceKey&&new Date(item.startsAt).getTime()>now)
-    .sort((a,b)=>new Date(a.startsAt).getTime()-new Date(b.startsAt).getTime())[0];
-  if(local)return local;
-  const resource=typeof resourceOrKey==='string'?getReservationResource(resourceOrKey)?.item:resourceOrKey;
-  const remoteStart=resource?.nextReservationAt?new Date(resource.nextReservationAt).getTime():NaN;
-  return Number.isFinite(remoteStart)&&remoteStart>now?{resourceKey,startsAt:resource.nextReservationAt,remote:true}:null;
+function getNextScheduledReservation(resourceOrKey, now = Date.now()) {
+  const resourceKey = typeof resourceOrKey === 'string' ? resourceOrKey : resourceKeyForEquipment(resourceOrKey);
+  if (!resourceKey) return null;
+  return state.scheduledReservations
+    .filter(item => item.resourceKey === resourceKey && new Date(item.startsAt).getTime() > now)
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())[0] || null;
 }
 function isReserved(machine) { return Boolean(machine.reservationExpiresAt && machine.reservationExpiresAt > Date.now()); }
 function isAvailable(machine) {
   return Boolean(machine.available && !isReserved(machine) && !getActiveScheduledReservation(machine));
 }
 
-/* Avisos: un solo temporizador, limpiado antes de mostrar el siguiente mensaje. */
 function showToast(message, type = 'success') {
   const toast = document.getElementById('toast');
   if (!toast) return;
@@ -155,7 +169,6 @@ function showToast(message, type = 'success') {
   state.toastTimer = window.setTimeout(() => toast.classList.remove('show'), 3200);
 }
 
-/* Navegación por vistas: equivalente al patrón del proyecto Personal. */
 function showView(name, updateHistory = true) {
   if (!LEVELUP_VIEWS.includes(name)) return;
   const target = document.getElementById(`view-${name}`);
@@ -212,7 +225,6 @@ function closeMobileMenu() {
   $('#mobileMenuToggle').attr({ 'aria-expanded': 'false', 'aria-label': 'Abrir menú' }).text('☰');
 }
 
-/* Catálogo asíncrono propio de LevelUp. El fetch informa rutas/HTTP y usa Cache Storage como respaldo offline. */
 async function readCatalogJSON(relativePath, label) {
   const url = new URL(relativePath, document.baseURI);
   let networkError = null;
@@ -242,7 +254,6 @@ async function readCatalogJSON(relativePath, label) {
     controller.abort();
   }
 
-  // Si no responde la red o el servidor devuelve 404/HTML, intenta la copia offline instalada.
   if ('caches' in window) {
     try {
       const cached = await caches.match(url.href, { ignoreSearch: true });
@@ -259,82 +270,9 @@ async function readCatalogJSON(relativePath, label) {
   throw new Error(`${label}: no se pudo leer ${url.pathname}. ${networkError?.message || 'Comprueba la carpeta data y vuelve a publicar el archivo.'}`);
 }
 
-/* Catálogos compartidos de LevelUp: Supabase en línea y JSON local como respaldo offline. */
-async function readResourcesFromSupabase(resourceType) {
-  const client = window.levelupSupabase;
-  if (!client) throw new Error('Cliente Supabase no disponible.');
-  const { data, error } = await client
-    .from('resources')
-    .select('id,resource_type,resource_code,label,category,cpu,gpu,ram,storage,monitor,seat,hourly_rate,half_hour_rate,included_controllers,extra_controller_fee,features,image_path,is_active')
-    .eq('resource_type', resourceType)
-    .eq('is_active', true)
-    .order('id', { ascending: true });
-  if (error) throw error;
-  if (!Array.isArray(data) || data.length === 0) {
-    throw new Error('Supabase no devolvió recursos activos para ' + resourceType + '.');
-  }
-  return data;
-}
-
-async function loadProductsFromSupabase() {
-  const client = window.levelupSupabase;
-  if (!client) return;
-  const { data, error } = await client
-    .from('products')
-    .select('id,name,category,price,unit_label,is_active')
-    .eq('is_active', true)
-    .order('id', { ascending: true });
-  if (error) throw error;
-  if (!Array.isArray(data) || data.length !== 8) {
-    throw new Error('El catálogo de Supabase debe devolver los ocho productos de LevelUp.');
-  }
-
-  data.forEach(product => {
-    const localItem = ACCESSORY_ITEMS[product.id];
-    const price = Number(product.price);
-    if (!localItem || !Number.isFinite(price) || price < 0) return;
-    localItem.name = String(product.name);
-    localItem.price = price;
-    localItem.priceLabel = `Bs ${price} / ${String(product.unit_label || 'unidad')}`;
-
-    const button = [...document.querySelectorAll('[data-accessory-add]')]
-      .find(element => element.dataset.accessoryAdd === product.id);
-    const card = button?.closest('.accessory-card');
-    const title = card?.querySelector('h3');
-    const amount = card?.querySelector('.accessory-copy > strong');
-    const image = card?.querySelector('img');
-    if (title) {
-      title.textContent = localItem.name;
-      title.title = localItem.name;
-    }
-    if (amount) {
-      amount.replaceChildren(
-        document.createTextNode(`Bs ${price} `),
-        createTextElement('small', '', `/ ${String(product.unit_label || 'unidad')}`)
-      );
-    }
-    if (image) image.alt = localItem.name;
-  });
-  console.info('Catálogo de productos cargado desde Supabase:', data.length);
-}
-
 async function loadMachineCatalog() {
-  let catalog;
-  try {
-    const rows = await readResourcesFromSupabase('pc');
-    catalog = rows.map(row => ({
-      id: row.id, type: row.category, label: row.label, price: row.hourly_rate,
-      cpu: row.cpu, gpu: row.gpu, ram: row.ram, storage: row.storage,
-      monitor: row.monitor, seat: row.seat, features: row.features,
-      image: row.image_path, imageAlt: `PC ${row.label} de LevelUp`,
-      available: true, elapsed: ''
-    }));
-    console.info('Catálogo de computadoras cargado desde Supabase:', catalog.length);
-  } catch (databaseError) {
-    console.warn('Supabase de PC no disponible; se usará el catálogo JSON local:', databaseError);
-    catalog = await readCatalogJSON('./data/computadoras.json?v=15', 'Catálogo de computadoras');
-  }
-  if (!Array.isArray(catalog) || catalog.length < 15) throw new Error('El catálogo debe contener al menos 15 estaciones.');
+  const catalog = await readCatalogJSON('./data/computadoras.json?v=15', 'Catálogo de computadoras');
+  if (!Array.isArray(catalog) || catalog.length < 15) throw new Error('computadoras.json debe contener al menos 15 estaciones.');
   const usedIds = new Set();
   state.machines = catalog.map(item => {
     const id = Number(item.id);
@@ -360,35 +298,49 @@ async function loadMachineCatalog() {
   });
   restoreMachineStates();
 }
-function restoreMachineStates(){state.machines.forEach(machine=>{machine.available=true;machine.sessionStartedAt=null;machine.sessionEndsAt=null;machine.reservationExpiresAt=null;});}
-function saveMachineStates(){return false;}
+function restoreMachineStates() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE.machines) || '[]');
+    if (Array.isArray(stored)) stored.forEach(saved => {
+      const machine = getMachine(saved.id);
+      if (!machine) return;
+      ['available', 'sessionStartedAt', 'sessionEndsAt', 'reservationExpiresAt'].forEach(key => {
+        if (saved[key] !== undefined) machine[key] = saved[key];
+      });
+    });
+  } catch (error) { console.warn('No se pudieron recuperar los estados guardados de los equipos.', error); }
+  state.machines.forEach(machine => {
+    if (!machine.available && !machine.reservationExpiresAt && !machine.sessionEndsAt && !machine.sessionStartedAt) {
+      machine.sessionStartedAt = Date.now() - parseElapsed(machine.elapsed) * 1000;
+    }
+    if (machine.reservationExpiresAt && machine.reservationExpiresAt <= Date.now()) {
+      machine.available = true;
+      machine.reservationExpiresAt = null;
+      machine.sessionStartedAt = null;
+    }
+  });
+  saveMachineStates();
+}
+function saveMachineStates() {
+  try {
+    const snapshot = state.machines.map(machine => ({
+      id: machine.id,
+      available: machine.available,
+      sessionStartedAt: machine.sessionStartedAt || null,
+      sessionEndsAt: machine.sessionEndsAt || null,
+      reservationExpiresAt: machine.reservationExpiresAt || null
+    }));
+    localStorage.setItem(STORAGE.machines, JSON.stringify(snapshot));
+  } catch (error) { showToast('No se pudieron guardar los estados en este navegador.', 'error'); }
+}
 
 async function loadConsoleCatalog() {
-  let catalog;
-  try {
-    const rows = await readResourcesFromSupabase('console');
-    catalog = rows.map(row => ({
-      id: row.id, label: row.label, price: row.hourly_rate,
-      priceNote: `Tarifa LevelUp · Bs ${row.hourly_rate} por hora`,
-      controllersIncluded: row.included_controllers,
-      extraControllerFee: row.extra_controller_fee,
-      seat: row.seat, features: row.features,
-      image: row.image_path, imageAlt: `PlayStation 5 número ${Number(row.id) - 100}`,
-      available: true, elapsed: ''
-    }));
-    console.info('Catálogo de PlayStation cargado desde Supabase:', catalog.length);
-  } catch (databaseError) {
-    console.warn('Supabase de PlayStation no disponible; se usará el catálogo JSON local:', databaseError);
-    catalog = await readCatalogJSON('./data/consolas.json?v=15', 'Catálogo PlayStation');
-  }
-  if (!Array.isArray(catalog) || catalog.length !== 4) throw new Error('El catálogo debe contener exactamente cuatro consolas.');
+  const catalog = await readCatalogJSON('./data/consolas.json?v=15', 'Catálogo PlayStation');
+  if (!Array.isArray(catalog) || catalog.length !== 4) throw new Error('consolas.json debe contener exactamente cuatro consolas.');
   const ids = new Set();
   state.consoles = catalog.map(item => {
     const id = Number(item.id);
     if (!Number.isInteger(id) || id < 101 || id > 104 || ids.has(id)) throw new Error(`consolas.json: identificador no válido o repetido (${item.id}).`);
-    // La tarifa comercial de PlayStation se define aquí y en consolas.json.
-    // Si GitHub Pages o el navegador entrega un JSON antiguo sin precio (o con otra tarifa),
-    // se normaliza a la tarifa vigente en vez de bloquear las cuatro consolas.
     const suppliedRate = Number(item.price ?? item.hourlyRate ?? item.pricePerHour);
     if (!Number.isFinite(suppliedRate) || suppliedRate !== 15) {
       console.warn(`consolas.json: tarifa antigua/incompleta en la consola ${id - 100}; se aplicará Bs 15 por hora.`);
@@ -414,8 +366,38 @@ async function loadConsoleCatalog() {
   });
   restoreConsoleStates();
 }
-function restoreConsoleStates(){state.consoles.forEach(machine=>{machine.available=true;machine.sessionStartedAt=null;machine.sessionEndsAt=null;machine.reservationExpiresAt=null;});}
-function saveConsoleStates(){return false;}
+function restoreConsoleStates() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE.consoles) || '[]');
+    if (Array.isArray(stored)) stored.forEach(saved => {
+      const consoleUnit = getConsole(saved.id);
+      if (!consoleUnit) return;
+      ['available', 'sessionStartedAt', 'sessionEndsAt', 'reservationExpiresAt'].forEach(key => {
+        if (saved[key] !== undefined) consoleUnit[key] = saved[key];
+      });
+    });
+  } catch (error) { console.warn('No se pudieron recuperar los estados de las consolas.', error); }
+  state.consoles.forEach(consoleUnit => {
+    if (consoleUnit.reservationExpiresAt && consoleUnit.reservationExpiresAt <= Date.now()) {
+      consoleUnit.available = true;
+      consoleUnit.reservationExpiresAt = null;
+      consoleUnit.sessionStartedAt = null;
+    }
+  });
+  saveConsoleStates();
+}
+function saveConsoleStates() {
+  try {
+    const snapshot = state.consoles.map(consoleUnit => ({
+      id: consoleUnit.id,
+      available: consoleUnit.available,
+      sessionStartedAt: consoleUnit.sessionStartedAt || null,
+      sessionEndsAt: consoleUnit.sessionEndsAt || null,
+      reservationExpiresAt: consoleUnit.reservationExpiresAt || null
+    }));
+    localStorage.setItem(STORAGE.consoles, JSON.stringify(snapshot));
+  } catch (error) { showToast('No se pudieron guardar los estados de las consolas.', 'error'); }
+}
 function renderConsoles() {
   const grid = document.getElementById('consoleGrid');
   if (!grid) return;
@@ -479,7 +461,6 @@ function renderConsoles() {
   grid.replaceChildren(fragment);
 }
 
-/* Filtros de tres capas: categoría -> procesador -> gráfica. */
 function fillSelect(select, placeholder, values, disabled = false) {
   const element = document.getElementById(select);
   if (!element) return;
@@ -520,14 +501,11 @@ function getFilteredMachines() {
     return matchesQuick && matchesCategory && matchesCpu && matchesGpu && (!query || searchText.includes(query));
   });
 }
-function cardStatus(machine){
-  if(isReserved(machine))return {label:'Apartada',className:'reserved'};
-  if(getActiveScheduledReservation(machine))return {label:'Turno reservado',className:'reserved'};
-  if(isAvailable(machine)){
-    const next=getNextScheduledReservation(machine);
-    return {label:next?'Disponible · próximo turno':'Disponible',className:'available'};
-  }
-  return {label:'Ocupada',className:'occupied'};
+function cardStatus(machine) {
+  if (isReserved(machine)) return { label: 'Apartada', className: 'reserved' };
+  if (getActiveScheduledReservation(machine)) return { label: 'Turno reservado', className: 'reserved' };
+  if (isAvailable(machine)) return { label: 'Disponible', className: 'available' };
+  return { label: 'Ocupada', className: 'occupied' };
 }
 function renderMachines() {
   const grid = document.getElementById('pcGrid');
@@ -673,36 +651,95 @@ function setCatalogLoadingState(containerId, title, detail) {
   container.replaceChildren(stateBox);
 }
 
-async function initializeCatalog(){
-  $('#catalogError, #consoleCatalogError').prop('hidden',true);$('#catalogStatus').text('Cargando catálogo…');
-  setCatalogLoadingState('pcGrid','Preparando las estaciones…','Consultando el catálogo de Supabase.');
-  setCatalogLoadingState('consoleGrid','Preparando las consolas…','Consultando el catálogo de Supabase.');
-  const [machinesResult,consolesResult]=await Promise.allSettled([loadMachineCatalog(),loadConsoleCatalog()]);
-  await loadProductsFromSupabase().catch(error=>console.warn('No se pudo leer el catálogo de productos de Supabase; las operaciones seguirán validándose con precios de servidor:',error));
-  if(machinesResult.status==='fulfilled'){
-    fillSelect('filterCategory','Todas las categorías',['basic','standard','premium'],false);
-    const labels={basic:'Básica',standard:'Estándar',premium:'Premium'};
-    [...document.getElementById('filterCategory').options].forEach(option=>{if(labels[option.value])option.textContent=labels[option.value];});
-    fillSelect('filterCPU','Primero elige categoría',[],true);fillSelect('filterGPU','Primero elige procesador',[],true);
-    renderMachines();$('#catalogStatus').text(state.machines.length+' estaciones listas');
-  }else{
-    const error=machinesResult.reason;console.error('Error en catálogo de computadoras:',error);state.machines=[];
-    document.getElementById('pcGrid')?.replaceChildren();$('#catalogStatus').text('No se pudo cargar el catálogo de computadoras');
-    $('#catalogErrorText').text(error?.message||'Comprueba la conexión con Supabase.');$('#catalogError').prop('hidden',false);updateStats();
+async function initializeCatalog() {
+  $('#catalogError, #consoleCatalogError').prop('hidden', true);
+  $('#catalogStatus').text('Cargando catálogo…');
+  setCatalogLoadingState('pcGrid', 'Preparando las estaciones…', 'Estamos leyendo data/computadoras.json.');
+  setCatalogLoadingState('consoleGrid', 'Preparando las consolas…', 'Estamos leyendo data/consolas.json.');
+
+  const [machinesResult, consolesResult] = await Promise.allSettled([
+    loadMachineCatalog(),
+    loadConsoleCatalog()
+  ]);
+
+  if (machinesResult.status === 'fulfilled') {
+    fillSelect('filterCategory', 'Todas las categorías', ['basic', 'standard', 'premium'], false);
+    const categoryLabels = { basic: 'Básica', standard: 'Estándar', premium: 'Premium' };
+    [...document.getElementById('filterCategory').options].forEach(option => {
+      if (categoryLabels[option.value]) option.textContent = categoryLabels[option.value];
+    });
+    fillSelect('filterCPU', 'Primero elige categoría', [], true);
+    fillSelect('filterGPU', 'Primero elige procesador', [], true);
+    renderMachines();
+    $('#catalogStatus').text(`${state.machines.length} estaciones listas`);
+  } else {
+    const error = machinesResult.reason;
+    console.error('Error en data/computadoras.json:', error);
+    state.machines = [];
+    document.getElementById('pcGrid')?.replaceChildren();
+    $('#catalogStatus').text('No se pudo cargar el catálogo de computadoras');
+    $('#catalogErrorText').text(error?.message || 'Comprueba que data/computadoras.json esté publicado.');
+    $('#catalogError').prop('hidden', false);
+    updateStats();
   }
-  if(consolesResult.status==='fulfilled'){renderConsoles();$('#consoleCatalogError').prop('hidden',true);}
-  else{const error=consolesResult.reason;console.error('Error en catálogo de consolas:',error);state.consoles=[];
-    document.getElementById('consoleGrid')?.replaceChildren();$('#consoleCatalogErrorText').text(error?.message||'Comprueba la conexión con Supabase.');$('#consoleCatalogError').prop('hidden',false);}
-  populateReservationResources();setReservationDateMinimum();renderScheduledReservations();
-  state.activeScheduledSignature=activeScheduledSignature();
-  try{await levelupRefreshResourceAvailability();}catch(error){console.warn('No se pudo consultar disponibilidad remota:',error);}
+
+  if (consolesResult.status === 'fulfilled') {
+    renderConsoles();
+    $('#consoleCatalogError').prop('hidden', true);
+  } else {
+    const error = consolesResult.reason;
+    console.error('Error en data/consolas.json:', error);
+    state.consoles = [];
+    document.getElementById('consoleGrid')?.replaceChildren();
+    $('#consoleCatalogErrorText').text(error?.message || 'Comprueba que data/consolas.json esté publicado.');
+    $('#consoleCatalogError').prop('hidden', false);
+  }
+  populateReservationResources();
+  setReservationDateMinimum();
+  renderScheduledReservations();
+  state.activeScheduledSignature = activeScheduledSignature();
   startSessionTicker();
 }
 
-/* Reservas futuras de turno: ejercicio local de validación y persistencia, separado del apartado de reserva inmediata. */
 const RESERVATION_DURATIONS = [1, 2, 3, 5, 8];
-function loadScheduledReservations(){state.scheduledReservations=[];renderScheduledReservations();}
-function saveScheduledReservations(){return false;}
+function loadScheduledReservations() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE.scheduledReservations) || '[]');
+    const now = Date.now();
+    const source = Array.isArray(stored) ? stored : [];
+    state.scheduledReservations = source
+      .filter(item => item && typeof item === 'object' && typeof item.id === 'string'
+        && typeof item.name === 'string' && typeof item.resourceKey === 'string'
+        && typeof item.startsAt === 'string' && Number.isFinite(new Date(item.startsAt).getTime())
+        && new Date(item.startsAt).getTime() + Number(item.durationHours) * 60 * 60 * 1000 >= now
+        && RESERVATION_DURATIONS.includes(Number(item.durationHours)))
+      .slice(0, 50)
+      .map(item => ({
+        id: item.id.slice(0, 80), name: item.name.slice(0, 60),
+        resourceKey: item.resourceKey.slice(0, 40), resourceLabel: String(item.resourceLabel || 'Equipo LevelUp').slice(0, 120),
+        startsAt: item.startsAt, durationHours: Number(item.durationHours), createdAt: String(item.createdAt || '')
+      }));
+    if (state.scheduledReservations.length !== source.length) {
+      try {
+        localStorage.setItem(STORAGE.scheduledReservations, JSON.stringify(state.scheduledReservations));
+      } catch (writeError) {
+        console.warn('No se pudieron depurar las solicitudes antiguas; se ocultarán de la lista activa.', writeError);
+      }
+    }
+  } catch (error) {
+    state.scheduledReservations = [];
+    console.warn('No se pudieron leer las solicitudes de turno guardadas en este navegador.', error);
+  }
+}
+function saveScheduledReservations() {
+  try {
+    localStorage.setItem(STORAGE.scheduledReservations, JSON.stringify(state.scheduledReservations));
+    return true;
+  } catch (error) {
+    showToast('El navegador no permitió guardar el turno. Libera espacio e inténtalo de nuevo.', 'error');
+    return false;
+  }
+}
 function getReservationResource(resourceKey) {
   const match = /^(pc|console):(\d+)$/.exec(String(resourceKey || ''));
   if (!match) return null;
@@ -765,8 +802,6 @@ function getCurrentMinuteStart(now = new Date()) {
   return currentMinute;
 }
 function getNextReservationStart(now = new Date()) {
-  // Para una contratación inmediata, propone este mismo minuto, sin espera artificial.
-  // Si el local está fuera de horario, propone la próxima apertura.
   const candidate = getCurrentMinuteStart(now);
   if (candidate.getHours() < 8) candidate.setHours(8, 0, 0, 0);
   if (candidate.getHours() >= 23) {
@@ -781,8 +816,6 @@ function setReservationDateMinimum() {
   const minimum = getCurrentMinuteStart().getTime();
   input.min = localDateTimeInputValue(minimum);
   const selected = input.value ? new Date(input.value).getTime() : NaN;
-  // La fecha inicial es hoy y el horario puede comenzar inmediatamente.
-  // Solo se impiden minutos anteriores al minuto actual.
   if (!Number.isFinite(selected) || selected < minimum) {
     input.value = localDateTimeInputValue(getNextReservationStart().getTime());
   }
@@ -865,7 +898,6 @@ function validateScheduledReservation() {
   setReservationFieldError('recursoSelect', 'recursoSelectError', resourceError);
   setReservationFieldError('fechaTurno', 'fechaTurnoError', dateError);
   setReservationFieldError('duracionTurno', 'duracionTurnoError', durationError);
-  // Si se elige el minuto actual, comienza ahora mismo; no se añade ningún margen de espera.
   const effectiveStartAt = Number.isFinite(startAt) && startAt >= currentMinute && startAt <= Date.now()
     ? Date.now() : startAt;
   return { valid: !(nameError || resourceError || dateError || durationError), name, resource, startAt: effectiveStartAt, duration };
@@ -982,524 +1014,140 @@ function activeScheduledSignature(now = Date.now()) {
     })
     .map(item => `${item.resourceKey}:${item.id}`).sort().join('|');
 }
-async function levelupRequireClient(){const c=window.levelupSupabase;if(!c||!state.activeUser?.id)throw new Error('Inicia sesión para operar con Supabase.');return c;}
-function levelupResourceId(key){const m=/^(pc|console):(\d+)$/.exec(String(key||''));if(!m)throw new Error('Equipo inválido.');return Number(m[2]);}
-
-const LEVELUP_QUEUE_DATABASE='levelup-pending-operations-v1';
-const LEVELUP_QUEUE_STORE='operations';
-function levelupOpenQueueDatabase(){
-  return new Promise((resolve,reject)=>{
-    if(!window.indexedDB){reject(new Error('Este navegador no permite guardar operaciones pendientes.'));return;}
-    const request=window.indexedDB.open(LEVELUP_QUEUE_DATABASE,1);
-    request.onupgradeneeded=()=>{
-      const database=request.result;
-      if(!database.objectStoreNames.contains(LEVELUP_QUEUE_STORE)){
-        const store=database.createObjectStore(LEVELUP_QUEUE_STORE,{keyPath:'id'});
-        store.createIndex('user_id','user_id',{unique:false});
-        store.createIndex('status','status',{unique:false});
-      }
-    };
-    request.onsuccess=()=>resolve(request.result);
-    request.onerror=()=>reject(request.error||new Error('No se pudo abrir la cola local.'));
-    request.onblocked=()=>reject(new Error('Cierra otra pestaña de LevelUp y vuelve a intentarlo.'));
-  });
-}
-async function levelupQueueStore(record){
-  const database=await levelupOpenQueueDatabase();
-  return new Promise((resolve,reject)=>{
-    const transaction=database.transaction(LEVELUP_QUEUE_STORE,'readwrite');
-    transaction.objectStore(LEVELUP_QUEUE_STORE).put(record);
-    transaction.oncomplete=()=>{database.close();resolve(true);};
-    transaction.onerror=()=>{const error=transaction.error;database.close();reject(error||new Error('No se pudo guardar la operación pendiente.'));};
-    transaction.onabort=()=>{const error=transaction.error;database.close();reject(error||new Error('Se canceló el guardado de la operación pendiente.'));};
-  });
-}
-async function levelupQueueReadAll(){
-  const database=await levelupOpenQueueDatabase();
-  return new Promise((resolve,reject)=>{
-    const transaction=database.transaction(LEVELUP_QUEUE_STORE,'readonly');
-    const request=transaction.objectStore(LEVELUP_QUEUE_STORE).getAll();
-    request.onsuccess=()=>resolve(Array.isArray(request.result)?request.result:[]);
-    request.onerror=()=>reject(request.error||new Error('No se pudo leer la cola local.'));
-    transaction.oncomplete=()=>database.close();
-    transaction.onerror=()=>{const error=transaction.error;database.close();reject(error||new Error('No se pudo leer la cola local.'));};
-  });
-}
-async function levelupQueueDelete(id){
-  const database=await levelupOpenQueueDatabase();
-  return new Promise((resolve,reject)=>{
-    const transaction=database.transaction(LEVELUP_QUEUE_STORE,'readwrite');
-    transaction.objectStore(LEVELUP_QUEUE_STORE).delete(id);
-    transaction.oncomplete=()=>{database.close();resolve(true);};
-    transaction.onerror=()=>{const error=transaction.error;database.close();reject(error||new Error('No se pudo retirar la operación.'));};
-  });
-}
-function levelupIsTransportFailure(error){
-  const message=String(error?.message||error||'');
-  return navigator.onLine===false
-    || error?.name==='TypeError'
-    || /failed to fetch|network error|network request|offline|timed? ?out|connection (?:lost|closed|refused)|failed to send a request/i.test(message);
-}
-async function levelupEnqueueOffline(type,payload,requestKey){
-  if(!state.activeUser?.id)throw new Error('Inicia sesión para guardar una operación pendiente.');
-  if(!['reservation_create','order_create','recharge_request'].includes(type))throw new Error('Esta operación no admite cola offline.');
-  const record={
-    id:requestKey,user_id:state.activeUser.id,type,payload,
-    status:'pending',created_at:new Date().toISOString(),last_error:''
-  };
-  await levelupQueueStore(record);
-  await levelupRenderOfflineQueue();
-  return record;
-}
-async function levelupRenderOfflineQueue(){
-  const panel=document.getElementById('offlinePendingPanel');
-  const list=document.getElementById('offlinePendingList');
-  if(!panel||!list)return;
-  if(!state.activeUser?.id){panel.hidden=true;list.replaceChildren();return;}
-  try{
-    const all=await levelupQueueReadAll();
-    const records=all.filter(item=>item.user_id===state.activeUser.id)
-      .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-    panel.hidden=records.length===0;
-    list.replaceChildren();
-    records.forEach(record=>{
-      const item=createTextElement('article','recharge-request-item');
-      const copy=createTextElement('div','recharge-request-item__copy');
-      let title='Operación pendiente';
-      let detail='';
-      if(record.type==='reservation_create'){
-        title='Reserva · PC/PlayStation '+record.payload.p_resource_id;
-        detail=new Date(record.payload.p_starts_at).toLocaleString('es-BO')+' · '+record.payload.p_duration_hours+' h';
-      }else if(record.type==='order_create'){
-        title='Pedido de snacks y accesorios';
-        detail=(record.payload.p_items||[]).map(entry=>entry.quantity+' × '+entry.product_id).join(', ');
-      }else if(record.type==='recharge_request'){
-        title='Solicitud de recarga · '+money(record.payload.p_amount);
-        detail='Método: '+record.payload.p_payment_method;
-      }
-      copy.append(createTextElement('strong','',title));
-      copy.append(createTextElement('small','',detail));
-      if(record.status==='failed')copy.append(createTextElement('small','',record.last_error||'El servidor no aceptó la operación.'));
-      const status=createTextElement('span','recharge-request-item__status',
-        record.status==='failed'?'No enviada': 'Pendiente de sincronizar');
-      status.dataset.status=record.status==='failed'?'rejected':'pending';
-      item.append(copy,status);
-      if(record.status==='failed'){
-        const actions=createTextElement('div','admin-list-item__actions');
-        const retry=createTextElement('button','secondary-btn','Reintentar');
-        retry.type='button';retry.dataset.retryOffline=record.id;retry.dataset.hidratado='true';
-        const remove=createTextElement('button','secondary-btn','Quitar');
-        remove.type='button';remove.dataset.removeOffline=record.id;remove.dataset.hidratado='true';
-        actions.append(retry,remove);item.append(actions);
-      }
-      list.append(item);
-    });
-  }catch(error){
-    console.warn('No se pudo mostrar la cola de operaciones pendientes:',error);
-    panel.hidden=false;
-    list.replaceChildren(createTextElement('p','admin-empty','No se pudo consultar la cola local de operaciones.'));
-  }
-}
-async function levelupProcessPendingTransactions(){
-  if(!state.activeUser?.id||!window.levelupSupabase||navigator.onLine===false||state.levelupQueueSyncing)return;
-  state.levelupQueueSyncing=true;
-  let synced=0;
-  try{
-    const records=await levelupQueueReadAll();
-    for(const record of records){
-      if(record.user_id!==state.activeUser.id||record.status!=='pending')continue;
-      if(navigator.onLine===false)break;
-      try{
-        const client=await levelupRequireClient();
-        let result;
-        if(record.type==='reservation_create'){
-          result=await client.rpc('levelup_create_scheduled_reservation',record.payload);
-        }else if(record.type==='order_create'){
-          result=await client.rpc('levelup_create_order',record.payload);
-        }else if(record.type==='recharge_request'){
-          result=await client.rpc('levelup_create_recharge_request',record.payload);
-        }else{
-          throw new Error('Tipo de operación desconocido.');
-        }
-        if(result.error)throw result.error;
-        await levelupQueueDelete(record.id);
-        synced++;
-      }catch(error){
-        if(levelupIsTransportFailure(error))break;
-        await levelupQueueStore({...record,status:'failed',last_error:String(error.message||'El servidor no aceptó la operación.')});
-      }
-    }
-    await levelupRenderOfflineQueue();
-    if(synced>0){
-      await levelupRefreshWalletAndSessions();
-      await levelupLoadMyScheduledReservations();
-      await levelupLoadMyRechargeRequests();
-      await levelupRefreshResourceAvailability();
-      showToast(synced+' operación(es) sincronizada(s) con Supabase.');
-    }
-  }catch(error){
-    console.warn('No se pudo sincronizar la cola offline:',error);
-  }finally{
-    state.levelupQueueSyncing=false;
-    await levelupRenderOfflineQueue();
-  }
-}
-async function levelupRetryOfflineOperation(id){
-  const all=await levelupQueueReadAll();
-  const record=all.find(item=>item.id===id&&item.user_id===state.activeUser?.id);
-  if(!record)return;
-  await levelupQueueStore({...record,status:'pending',last_error:''});
-  await levelupRenderOfflineQueue();
-  await levelupProcessPendingTransactions();
-}
-
-async function levelupRefreshWalletAndSessions(){
-  const client=await levelupRequireClient();
-  const sync=await client.rpc('levelup_sync_my_sessions');
-  if(sync.error)throw sync.error;
-  const q=await Promise.all([
-    client.from('profiles').select('id,full_name,phone,balance,role').eq('id',state.activeUser.id).single(),
-    client.from('sessions').select('*').eq('customer_id',state.activeUser.id).eq('status','active').order('started_at',{ascending:false}),
-    client.from('wallet_transactions').select('*').eq('customer_id',state.activeUser.id).order('created_at',{ascending:false}).limit(30),
-    client.from('orders').select('id,session_id,total_amount,status,created_at,order_items(product_id,item_name,quantity,unit_price,line_total)').eq('customer_id',state.activeUser.id).order('created_at',{ascending:false}).limit(20),
-    client.from('recharge_requests').select('id,amount,payment_method,status,created_at').eq('customer_id',state.activeUser.id).order('created_at',{ascending:false}).limit(12)
-  ]);
-  q.forEach(item=>{if(item.error)throw item.error;});
-  const profile=q[0].data;
-  state.activeUser.name=String(profile.full_name||state.activeUser.name);
-  state.activeUser.phone=localLevelUpPhone(profile.phone||state.activeUser.phone);
-  state.activeUser.role=profile.role;
-  state.activeUser.balance=Number(profile.balance||0);
-  state.activeSessions=q[1].data.map(row=>{
-    const key=row.resource_id>=101?'console:'+row.resource_id:'pc:'+row.resource_id;
-    const found=getReservationResource(key);
-    return {id:row.id,resourceKey:key,resourceType:row.resource_id>=101?'console':'pc',machine:row.resource_id,
-      resourceLabel:found?.label||('Equipo '+row.resource_id),ownerPhone:state.activeUser.phone,ownerName:state.activeUser.name,
-      billingMode:row.billing_mode,startedAt:new Date(row.started_at).getTime(),
-      endsAt:row.planned_end_at?new Date(row.planned_end_at).getTime():null,
-      durationMinutes:row.planned_end_at?Math.round((new Date(row.planned_end_at)-new Date(row.started_at))/60000):null,
-      ratePerHour:Number(row.hourly_rate_snapshot),halfHourRate:found?.item?.halfHourRate||0,
-      timeAmount:Number(row.time_amount),snacksTotal:Number(row.snacks_total),extraController:row.extra_controller,
-      paidUntil:row.paid_until?new Date(row.paid_until).getTime():null,nextChargeAt:row.next_charge_at?new Date(row.next_charge_at).getTime():null,
-      orders:q[3].data.filter(order=>order.session_id===row.id).map(order=>({id:order.id,date:order.created_at,total:Number(order.total_amount),
-        items:order.order_items.map(item=>({id:item.product_id,name:item.item_name,quantity:item.quantity,price:Number(item.unit_price)}))}))
-    };
-  });
-  state.activeUser.history=q[2].data.map(row=>({type:row.reason,amount:row.direction==='credit'?Number(row.amount):-Number(row.amount),date:row.created_at,method:row.payment_method,details:row.reason}));
-  levelupRenderMyRechargeRequests(q[4].data||[]);
-  renderMachines();renderConsoles();renderAccount();updatePaymentState();
-  if(['admin','staff'].includes(state.activeUser.role))await levelupLoadAdminDashboard();
-  return sync.data;
-}
-async function levelupLoadMyScheduledReservations(){
-  const client=await levelupRequireClient();
-  const result=await client.from('reservations').select('*').eq('customer_id',state.activeUser.id).in('status',['pending','confirmed','active']).order('starts_at');
-  if(result.error)throw result.error;
-  state.scheduledReservations=(result.data||[]).map(row=>{
-    const key=row.resource_id>=101?'console:'+row.resource_id:'pc:'+row.resource_id;
-    const resource=getReservationResource(key);
-    return {id:row.id,name:row.customer_name,resourceKey:key,resourceLabel:resource?.label||('Equipo '+row.resource_id),startsAt:row.starts_at,durationHours:row.duration_hours,createdAt:row.created_at,db:true};
-  });
-  renderScheduledReservations();populateReservationResources();renderMachines();renderConsoles();
-}
-
-function levelupRequestKey(stateKey) {
-  if (state[stateKey]) return state[stateKey];
-  let value = '';
-  try { value = window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : ''; } catch (_) {}
-  if (!value) value = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-    const r = Math.random() * 16 | 0;
-    return (c === 'x' ? r : (r & 3 | 8)).toString(16);
-  });
-  state[stateKey] = value;
-  return value;
-}
-async function levelupRefreshResourceAvailability() {
-  const client = window.levelupSupabase;
-  if (!client) return [];
-  const result = await client.rpc('levelup_resource_availability');
-  if (result.error) throw result.error;
-  (result.data || []).forEach(row => {
-    const resource = Number(row.resource_id) >= 101 ? getConsole(Number(row.resource_id)) : getMachine(Number(row.resource_id));
-    if (!resource) return;
-    resource.available = Boolean(row.available_now);
-    const sessionEnd = row.current_session_ends_at ? new Date(row.current_session_ends_at).getTime() : 0;
-    const reservationEnd = row.current_reservation_ends_at ? new Date(row.current_reservation_ends_at).getTime() : 0;
-    resource.sessionEndsAt = sessionEnd > Date.now() ? sessionEnd : reservationEnd > Date.now() ? reservationEnd : null;
-    resource.reservationExpiresAt = null;
-    if (!resource.available && !resource.sessionEndsAt && !resource.sessionStartedAt) resource.sessionStartedAt = Date.now();
-    if (resource.available) resource.sessionStartedAt = null;
-    resource.nextReservationAt = row.next_reservation_starts_at || null;
-  });
-  renderMachines();
-  renderConsoles();
-  return result.data || [];
-}
-function levelupRenderMyRechargeRequests(rows) {
-  const container = document.getElementById('myRechargeRequests');
-  if (!container) return;
-  container.replaceChildren();
-  if (!rows || !rows.length) {
-    container.append(createTextElement('p','history-empty','Todavía no tienes solicitudes de recarga.'));
+function submitScheduledReservation(event) {
+  event.preventDefault();
+  const result = validateScheduledReservation();
+  const status = $('#reservationFormStatus');
+  status.text('').attr('class', 'form-status');
+  if (!result.valid) {
+    const firstInvalid = document.querySelector('#formReserva .form-field.invalid input, #formReserva .form-field.invalid select');
+    firstInvalid?.focus();
+    status.text('Revisa los campos marcados antes de guardar.').attr('class', 'form-status error');
     return;
   }
-  rows.forEach(row => {
-    const item=createTextElement('article','recharge-request-item');
-    const copy=createTextElement('div','recharge-request-item__copy');
-    const date=new Date(row.created_at);
-    const when=Number.isNaN(date.getTime())?'Fecha no disponible':date.toLocaleString('es-BO',{dateStyle:'short',timeStyle:'short'});
-    copy.append(createTextElement('strong','',money(row.amount)+' · '+row.payment_method));
-    copy.append(createTextElement('small','',when));
-    const status=createTextElement('span','recharge-request-item__status',
-      row.status==='approved'?'Aprobada':row.status==='rejected'?'Rechazada':'Pendiente de aprobación');
-    status.dataset.status=row.status;
-    item.append(copy,status);
-    container.append(item);
-  });
-}
-async function levelupLoadMyRechargeRequests() {
-  if (!state.activeUser?.id) return;
-  const client=await levelupRequireClient();
-  const result=await client.from('recharge_requests')
-    .select('id,amount,payment_method,status,created_at')
-    .eq('customer_id',state.activeUser.id)
-    .order('created_at',{ascending:false}).limit(12);
-  if(result.error)throw result.error;
-  levelupRenderMyRechargeRequests(result.data||[]);
-}
-function levelupAdminEmpty(message) {
-  return createTextElement('p','admin-empty',message);
-}
-async function levelupLoadAdminDashboard() {
-  const panel=document.getElementById('adminToolsPanel');
-  if(!panel)return;
-  const user=state.activeUser;
-  const allowed=Boolean(user&&['admin','staff'].includes(user.role));
-  panel.hidden=!allowed;
-  if(!allowed)return;
-  const client=await levelupRequireClient();
-  const queries=await Promise.all([
-    client.from('recharge_requests').select('id,customer_id,amount,payment_method,status,created_at').order('created_at',{ascending:false}).limit(25),
-    client.from('profiles').select('id,full_name,phone,balance,role').order('created_at',{ascending:false}).limit(100),
-    client.from('sessions').select('id,customer_id,resource_id,billing_mode,started_at,planned_end_at,time_amount,snacks_total,status').eq('status','active').order('started_at',{ascending:false}).limit(50),
-    client.from('reservations').select('id,customer_id,customer_name,resource_id,starts_at,ends_at,duration_hours,status').in('status',['pending','confirmed','active']).order('starts_at').limit(50),
-    client.from('orders').select('id,customer_id,session_id,total_amount,status,created_at,order_items(item_name,quantity,line_total)').order('created_at',{ascending:false}).limit(12)
-  ]);
-  queries.forEach(q=>{if(q.error)throw q.error;});
-  const requests=queries[0].data||[],profiles=queries[1].data||[],sessions=queries[2].data||[],reservations=queries[3].data||[],orders=queries[4].data||[];
-  const profileMap=new Map(profiles.map(p=>[p.id,p]));
-  const pending=requests.filter(r=>r.status==='pending').length;
-  const summary=document.getElementById('adminSummary');
-  if(summary){
-    summary.replaceChildren();
-    [['Clientes',profiles.length],['Recargas pendientes',pending],['Sesiones activas',sessions.length],['Reservas activas',reservations.length]].forEach(pair=>{
-      const box=createTextElement('div','admin-summary__item');
-      box.append(createTextElement('strong','',String(pair[1])),createTextElement('small','',pair[0]));
-      summary.append(box);
-    });
-  }
-  const rechargeList=document.getElementById('adminRechargeRequests');
-  if(rechargeList){
-    rechargeList.replaceChildren();
-    if(!requests.length)rechargeList.append(levelupAdminEmpty('No hay solicitudes de recarga.'));
-    requests.forEach(row=>{
-      const profile=profileMap.get(row.customer_id)||{};
-      const item=createTextElement('article','admin-list-item');
-      const copy=createTextElement('div','admin-list-item__copy');
-      const when=new Date(row.created_at);
-      copy.append(createTextElement('strong','',money(row.amount)+' · '+row.payment_method));
-      copy.append(createTextElement('small','',(profile.full_name||'Cliente')+' · '+(profile.phone||'Sin celular')));
-      copy.append(createTextElement('small','',when.toLocaleString('es-BO')+' · '+(row.status==='approved'?'Aprobada':row.status==='rejected'?'Rechazada':'Pendiente')));
-      item.append(copy);
-      if(row.status==='pending'){
-        const actions=createTextElement('div','admin-list-item__actions');
-        const approve=createTextElement('button','primary-btn','Aprobar');
-        approve.type='button';approve.dataset.rechargeReview='true';approve.dataset.requestId=row.id;approve.dataset.decision='approved';approve.dataset.hidratado='true';
-        const reject=createTextElement('button','secondary-btn','Rechazar');
-        reject.type='button';reject.dataset.rechargeReview='true';reject.dataset.requestId=row.id;reject.dataset.decision='rejected';reject.dataset.hidratado='true';
-        actions.append(approve,reject);item.append(actions);
-      }
-      rechargeList.append(item);
-    });
-  }
-  const activeList=document.getElementById('adminActiveSessions');
-  if(activeList){
-    activeList.replaceChildren();
-    if(!sessions.length)activeList.append(levelupAdminEmpty('No hay sesiones activas.'));
-    sessions.forEach(row=>{
-      const profile=profileMap.get(row.customer_id)||{};
-      const resource=row.resource_id>=101?'PlayStation #'+(row.resource_id-100):'PC #'+String(row.resource_id).padStart(2,'0');
-      const item=createTextElement('article','admin-list-item');
-      const copy=createTextElement('div','admin-list-item__copy');
-      copy.append(createTextElement('strong','',resource+' · '+(profile.full_name||'Cliente')));
-      copy.append(createTextElement('small','',(row.billing_mode==='open'?'Sin límite':'Tiempo definido')+' · Inicio '+new Date(row.started_at).toLocaleString('es-BO')));
-      copy.append(createTextElement('small','', 'Tiempo Bs '+Number(row.time_amount||0).toFixed(2)+' · Pedidos Bs '+Number(row.snacks_total||0).toFixed(2)));
-      item.append(copy);
-      const actions=createTextElement('div','admin-list-item__actions');
-      const finish=createTextElement('button','secondary-btn','Finalizar sesión');
-      finish.type='button';finish.dataset.adminFinishSession=row.id;finish.dataset.hidratado='true';
-      actions.append(finish);item.append(actions);
-      activeList.append(item);
-    });
-  }
-  const reservationList=document.getElementById('adminReservations');
-  if(reservationList){
-    reservationList.replaceChildren();
-    if(!reservations.length)reservationList.append(levelupAdminEmpty('No hay reservas pendientes ni activas.'));
-    reservations.forEach(row=>{
-      const profile=profileMap.get(row.customer_id)||{};
-      const resource=row.resource_id>=101?'PlayStation #'+(row.resource_id-100):'PC #'+String(row.resource_id).padStart(2,'0');
-      const item=createTextElement('article','admin-list-item');
-      const copy=createTextElement('div','admin-list-item__copy');
-      copy.append(createTextElement('strong','',resource+' · '+(row.customer_name||profile.full_name||'Cliente')));
-      copy.append(createTextElement('small','',new Date(row.starts_at).toLocaleString('es-BO')+' · '+row.duration_hours+' h'));
-      copy.append(createTextElement('small','',row.status==='active'?'En curso':row.status==='confirmed'?'Confirmada':'Pendiente'));
-      item.append(copy);reservationList.append(item);
-    });
-  }
-  const orderList=document.getElementById('adminOrders');
-  if(orderList){
-    orderList.replaceChildren();
-    if(!orders.length)orderList.append(levelupAdminEmpty('Todavía no hay pedidos.'));
-    orders.forEach(row=>{
-      const profile=profileMap.get(row.customer_id)||{};
-      const items=(row.order_items||[]).map(i=>i.quantity+' × '+i.item_name).join(', ');
-      const item=createTextElement('article','admin-list-item');
-      const copy=createTextElement('div','admin-list-item__copy');
-      copy.append(createTextElement('strong','',money(row.total_amount)+' · '+(profile.full_name||'Cliente')));
-      copy.append(createTextElement('small','',items||'Pedido sin detalle'));
-      copy.append(createTextElement('small','',new Date(row.created_at).toLocaleString('es-BO')+' · '+row.status));
-      item.append(copy);
-      if(row.status==='placed'){
-        const actions=createTextElement('div','admin-list-item__actions');
-        const deliver=createTextElement('button','secondary-btn','Marcar entregado');
-        deliver.type='button';deliver.dataset.adminDeliverOrder=row.id;deliver.dataset.hidratado='true';
-        actions.append(deliver);item.append(actions);
-      }
-      orderList.append(item);
-    });
-  }
-  const customerList=document.getElementById('adminCustomers');
-  if(customerList){
-    customerList.replaceChildren();
-    if(!profiles.length)customerList.append(levelupAdminEmpty('Todavía no hay clientes registrados.'));
-    profiles.forEach(profile=>{
-      const item=createTextElement('article','admin-list-item');
-      const copy=createTextElement('div','admin-list-item__copy');
-      copy.append(createTextElement('strong','',profile.full_name||'Cliente sin nombre'));
-      copy.append(createTextElement('small','',(profile.phone||'Sin celular')+' · Saldo '+money(profile.balance)));
-      const roleLabel=profile.role==='admin'?'Administrador':profile.role==='staff'?'Personal':'Cliente';
-      copy.append(createTextElement('small','',roleLabel));
-      item.append(copy);
-      if(state.activeUser.role==='admin'&&profile.role!=='admin'&&profile.id!==state.activeUser.id){
-        const actions=createTextElement('div','admin-list-item__actions');
-        const button=createTextElement('button','secondary-btn',profile.role==='staff'?'Quitar personal':'Hacer personal');
-        button.type='button';button.dataset.roleChange='true';button.dataset.profileId=profile.id;
-        button.dataset.newRole=profile.role==='staff'?'customer':'staff';button.dataset.hidratado='true';
-        actions.append(button);item.append(actions);
-      }
-      customerList.append(item);
-    });
+
+  const endAt = result.startAt + result.duration * 60 * 60 * 1000;
+  const endMinusOne = new Date(endAt - 1);
+  const startDate = new Date(result.startAt);
+  if (startDate.getHours() < 8 || endMinusOne.getFullYear() !== startDate.getFullYear()
+    || endMinusOne.getMonth() !== startDate.getMonth() || endMinusOne.getDate() !== startDate.getDate()) {
+    setReservationFieldError('fechaTurno', 'fechaTurnoError', 'El turno debe estar dentro del horario de 08:00 a 24:00 y terminar el mismo día.');
+    document.getElementById('fechaTurno')?.focus();
+    status.text('El horario seleccionado queda fuera de atención.').attr('class', 'form-status error');
+    return;
   }
 
-}
-
-async function levelupSetProfileRole(profileId,newRole){
-  if(!state.activeUser||state.activeUser.role!=='admin')throw new Error('Solo un administrador puede gestionar el personal.');
-  if(!['customer','staff'].includes(newRole))throw new Error('Rol no permitido.');
-  const promptText=newRole==='staff'
-    ?'¿Conceder acceso al panel del personal a esta cuenta?'
-    :'¿Retirar el acceso al panel del personal a esta cuenta?';
-  if(!window.confirm(promptText))return;
-  const client=await levelupRequireClient();
-  const {error}=await client.rpc('levelup_set_profile_role',{p_target_user_id:profileId,p_new_role:newRole});
-  if(error)throw error;
-  await levelupLoadAdminDashboard();
-  showToast(newRole==='staff'?'Acceso de personal asignado.':'Acceso de personal retirado.');
-}
-async function levelupAdminFinishSession(sessionId){
-  if(!state.activeUser||!['admin','staff'].includes(state.activeUser.role))throw new Error('Solo el personal puede finalizar sesiones.');
-  if(!window.confirm('¿Finalizar esta sesión? Se cerrará desde Supabase y no se aplicará ningún reembolso automático.'))return;
-  const client=await levelupRequireClient();
-  const {error}=await client.rpc('levelup_admin_finish_session',{p_session_id:sessionId});
-  if(error)throw error;
-  await levelupRefreshWalletAndSessions();
-  await levelupLoadAdminDashboard();
-  await levelupRefreshResourceAvailability();
-  showToast('Sesión finalizada desde el panel del personal.');
-}
-async function levelupAdminMarkOrderDelivered(orderId){
-  if(!state.activeUser||!['admin','staff'].includes(state.activeUser.role))throw new Error('Solo el personal puede actualizar pedidos.');
-  const client=await levelupRequireClient();
-  const {error}=await client.rpc('levelup_admin_mark_order_delivered',{p_order_id:orderId});
-  if(error)throw error;
-  await levelupLoadAdminDashboard();
-  showToast('Pedido marcado como entregado.');
-}
-async function levelupResolveRechargeRequest(requestId,decision) {
-  if(!state.activeUser||!['admin','staff'].includes(state.activeUser.role))throw new Error('Solo el personal autorizado puede validar recargas.');
-  if(!['approved','rejected'].includes(decision))throw new Error('Decisión no válida.');
-  if(decision==='approved'&&!window.confirm('¿Ya comprobaste que el pago ingresó? Solo aprueba después de verificar el efectivo o el QR.'))return;
-  const client=await levelupRequireClient();
-  const result=await client.rpc('levelup_resolve_recharge_request',{p_request_id:requestId,p_decision:decision});
-  if(result.error)throw result.error;
-  await levelupRefreshWalletAndSessions();
-  await levelupLoadAdminDashboard();
-  showToast(decision==='approved'?'Recarga aprobada y saldo acreditado.':'Solicitud de recarga rechazada.');
-}
-
-async function submitScheduledReservation(event){
-  event.preventDefault();const form=event.currentTarget;const button=form.querySelector('button[type="submit"]');
-  if(button?.disabled)return;
-  const result=validateScheduledReservation();const status=$('#reservationFormStatus');status.text('').attr('class','form-status');
-  if(!result.valid){status.text('Revisa los campos marcados antes de guardar.').attr('class','form-status error');return;}
-  const endAt=result.startAt+result.duration*3600000;const endMinusOne=new Date(endAt-1),startDate=new Date(result.startAt);
-  if(startDate.getHours()<8||endMinusOne.getDate()!==startDate.getDate()){
-    status.text('El turno debe estar entre las 08:00 y las 24:00 y terminar el mismo día.').attr('class','form-status error');return;
+  const resource = result.resource;
+  const liveBusyUntil = Number(resource.item.sessionEndsAt || resource.item.reservationExpiresAt || 0);
+  if (!resource.item.available && (!liveBusyUntil || result.startAt < liveBusyUntil)) {
+    setReservationFieldError('recursoSelect', 'recursoSelectError', 'El catálogo muestra este equipo ocupado y no tiene una hora de liberación confirmada. Elige otro equipo.');
+    document.getElementById('recursoSelect')?.focus();
+    status.text('No se puede proponer ese turno para un equipo ocupado sin hora de liberación.').attr('class', 'form-status error');
+    return;
   }
-  if(button)button.disabled=true;
-  const requestKey=levelupRequestKey('pendingReservationRequestId');
-  const payload={p_resource_id:levelupResourceId(result.resource.key),p_customer_name:result.name,
-    p_starts_at:new Date(result.startAt).toISOString(),p_duration_hours:result.duration,p_request_key:requestKey};
-  try{
-    const client=await levelupRequireClient();
-    const {error}=await client.rpc('levelup_create_scheduled_reservation',payload);
-    if(error)throw error;
-    state.pendingReservationRequestId=null;
-    await levelupLoadMyScheduledReservations();await levelupRefreshResourceAvailability();
-    form.reset();setReservationDateMinimum();status.text('Turno guardado en Supabase.').attr('class','form-status success');
-    showToast('Reserva confirmada en la base de datos.');
-  }catch(error){
-    console.error(error);
-    if(levelupIsTransportFailure(error)){
-      try{
-        await levelupEnqueueOffline('reservation_create',payload,requestKey);
-        state.pendingReservationRequestId=null;form.reset();setReservationDateMinimum();
-        status.text('Turno guardado en este dispositivo y pendiente de sincronizar. Todavía no está reservado.').attr('class','form-status');
-        showToast('Turno pendiente de enviar a Supabase cuando vuelva Internet.');
-      }catch(queueError){status.text(queueError.message||'No se pudo guardar la solicitud pendiente.').attr('class','form-status error');showToast(queueError.message||'No se pudo guardar la solicitud.','error');}
-    }else{
-      status.text(error.message||'Error guardando en Supabase.').attr('class','form-status error');
-      showToast(error.message||'No se guardó el turno.','error');
-    }
-  }finally{if(button)button.disabled=false;}
+  if (reservationOverlaps(resource.key, result.startAt, endAt)) {
+    setReservationFieldError('fechaTurno', 'fechaTurnoError', 'Ese equipo ya tiene una reserva en un horario que se cruza.');
+    document.getElementById('fechaTurno')?.focus();
+    status.text('Cambia el horario o selecciona otro equipo.').attr('class', 'form-status error');
+    return;
+  }
+
+  if (state.scheduledReservations.length >= 50) {
+    status.text('Ya hay 50 reservas guardadas. Cancela una antes de agregar otra.').attr('class', 'form-status error');
+    return;
+  }
+
+  const reservation = {
+    id: (window.crypto && typeof window.crypto.randomUUID === 'function') ? window.crypto.randomUUID() : `turno-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: result.name,
+    resourceKey: resource.key,
+    resourceLabel: resource.label,
+    startsAt: new Date(result.startAt).toISOString(),
+    durationHours: result.duration,
+    createdAt: new Date().toISOString()
+  };
+  state.scheduledReservations.push(reservation);
+  if (!saveScheduledReservations()) {
+    state.scheduledReservations.pop();
+    return;
+  }
+  renderScheduledReservations();
+  populateReservationResources();
+  renderMachines();
+  renderConsoles();
+  event.currentTarget.reset();
+  document.querySelectorAll('#formReserva .form-field').forEach(field => field.classList.remove('invalid'));
+  ['clienteNombreError', 'recursoSelectError', 'fechaTurnoError', 'duracionTurnoError'].forEach(id => $(`#${id}`).text(''));
+  setReservationDateMinimum();
+  const endLabel = reservationDateLabel(new Date(endAt).toISOString());
+  status.text(`Turno reservado: ${resource.label} · ${reservationDateLabel(reservation.startsAt)} a ${endLabel}.`).attr('class', 'form-status success');
+  showToast('Turno reservado. El equipo quedará protegido durante ese horario.');
 }
-async function cancelScheduledReservation(id){
-  if(id===state.activeScheduledReservationId){showToast('Cierra el proceso de inicio antes de cancelar un turno.','error');return;}
-  try{
-    const client=await levelupRequireClient();const {error}=await client.rpc('levelup_cancel_scheduled_reservation',{p_reservation_id:id});
-    if(error)throw error;
-    await levelupLoadMyScheduledReservations();await levelupRefreshResourceAvailability();
-    $('#reservationFormStatus').text('Turno cancelado en Supabase.').attr('class','form-status success');showToast('Turno cancelado.');
-  }catch(error){console.error(error);showToast(error.message||'No se pudo cancelar.','error');}
+function cancelScheduledReservation(id) {
+  if (id === state.activeScheduledReservationId) { showToast('Cierra el proceso de inicio antes de cancelar este turno.', 'error'); return; }
+  if (id === state.pendingScheduledReservationId) state.pendingScheduledReservationId = null;
+  const index = state.scheduledReservations.findIndex(item => item.id === id);
+  if (index < 0) return;
+  const [removed] = state.scheduledReservations.splice(index, 1);
+  if (!saveScheduledReservations()) {
+    state.scheduledReservations.splice(index, 0, removed);
+    return;
+  }
+  renderScheduledReservations();
+  populateReservationResources();
+  renderMachines();
+  renderConsoles();
+  $('#reservationFormStatus').text('El turno fue cancelado.').attr('class', 'form-status success');
+  showToast('Turno cancelado.');
 }
 
-/* Cuentas y actividad local. Se conservan las claves usadas por el prototipo anterior. */
-function loadAccounts(){state.accounts=[];state.activeUser=null;}
-function saveAccounts(){return false;}
-function saveActiveUser(){return false;}
-function loadActiveSessions(){state.activeSessions=[];}
-function saveActiveSessions(){return false;}
+function loadAccounts() {
+  try {
+    const accounts = JSON.parse(localStorage.getItem(STORAGE.accounts) || '[]');
+    state.accounts = Array.isArray(accounts) ? accounts : [];
+    const phone = localStorage.getItem(STORAGE.activePhone);
+    state.activeUser = state.accounts.find(account => account.phone === phone) || null;
+  } catch (error) {
+    state.accounts = [];
+    state.activeUser = null;
+  }
+}
+function saveAccounts() {
+  try {
+    localStorage.setItem(STORAGE.accounts, JSON.stringify(state.accounts));
+    if (state.activeUser) localStorage.setItem(STORAGE.activePhone, state.activeUser.phone);
+    else localStorage.removeItem(STORAGE.activePhone);
+  } catch (error) { showToast('El navegador no permitió guardar la cuenta.', 'error'); }
+}
+function saveActiveUser() {
+  if (!state.activeUser) return;
+  const index = state.accounts.findIndex(account => account.phone === state.activeUser.phone);
+  if (index >= 0) state.accounts[index] = state.activeUser;
+  else state.accounts.push(state.activeUser);
+  saveAccounts();
+  renderAccount();
+}
+function loadActiveSessions() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE.activeSessions) || '[]');
+    state.activeSessions = Array.isArray(saved) ? saved.filter(item => item && typeof item.id === 'string'
+      && typeof item.resourceKey === 'string' && typeof item.ownerPhone === 'string'
+      && Number.isFinite(Number(item.startedAt)) && ['fixed', 'open'].includes(item.billingMode)
+      && Number.isFinite(Number(item.timeAmount)) && Number.isFinite(Number(item.snacksTotal)))
+      .slice(0, 30).map(item => ({
+        ...item,
+        durationMinutes: item.billingMode === 'open' ? null : Number(item.durationMinutes),
+        halfHourRate: Math.max(0, Number(item.halfHourRate || 0)),
+        timeAmount: Math.max(0, Number(item.timeAmount || 0)),
+        snacksTotal: Math.max(0, Number(item.snacksTotal || 0)),
+        orders: Array.isArray(item.orders) ? item.orders.slice(-30) : []
+      })) : [];
+  } catch (_) { state.activeSessions = []; }
+}
+function saveActiveSessions() {
+  try { localStorage.setItem(STORAGE.activeSessions, JSON.stringify(state.activeSessions)); }
+  catch (_) { showToast('No se pudo guardar la sesión en este navegador.', 'error'); }
+}
 function activeSessionsForPhone(phone) {
   return state.activeSessions.filter(item => item.ownerPhone === phone)
     .sort((a, b) => Number(b.startedAt) - Number(a.startedAt));
@@ -1583,40 +1231,114 @@ function updateActiveSessionPanel() {
     if (grandTotal) grandTotal.textContent = money(session.timeAmount + session.snacksTotal);
   });
 }
-async function finishOpenSession(sessionId,reason='manual'){
-  try{
-    const client=await levelupRequireClient();const {error}=await client.rpc('levelup_finish_open_session',{p_session_id:sessionId});
-    if(error)throw error;
-    await levelupRefreshWalletAndSessions();await levelupLoadMyScheduledReservations();await levelupRefreshResourceAvailability();
-    showToast('Sesión finalizada y sincronizada con Supabase.');
-  }catch(error){console.error(error);showToast(error.message||'No se pudo finalizar la sesión.','error');}
+function finishOpenSession(sessionId, reason = 'manual') {
+  const session = state.activeSessions.find(item => item.id === sessionId && item.billingMode === 'open');
+  if (!session) return;
+  const resource = getReservationResource(session.resourceKey)?.item;
+  if (resource) {
+    resource.available = true;
+    resource.reservationExpiresAt = null;
+    resource.sessionStartedAt = null;
+    resource.sessionEndsAt = null;
+    if (session.resourceType === 'console') saveConsoleStates(); else saveMachineStates();
+  }
+  state.activeSessions = state.activeSessions.filter(item => item.id !== sessionId);
+  saveActiveSessions();
+  renderMachines();
+  renderConsoles();
+  populateReservationResources();
+  renderAccount();
+  showToast(reason === 'insufficient'
+    ? 'El saldo no alcanzó para el siguiente bloque. La sesión terminó.'
+    : 'Sesión finalizada.');
 }
-function processOpenSessionCharges(now){return [];}
-
-function renderAccount(){
-  renderPendingActions();
-  const loggedIn=Boolean(state.activeUser);
-  $('#accountAccessPanel').prop('hidden',loggedIn);$('#accountDashboard').prop('hidden',!loggedIn);
-  const adminPanel=document.getElementById('adminToolsPanel');
-  if(adminPanel)adminPanel.hidden=!loggedIn||!['admin','staff'].includes(state.activeUser.role);
-  if(!loggedIn)return;
-  const user=state.activeUser;
-  $('#accountDisplayName').text(user.name);$('#accountDisplayPhone').text('Celular · '+user.phone);$('#accountDisplayBalance').text(money(user.balance));
-  renderActiveSessionPanel();
-  const history=Array.isArray(user.history)?[...user.history].reverse().slice(0,8):[];
-  const container=document.getElementById('accountHistory');if(!container)return;container.replaceChildren();
-  if(!history.length){container.append(createTextElement('div','history-empty','Todavía no tienes movimientos confirmados en Supabase.'));return;}
-  history.forEach(entry=>{
-    if(!entry||typeof entry!=='object')return;
-    const row=createTextElement('div','history-item'),copy=createTextElement('div','');
-    const dateValue=entry.date?new Date(entry.date):null;
-    const date=dateValue&&!Number.isNaN(dateValue.getTime())?dateValue.toLocaleString('es-BO',{dateStyle:'short',timeStyle:'short'}):'Fecha no disponible';
-    const amount=Number(entry.amount||0);
-    copy.append(createTextElement('strong','',entry.type||'Movimiento'));
-    copy.append(createTextElement('small','',(entry.details||entry.method||'Movimiento confirmado')+' · '+date));
-    row.append(copy,createTextElement('span','history-amount '+(amount>=0?'positive':'negative'),(amount>=0?'+':'−')+money(Math.abs(amount))));
-    container.append(row);
+function processOpenSessionCharges(now) {
+  let accountsChanged = false;
+  const ended = [];
+  state.activeSessions.forEach(session => {
+    if (session.billingMode !== 'open') return;
+    const user = state.accounts.find(account => account.phone === session.ownerPhone);
+    if (!user) { ended.push({ id: session.id, reason: 'insufficient' }); return; }
+    while (Number(session.nextChargeAt || Infinity) <= now) {
+      const charge = Number(session.halfHourRate || 0);
+      if (!(charge > 0) || Number(user.balance || 0) < charge) {
+        ended.push({ id: session.id, reason: 'insufficient' });
+        break;
+      }
+      user.balance = Number(user.balance) - charge;
+      user.history = Array.isArray(user.history) ? user.history : [];
+      user.history.push({ type: 'Tiempo sin límite · bloque de 30 min', machine: session.machine, minutes: 30, amount: -charge, date: new Date(session.nextChargeAt).toISOString() });
+      session.timeAmount = Number(session.timeAmount || 0) + charge;
+      session.nextChargeAt += 30 * 60000;
+      session.paidUntil = session.nextChargeAt;
+      accountsChanged = true;
+    }
   });
+  if (ended.length) {
+    const endingIds = new Set(ended.map(item => item.id));
+    ended.forEach(item => {
+      const session = state.activeSessions.find(entry => entry.id === item.id);
+      if (!session) return;
+      const resource = getReservationResource(session.resourceKey)?.item;
+      if (resource) {
+        resource.available = true;
+        resource.reservationExpiresAt = null;
+        resource.sessionStartedAt = null;
+        resource.sessionEndsAt = null;
+      }
+    });
+    state.activeSessions = state.activeSessions.filter(item => !endingIds.has(item.id));
+  }
+  if (accountsChanged) saveAccounts();
+  if (accountsChanged || ended.length) saveActiveSessions();
+  return ended;
+}
+
+function renderAccount() {
+  renderPendingActions();
+  const loggedIn = Boolean(state.activeUser);
+  $('#accountAccessPanel').prop('hidden', loggedIn);
+  $('#accountDashboard').prop('hidden', !loggedIn);
+  if (!loggedIn) return;
+  const user = state.activeUser;
+  $('#accountDisplayName').text(user.name);
+  $('#accountDisplayPhone').text(`Celular · ${user.phone}`);
+  $('#accountDisplayBalance').text(money(user.balance));
+  renderActiveSessionPanel();
+  const history = Array.isArray(user.history) ? [...user.history].reverse().slice(0, 8) : [];
+  const historyContainer = document.getElementById('accountHistory');
+  if (historyContainer) {
+    if (!history.length) {
+      historyContainer.replaceChildren(createTextElement('div', 'history-empty', 'Todavía no tienes movimientos. Cuando recargues o completes una sesión aparecerán aquí.'));
+    } else {
+      const fragment = document.createDocumentFragment();
+      history.forEach(entry => {
+        if (!entry || typeof entry !== 'object') return;
+        const row = createTextElement('div', 'history-item');
+        const detailsBox = document.createElement('div');
+        const dateValue = entry.date ? new Date(entry.date) : null;
+        const date = dateValue && !Number.isNaN(dateValue.getTime())
+          ? dateValue.toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' })
+          : 'Fecha no disponible';
+        const amountValue = Number(entry.amount || 0);
+        const amount = Number.isFinite(amountValue) ? amountValue : 0;
+        const resourceLabel = entry.resource === 'console' ? `PlayStation #${Number(entry.machine) - 100}` : `Estación #${pad(entry.machine)}`;
+        const sessionLabel = entry.durationLabel || (entry.type && entry.type.startsWith('Pedido') ? 'Pedido' : (entry.minutes ? durationLabel(entry.minutes) : `${entry.hours || 1} h`));
+        const details = entry.machine ? `${resourceLabel} · ${sessionLabel}` : (entry.method || entry.details || 'Movimiento local');
+        const entryType = entry.type === 'Recarga simulada' ? 'Recarga de saldo' : (entry.type || 'Movimiento');
+        detailsBox.append(
+          createTextElement('strong', '', entryType),
+          createTextElement('small', '', `${details} · ${date}`)
+        );
+        row.append(
+          detailsBox,
+          createTextElement('span', `history-amount ${amount >= 0 ? 'positive' : 'negative'}`, `${amount >= 0 ? '+' : '−'}${money(Math.abs(amount))}`)
+        );
+        fragment.append(row);
+      });
+      historyContainer.replaceChildren(fragment);
+    }
+  }
 }
 function switchAccountTab(tab) {
   const register = tab === 'register';
@@ -1649,56 +1371,6 @@ function validateLoginPhone() {
   const value = $('#loginPhone').val();
   return setFieldError('loginPhone', 'loginPhoneError', /^\d{8}$/.test(value) ? '' : 'Ingresa los 8 dígitos del celular.');
 }
-function validateAccountPassword() {
-  const value = String($('#accountPassword').val() || '');
-  return setFieldError('accountPassword', 'accountPasswordError',
-    value.length < 8 ? 'La contraseña debe tener al menos 8 caracteres.'
-      : value.length > 72 ? 'La contraseña no puede superar 72 caracteres.' : '');
-}
-function validateLoginPassword() {
-  const value = String($('#loginPassword').val() || '');
-  return setFieldError('loginPassword', 'loginPasswordError',
-    !value ? 'Escribe tu contraseña.' : value.length > 72 ? 'La contraseña no puede superar 72 caracteres.' : '');
-}
-function levelUpAuthPhone(localPhone) {
-  return '+591' + String(localPhone || '').replace(/\D/g, '').slice(-8);
-}
-function localLevelUpPhone(authPhone) {
-  const value = String(authPhone || '').replace(/\D/g, '');
-  return value.startsWith('591') ? value.slice(3) : value.slice(-8);
-}
-function setAccountAuthNote(message, isError = false) {
-  const note = document.getElementById('accountAuthNote');
-  if (!note) return;
-  note.textContent = String(message || '');
-  note.classList.toggle('error', Boolean(isError));
-}
-async function activateLevelUpAuthUser(authUser){
-  if(!authUser?.id||!window.levelupSupabase)throw new Error('No se pudo identificar la sesión.');
-  const client=window.levelupSupabase;
-  const {data:profile,error}=await client.from('profiles').select('id,full_name,phone,balance,role').eq('id',authUser.id).maybeSingle();
-  if(error)throw error;
-  if(!profile)throw new Error('No encontramos el perfil.');
-  state.activeUser={id:authUser.id,name:String(profile.full_name||authUser.user_metadata?.full_name||'Cliente LevelUp'),
-    phone:localLevelUpPhone(profile.phone||authUser.phone),balance:Number(profile.balance||0),role:profile.role,
-    history:[],createdAt:authUser.created_at||new Date().toISOString(),supabaseAuth:true};
-  renderAccount();
-  await levelupRefreshWalletAndSessions();
-  await levelupLoadMyScheduledReservations();
-  await levelupLoadMyRechargeRequests();
-  if(['admin','staff'].includes(state.activeUser.role))await levelupLoadAdminDashboard();
-  await levelupRenderOfflineQueue();
-  await levelupProcessPendingTransactions();
-  setAccountAuthNote('Perfil, saldo, historial, sesiones y reservas cargados desde Supabase.');
-}
-async function restoreLevelUpAuthSession() {
-  const client = window.levelupSupabase;
-  if (!client) return;
-  const { data, error } = await client.auth.getSession();
-  if (error) throw error;
-  if (data.session?.user) await activateLevelUpAuthUser(data.session.user);
-}
-
 function validateBookingName() {
   const value = $('#customerName').val().trim();
   return setFieldError('customerName', 'customerNameError', !value ? 'Escribe tu nombre.' : value.length < 3 ? 'Debe tener al menos 3 caracteres.' : containsBlacklistedTerms(value) ? 'Evita palabras ofensivas o insultos.' : '');
@@ -1726,8 +1398,12 @@ function validateContactForm() {
   return validName && validPhone && validMessage;
 }
 
-/* Almacenamiento local de solicitudes pendientes. Sin API de servidor no se afirma que hayan sido enviadas. */
-function readPendingActions(){return [];}
+function readPendingActions() {
+  try {
+    const queue = JSON.parse(localStorage.getItem(STORAGE.pending) || '[]');
+    return Array.isArray(queue) ? queue : [];
+  } catch (_) { return []; }
+}
 function renderPendingActions() {
   const queue = readPendingActions();
   const panel = document.getElementById('pendingSyncNotice');
@@ -1736,9 +1412,15 @@ function renderPendingActions() {
   $('#pendingSyncCount').text(`${queue.length} ${queue.length === 1 ? 'acción guardada' : 'acciones guardadas'}`);
   $('#pendingSyncText').text('Guardadas únicamente en este navegador y pendientes de un servidor. GitHub Pages no recibe ni sincroniza estos registros automáticamente.');
 }
-function queueLocalAction(){return false;}
+function queueLocalAction(type, payload) {
+  try {
+    const queue = readPendingActions();
+    queue.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type, payload, createdAt: new Date().toISOString(), status: 'pendiente de servidor' });
+    localStorage.setItem(STORAGE.pending, JSON.stringify(queue.slice(-100)));
+    renderPendingActions();
+  } catch (error) { console.warn('No se pudo guardar la acción pendiente localmente.', error); }
+}
 
-/* Capas modales accesibles y visor de imágenes. */
 function openModal(selector) {
   const layer = document.querySelector(selector);
   if (!layer) return;
@@ -1776,7 +1458,6 @@ function closePhotoViewer() {
   $('#photoViewerImage').attr('src', '');
 }
 
-/* Reserva temporal y temporizadores. */
 function showBookingStep(step) {
   $('#bookingStep').prop('hidden', step !== 'booking');
   $('#paymentStep').prop('hidden', step !== 'payment');
@@ -1952,246 +1633,98 @@ function startPaymentStep() {
   const timeLabel = billingMode === 'open' ? 'Sin límite · primer bloque de 30 min' : durationLabel(durationMinutes);
   $('#paymentSummary').text(`${timeLabel}${hasExtraController ? ' · segundo mando (+ Bs 6)' : ''} · comienza al confirmar`);
   $('#paymentTotal').text(money(state.booking.total));
-  $('#paymentStatus').text('').attr('class', 'form-status').prop('hidden', true);
   showBookingStep('payment');
   updatePaymentState();
 }
-function levelupApplyConfirmedSessionStart(sessionRow, balance, charged, machine, user, booking) {
-  const resourceKey = resourceKeyForEquipment(machine);
-  const resourceType = booking.kind || state.selectedResourceType || 'pc';
-  const startedAt = new Date(sessionRow.started_at).getTime();
-  const endsAt = sessionRow.planned_end_at ? new Date(sessionRow.planned_end_at).getTime() : null;
-  const resourceLabel = resourceLabelForSession(machine, resourceType);
-  const session = {
-    id: sessionRow.id,
-    resourceKey,
-    resourceType,
-    machine: Number(sessionRow.resource_id),
-    resourceLabel,
-    ownerPhone: user.phone,
-    ownerName: user.name,
-    billingMode: sessionRow.billing_mode,
-    startedAt,
-    endsAt,
-    durationMinutes: endsAt ? Math.round((endsAt - startedAt) / 60000) : null,
-    ratePerHour: Number(sessionRow.hourly_rate_snapshot || machine.price || 0),
-    halfHourRate: halfHourPrice(machine),
-    timeAmount: Number(sessionRow.time_amount ?? charged),
-    snacksTotal: Number(sessionRow.snacks_total || 0),
-    extraController: Boolean(sessionRow.extra_controller),
-    paidUntil: sessionRow.paid_until ? new Date(sessionRow.paid_until).getTime() : null,
-    nextChargeAt: sessionRow.next_charge_at ? new Date(sessionRow.next_charge_at).getTime() : null,
-    orders: []
-  };
-
-  state.activeUser.balance = Number(balance);
-  state.activeSessions = [session, ...state.activeSessions.filter(item => item.id !== session.id)];
-
-  if (!Array.isArray(user.history)) user.history = [];
-  if (!user.history.some(item => item.sessionId === session.id)) {
-    user.history.push({
-      type: booking.billingMode === 'open'
-        ? 'Inicio de sesión · primer bloque de 30 minutos'
-        : 'Inicio de sesión LevelUp',
-      amount: -Number(charged),
-      date: sessionRow.started_at,
-      method: 'Sistema',
-      details: resourceLabel,
-      sessionId: session.id
-    });
-  }
-
-  machine.available = false;
-  machine.sessionStartedAt = startedAt;
-  machine.sessionEndsAt = endsAt;
-  machine.reservationExpiresAt = null;
-  state.activeScheduledReservationId = '';
-  booking.confirmed = true;
-
-  renderMachines();
-  renderConsoles();
-  renderAccount();
-
-  $('#successText').text(
-    'Se descontaron ' + money(charged) + ' de tu saldo. Saldo disponible: ' + money(balance) +
-    '. Tu sesión en ' + resourceLabel + ' ya está activa.'
-  );
-  $('#contractedAtLabel').text(
-    'Iniciada el ' + new Date(sessionRow.started_at).toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short' })
-  );
-  $('#syncNote').text('Supabase confirmó la sesión y el movimiento de saldo.');
-  showBookingStep('success');
-  showToast('Cobro de ' + money(charged) + ' confirmado. Saldo restante: ' + money(balance) + '.');
-  return session;
-}
-
-async function levelupRefreshAfterConfirmedSession() {
-  const results = await Promise.allSettled([
-    levelupRefreshWalletAndSessions(),
-    levelupLoadMyScheduledReservations(),
-    levelupRefreshResourceAvailability()
-  ]);
-  const failed = results.filter(result => result.status === 'rejected');
-  if (failed.length) {
-    failed.forEach(result => console.warn('Actualización secundaria después del cobro confirmado:', result.reason));
-    $('#syncNote').text(
-      'El cobro y la sesión ya están confirmados. La pantalla muestra el saldo devuelto por Supabase; ' +
-      'alguna consulta secundaria no se actualizó. Vuelve a entrar a Mi cuenta para sincronizar el historial.'
-    );
-    return false;
-  }
-  $('#syncNote').text('Saldo, sesión, historial y disponibilidad actualizados desde Supabase.');
-  return true;
-}
-
-async function recoverSessionStartAfterLostResponse(machine, user, booking, requestedAt, previousSessionIds) {
-  const client = await levelupRequireClient();
-  const resourceId = levelupResourceId(resourceKeyForEquipment(machine));
-  const [sessionsResult, profileResult] = await Promise.all([
-    client.from('sessions')
-      .select('*')
-      .eq('customer_id', user.id)
-      .eq('resource_id', resourceId)
-      .eq('status', 'active')
-      .gte('started_at', new Date(requestedAt - 60000).toISOString())
-      .order('started_at', { ascending: false })
-      .limit(5),
-    client.from('profiles')
-      .select('balance')
-      .eq('id', user.id)
-      .single()
-  ]);
-  if (sessionsResult.error) throw sessionsResult.error;
-  if (profileResult.error) throw profileResult.error;
-
-  const recovered = (sessionsResult.data || []).find(row => !previousSessionIds.has(row.id));
-  if (!recovered) return false;
-
-  const balance = Number(profileResult.data.balance);
-  const charged = Number(recovered.time_amount ?? booking.total);
-  if (!Number.isFinite(balance) || !Number.isFinite(charged)) {
-    throw new Error('El servidor encontró la sesión, pero no pudo confirmar el saldo.');
-  }
-
-  levelupApplyConfirmedSessionStart(recovered, balance, charged, machine, user, booking);
-  return true;
-}
-
-async function confirmSessionPayment() {
+function confirmSessionPayment() {
   const machine = state.selectedMachine;
   const user = state.activeUser;
-  const booking = state.booking;
-  const scheduledId = booking?.scheduledReservationId || null;
-  const scheduledEntry = scheduledId
-    ? state.scheduledReservations.find(item => item.id === scheduledId)
-    : null;
-  const validHold = machine?.reservationExpiresAt && machine.reservationExpiresAt > Date.now();
-
-  if (!machine || !user || !booking || booking.confirmed || booking.uncertain ||
-      (scheduledId ? !scheduledEntry : !validHold)) {
-    showToast('La reserva temporal o el turno ya no está disponible.', 'error');
+  const scheduledId = state.booking?.scheduledReservationId || '';
+  const scheduledEntry = scheduledId ? state.scheduledReservations.find(item => item.id === scheduledId) : null;
+  const validWalkInHold = machine?.reservationExpiresAt && machine.reservationExpiresAt > Date.now();
+  if (!machine || !user || !state.booking || (scheduledId ? !scheduledEntry : !validWalkInHold)) {
+    if (scheduledId) { closeBooking(false); showToast('El turno reservado ya no está disponible.', 'error'); }
+    else expireReservation();
     return;
   }
-
-  const button = document.getElementById('confirmPayment');
-  if (button?.disabled) return;
-
-  const originalLabel = button?.textContent || 'Confirmar servicio →';
+  const bookingStart = Date.now();
+  const openMode = state.booking.billingMode === 'open';
+  const durationMinutes = openMode ? null : Number(state.booking.durationMinutes);
+  const bookingEnd = openMode ? Number.MAX_SAFE_INTEGER : bookingStart + durationMinutes * 60000;
+  const bookingConflict = findScheduledReservationOverlap(resourceKeyForEquipment(machine), bookingStart, bookingEnd, scheduledId);
+  if (bookingConflict) {
+    showBookingStep('booking');
+    $('#scheduledBookingConflict')
+      .text(`Este equipo ya tiene un turno programado para ${reservationDateLabel(bookingConflict.startsAt)}. Reduce la duración o elige otro equipo.`)
+      .prop('hidden', false);
+    return;
+  }
+  if (Number(user.balance) < state.booking.total) { updatePaymentState(); return; }
+  if (scheduledId) {
+    const reservedIndex = state.scheduledReservations.findIndex(item => item.id === scheduledId);
+    if (reservedIndex < 0) { showToast('El turno ya fue cancelado o iniciado.', 'error'); closeBooking(false); return; }
+    const [convertedReservation] = state.scheduledReservations.splice(reservedIndex, 1);
+    if (!saveScheduledReservations()) {
+      state.scheduledReservations.splice(reservedIndex, 0, convertedReservation);
+      renderScheduledReservations();
+      return;
+    }
+    renderScheduledReservations();
+  }
+  user.balance = Number(user.balance) - state.booking.total;
+  user.history = Array.isArray(user.history) ? user.history : [];
+  const isConsole = state.selectedResourceType === 'console';
+  const resourceName = isConsole ? `PlayStation 5 · Consola #${machine.id - 100}` : `Estación #${pad(machine.id)} · ${machine.label}`;
+  const contractedAt = new Date();
+  const contractedAtMs = contractedAt.getTime();
   const resourceKey = resourceKeyForEquipment(machine);
-  const requestedAt = Date.now();
-  const previousSessionIds = new Set(state.activeSessions.map(item => item.id));
-
-  if (button) {
-    button.disabled = true;
-    button.textContent = 'Procesando cobro…';
-  }
-  $('#paymentStatus')
-    .attr('class', 'form-status')
-    .text('Confirmando el inicio de sesión y el descuento de tu saldo…')
-    .prop('hidden', false);
-
-  try {
-    const client = await levelupRequireClient();
-    const { data, error } = await client.rpc('levelup_start_session', {
-      p_resource_id: levelupResourceId(resourceKey),
-      p_billing_mode: booking.billingMode,
-      p_duration_minutes: booking.billingMode === 'open' ? 30 : Number(booking.durationMinutes),
-      p_has_extra_controller: Boolean(booking.hasExtraController),
-      p_scheduled_reservation_id: scheduledId
-    });
-
-    if (error) throw error;
-
-    const sessionRow = data?.session;
-    const balance = Number(data?.balance);
-    const charged = Number(data?.charged);
-    if (!sessionRow?.id || !Number.isFinite(balance) || !Number.isFinite(charged)) {
-      const uncertain = new Error('Supabase no devolvió todos los datos de confirmación.');
-      uncertain.code = 'LEVELUP_CONFIRMATION_UNCERTAIN';
-      throw uncertain;
-    }
-
-    levelupApplyConfirmedSessionStart(sessionRow, balance, charged, machine, user, booking);
-    await levelupRefreshAfterConfirmedSession();
-  } catch (error) {
-    console.error('Error al iniciar sesión o verificar el cobro de LevelUp:', error);
-
-    const responseMayHaveBeenLost =
-      levelupIsTransportFailure(error) || error?.code === 'LEVELUP_CONFIRMATION_UNCERTAIN';
-
-    if (responseMayHaveBeenLost) {
-      $('#paymentStatus')
-        .attr('class', 'form-status')
-        .text('No llegó la respuesta de cobro. Estoy comprobando si la sesión quedó registrada para evitar un segundo descuento.')
-        .prop('hidden', false);
-
-      try {
-        const recovered = await recoverSessionStartAfterLostResponse(
-          machine, user, booking, requestedAt, previousSessionIds
-        );
-        if (recovered) {
-          await levelupRefreshAfterConfirmedSession();
-          return;
-        }
-
-        const client = await levelupRequireClient();
-        const profile = await client.from('profiles')
-          .select('balance')
-          .eq('id', user.id)
-          .single();
-        if (profile.error) throw profile.error;
-        state.activeUser.balance = Number(profile.data.balance);
-        renderAccount();
-        updatePaymentState();
-
-        const message = 'No encontramos una sesión nueva ni un descuento asociado. Tu saldo no cambió; puedes volver a intentarlo.';
-        $('#paymentStatus').attr('class', 'form-status error').text(message).prop('hidden', false);
-        showToast('No se confirmó el cobro. Puedes volver a intentarlo.', 'error');
-      } catch (recoveryError) {
-        console.error('No se pudo verificar el resultado del cobro:', recoveryError);
-        booking.uncertain = true;
-        if (button) button.textContent = 'Verifica tu sesión';
-        $('#paymentStatus')
-          .attr('class', 'form-status error')
-          .text('No pudimos verificar la respuesta del servidor. Para evitar un doble cobro, no vuelvas a confirmar todavía. Recarga la página y revisa Mi cuenta; si la sesión aparece activa, el descuento ya se aplicó.')
-          .prop('hidden', false);
-        showToast('No se pudo verificar el cobro. Revisa Mi cuenta antes de reintentar.', 'error');
-      }
-    } else {
-      const message = error?.hint || error?.message || 'No se pudo iniciar la sesión.';
-      $('#paymentStatus')
-        .attr('class', 'form-status error')
-        .text('No se inició la sesión ni se descontó saldo: ' + message)
-        .prop('hidden', false);
-      showToast('No se creó la sesión ni se descontó el saldo.', 'error');
-    }
-  } finally {
-    if (button && !booking.confirmed && !booking.uncertain) {
-      button.disabled = false;
-      button.textContent = originalLabel;
-    }
-  }
-} 
+  const durationText = openMode ? 'Sin límite de tiempo' : durationLabel(durationMinutes);
+  const session = { type: isConsole ? 'Sesión PlayStation' : 'Sesión PC', resource: isConsole ? 'console' : 'pc', machine: machine.id, hours: openMode ? null : durationMinutes / 60, minutes: durationMinutes, billingMode: state.booking.billingMode, durationLabel: durationText, scheduledReservation: Boolean(scheduledId), extraController: Boolean(state.booking.hasExtraController), controllerFee: Number(state.booking.controllerFee || 0), amount: -state.booking.total, date: contractedAt.toISOString() };
+  user.history.push(session);
+  machine.available = false;
+  machine.reservationExpiresAt = null;
+  machine.sessionStartedAt = contractedAtMs;
+  machine.sessionEndsAt = openMode ? null : contractedAtMs + durationMinutes * 60000;
+  const activeSession = {
+    id: `${resourceKey}-${contractedAtMs}`,
+    resourceKey,
+    resourceType: isConsole ? 'console' : 'pc',
+    machine: machine.id,
+    resourceLabel: resourceLabelForSession(machine, isConsole ? 'console' : 'pc'),
+    ownerPhone: user.phone,
+    ownerName: user.name,
+    billingMode: state.booking.billingMode,
+    startedAt: contractedAtMs,
+    endsAt: openMode ? null : machine.sessionEndsAt,
+    durationMinutes,
+    ratePerHour: Number(machine.price),
+    halfHourRate: halfHourPrice(machine),
+    timeAmount: Number(state.booking.baseAmount),
+    snacksTotal: Number(state.booking.controllerFee || 0),
+    extraController: Boolean(state.booking.hasExtraController),
+    orders: state.booking.hasExtraController ? [{ id: `controller-${contractedAtMs}`, date: contractedAt.toISOString(), total: Number(state.booking.controllerFee || 0), items: [{ id: 'controller', name: 'Mando adicional PS5', quantity: 1, price: Number(state.booking.controllerFee || 0) }] }] : [],
+    paidUntil: openMode ? contractedAtMs + 30 * 60000 : machine.sessionEndsAt,
+    nextChargeAt: openMode ? contractedAtMs + 30 * 60000 : null
+  };
+  state.activeSessions = state.activeSessions.filter(item => item.resourceKey !== resourceKey);
+  state.activeSessions.push(activeSession);
+  saveActiveSessions();
+  saveActiveUser();
+  if (state.networkState !== 'online') queueLocalAction(isConsole ? 'sesion-playstation-local' : 'sesion-pc-local', session);
+  if (isConsole) { saveConsoleStates(); renderConsoles(); }
+  else { saveMachineStates(); renderMachines(); }
+  state.activeScheduledReservationId = '';
+  populateReservationResources();
+  const extra = isConsole && state.booking.hasExtraController ? ' Se añadió un segundo mando por Bs 6.' : '';
+  const message = `${state.booking.name}, se asignó ${resourceName} ${openMode ? 'sin límite de tiempo, con cobro por bloques de 30 minutos' : `durante ${durationLabel(durationMinutes)}`}.${extra} Se descontaron ${money(state.booking.total)}. Saldo restante: ${money(user.balance)}.`;
+  $('#successText').text(message);
+  $('#contractedAtLabel').text(`Contratado el ${contractedAt.toLocaleString('es-BO', { dateStyle: 'medium', timeStyle: 'short' })}`);
+  $('#syncNote').text(state.networkState === 'online'
+    ? 'Registro guardado en este navegador. Esta versión no procesa cobros bancarios.'
+    : 'Sin Internet: el registro quedó guardado en este dispositivo. No se ha enviado a un servidor.');
+  showBookingStep('success');
+  updateBookingCountdown();
+}
 function closeBooking(release = true) {
   const wasScheduledTurn = Boolean(state.activeScheduledReservationId);
   if (release) releaseReservation(false);
@@ -2207,7 +1740,6 @@ function closeBooking(release = true) {
   if (wasScheduledTurn) renderScheduledReservations();
 }
 
-/* Recargas: simulación local, sin procesar dinero real. */
 function openRecharge() {
   if (!state.activeUser) {
     showView('cuenta');
@@ -2217,45 +1749,96 @@ function openRecharge() {
   $('#rechargeAmountLabel').text(money(state.rechargeAmount));
   openModal('#rechargeModal');
 }
-async function confirmRecharge(){
-  if(!state.activeUser)return;const button=document.getElementById('confirmRecharge');if(button?.disabled)return;
-  const amount=Number(state.rechargeAmount);if(!Number.isFinite(amount)||amount<5||amount>500){showToast('Recarga entre Bs 5 y Bs 500.','error');return;}
-  if(button)button.disabled=true;
-  const requestKey=levelupRequestKey('pendingRechargeRequestId');
-  const payload={p_amount:amount,p_payment_method:state.rechargeMethod,p_request_key:requestKey};
-  try{
-    const client=await levelupRequireClient();
-    const {error}=await client.rpc('levelup_create_recharge_request',payload);
-    if(error)throw error;
-    state.pendingRechargeRequestId=null;closeModal('#rechargeModal');
-    await levelupLoadMyRechargeRequests();
-    showToast('Solicitud registrada. El saldo solo cambiará tras la aprobación del personal.');
-  }catch(error){
-    console.error(error);
-    if(levelupIsTransportFailure(error)){
-      try{
-        await levelupEnqueueOffline('recharge_request',payload,requestKey);
-        state.pendingRechargeRequestId=null;closeModal('#rechargeModal');
-        showToast('Solicitud guardada como pendiente local. El saldo no ha cambiado ni se ha acreditado.');
-      }catch(queueError){showToast(queueError.message||'No se pudo guardar la solicitud pendiente.','error');}
-    }else showToast(error.message||'No se registró la solicitud.','error');
-  }finally{if(button)button.disabled=false;}
+function confirmRecharge() {
+  if (!state.activeUser) return;
+  const amount = Number(state.rechargeAmount);
+  state.activeUser.balance = Number(state.activeUser.balance || 0) + amount;
+  state.activeUser.history = Array.isArray(state.activeUser.history) ? state.activeUser.history : [];
+  const recharge = { type: 'Recarga de saldo', amount, method: state.rechargeMethod, date: new Date().toISOString() };
+  state.activeUser.history.push(recharge);
+  saveActiveUser();
+  if (state.networkState !== 'online') queueLocalAction('recarga-local', recharge);
+  closeModal('#rechargeModal');
+  updatePaymentState();
+  showToast(`${money(amount)} añadidos al saldo de tu cuenta en este navegador.`);
 }
 
-/* Temporizador único: se actualizan los textos, no se adjuntan listeners a cada tarjeta. */
-function tickSessions(){
-  const now=Date.now();
-  [...state.machines,...state.consoles].forEach(machine=>{
-    if(machine.reservationExpiresAt&&machine.reservationExpiresAt<=now){machine.reservationExpiresAt=null;machine.available=true;machine.sessionStartedAt=null;machine.sessionEndsAt=null;}
-    if(machine.sessionEndsAt&&machine.sessionEndsAt<=now){machine.available=true;machine.sessionEndsAt=null;machine.sessionStartedAt=null;}
+function tickSessions() {
+  const now = Date.now();
+  let changed = false;
+  const openSessionEnded = processOpenSessionCharges(now);
+  if (openSessionEnded.length) changed = true;
+  const expiredReservations = [];
+  const finishedSessions = [];
+  [...state.machines, ...state.consoles].forEach(machine => {
+    if (machine.reservationExpiresAt) {
+      const remaining = machine.reservationExpiresAt - now;
+      if (remaining <= 0) {
+        machine.reservationExpiresAt = null;
+        machine.available = true;
+        machine.sessionStartedAt = null;
+        expiredReservations.push({ id: machine.id, kind: machine.kind || 'pc' });
+        changed = true;
+      } else {
+        $(`[data-hold-timer="${machine.id}"]`).text(formatHold(remaining));
+        if (state.selectedMachine?.id === machine.id) updateBookingCountdown();
+      }
+    }
+    if (machine.sessionEndsAt) {
+      const remaining = machine.sessionEndsAt - now;
+      if (remaining <= 0) {
+        machine.available = true;
+        machine.sessionEndsAt = null;
+        machine.sessionStartedAt = null;
+        finishedSessions.push({ id: machine.id, kind: machine.kind || 'pc' });
+        changed = true;
+      } else $(`[data-session-timer="${machine.id}"]`).text(formatClock(remaining));
+    } else if (!machine.available && !machine.reservationExpiresAt && machine.sessionStartedAt) {
+      const elapsed = now - machine.sessionStartedAt;
+      $(`[data-elapsed-timer="${machine.id}"]`).text(formatClock(elapsed));
+    }
   });
-  updateActiveSessionPanel();
-  if(state.networkState==='online'&&!state.levelupSyncBusy&&(now-(state.levelupLastSyncAt||0)>=30000)){
-    state.levelupSyncBusy=true;state.levelupLastSyncAt=now;
-    const tasks=[levelupRefreshResourceAvailability()];
-    if(state.activeUser?.id)tasks.push(levelupRefreshWalletAndSessions().then(levelupLoadMyScheduledReservations).then(levelupLoadMyRechargeRequests));
-    Promise.all(tasks).catch(error=>console.warn('Sincronización Supabase:',error)).finally(()=>{state.levelupSyncBusy=false;});
+  if (expiredReservations.length) {
+    expiredReservations.forEach(item => {
+      const isSelected = state.selectedMachine?.id === item.id && state.selectedResourceType === item.kind;
+      if (isSelected) {
+        state.selectedMachine = null;
+        state.selectedResourceType = null;
+        state.booking = null;
+        closeModal('#bookingModal');
+      }
+      const label = item.kind === 'console' ? `PlayStation #${item.id - 100}` : `estación #${pad(item.id)}`;
+      showToast(`La reserva de ${label} venció y quedó libre.`, 'error');
+    });
   }
+  const expiredScheduled = state.scheduledReservations.filter(item =>
+    item.id !== state.activeScheduledReservationId && scheduledReservationEnd(item) <= now
+  );
+  if (expiredScheduled.length) {
+    const expiredIds = new Set(expiredScheduled.map(item => item.id));
+    state.scheduledReservations = state.scheduledReservations.filter(item => !expiredIds.has(item.id));
+    saveScheduledReservations();
+    renderScheduledReservations();
+  }
+  const nextSignature = activeScheduledSignature(now);
+  const scheduleChanged = nextSignature !== state.activeScheduledSignature;
+  state.activeScheduledSignature = nextSignature;
+  if (changed || scheduleChanged || expiredScheduled.length) {
+    if (changed) { saveMachineStates(); saveConsoleStates(); }
+    renderMachines();
+    renderConsoles();
+    populateReservationResources();
+    if (scheduleChanged) renderScheduledReservations();
+  }
+  if (finishedSessions.length) {
+    const finishedKeys = new Set(finishedSessions.map(item => `${item.kind === 'console' ? 'console' : 'pc'}:${item.id}`));
+    const before = state.activeSessions.length;
+    state.activeSessions = state.activeSessions.filter(session => !finishedKeys.has(session.resourceKey));
+    if (state.activeSessions.length !== before) saveActiveSessions();
+  }
+  if (finishedSessions.length || openSessionEnded.length) renderAccount();
+  updateActiveSessionPanel();
+  finishedSessions.forEach(item => showToast(`Terminó la sesión de ${item.kind === 'console' ? `PlayStation #${item.id - 100}` : `estación #${pad(item.id)}`}. Ya está disponible.`));
 }
 function startSessionTicker() {
   if (state.sessionTimer !== null) window.clearInterval(state.sessionTimer);
@@ -2263,10 +1846,8 @@ function startSessionTicker() {
   state.sessionTimer = window.setInterval(tickSessions, 1000);
 }
 
-/* Visor de imágenes. */
 function handlePhotoOpen(target) { openPhotoViewer(target); }
 
-/* Conectividad real del propio sitio. El SW excluye la petición de health-check de la caché. */
 function paintNetwork(status) {
   state.networkState = status;
   const label = status === 'online' ? 'Online' : status === 'offline' ? 'Offline' : 'Comprobando…';
@@ -2305,7 +1886,6 @@ async function refreshNetworkStatus(initial = false) {
   paintNetwork(connected ? 'online' : 'offline');
 }
 
-/* PWA: manifest e instalación del Service Worker. La instalación se gestiona desde el navegador, sin botón propio. */
 function setupPWA() {
   if (!('serviceWorker' in navigator)) return;
   const registerWorker = () => navigator.serviceWorker.register('./sw.js', { scope: './' }).then(registration => {
@@ -2316,28 +1896,27 @@ function setupPWA() {
   else window.addEventListener('load', registerWorker, { once: true });
 }
 
-/* Contacto: valida y prepara un WhatsApp real; no simula envío a una API. */
-function sendContactMessage(){
-  if(!validateContactForm()){
-    $('#contactStatus').text('Revisa los campos marcados.').attr('class','form-status error');
+function sendContactMessage() {
+  if (!validateContactForm()) {
+    $('#contactStatus').text('Revisa los campos marcados.').attr('class', 'form-status error');
     document.querySelector('#contactForm .form-field.invalid input, #contactForm .form-field.invalid textarea')?.focus();
     return;
   }
-  const name=$('#contactName').val().trim();
-  const phone=$('#contactPhone').val();
-  const message=$('#contactMessage').val().trim();
-  const text=`Hola, soy ${name}. Mi celular es ${phone}. Consulta para LevelUp: ${message}`;
-  const url=`https://wa.me/59164133234?text=${encodeURIComponent(text)}`;
-  if(state.networkState==='offline'||navigator.onLine===false){
-    $('#contactStatus').text('Sin conexión. La consulta no se envió ni se guardó en el servidor. Vuelve a intentarlo cuando recuperes Internet.').attr('class','form-status error');
-    showToast('La consulta no se envió. Necesitas Internet para abrir WhatsApp.','error');
+  const name = $('#contactName').val().trim();
+  const phone = $('#contactPhone').val();
+  const message = $('#contactMessage').val().trim();
+  const text = `Hola, soy ${name}. Mi celular es ${phone}. Consulta para LevelUp: ${message}`;
+  const url = `https://wa.me/59164133234?text=${encodeURIComponent(text)}`;
+  if (state.networkState === 'offline') {
+    queueLocalAction('consulta-contacto', { name, phone, message });
+    $('#contactStatus').text('Sin conexión. La consulta quedó guardada en este navegador; abre WhatsApp cuando recuperes Internet.').attr('class', 'form-status error');
+    showToast('Consulta guardada localmente. No se envió todavía.');
     return;
   }
-  $('#contactStatus').text('Abriendo WhatsApp con tu consulta. Confirma el envío desde esa aplicación.').attr('class','form-status success');
+  $('#contactStatus').text('Abriendo WhatsApp con tu consulta. Confirma el envío desde esa aplicación.').attr('class', 'form-status success');
   window.location.assign(url);
 }
 
-/* Hidratar: los controles nacen inactivos; se conectan los listeners y recién se habilitan. */
 function markHydrated() {
   const pending = document.querySelectorAll('[data-hidratado="false"]');
   pending.forEach(element => {
@@ -2485,9 +2064,8 @@ function removeAccessoryFromQueue(id) {
   renderAccessoryQueue();
   setQuickOrderStatus(`${ACCESSORY_ITEMS[id]?.name || 'Producto'} quitado del pedido.`);
 }
-async function sendAccessoryOrder() {
-  const button = document.getElementById('sendAccessoryOrder');
-  if (button?.disabled || !state.accessoryQueue.length) return;
+function sendAccessoryOrder() {
+  if (!state.accessoryQueue.length) return;
   if (!state.activeUser) {
     showToast('Inicia sesión para registrar tu pedido.', 'error');
     showView('cuenta');
@@ -2495,104 +2073,50 @@ async function sendAccessoryOrder() {
   }
   const session = getLatestActiveSessionForUser();
   if (!session) {
-    showToast('Primero inicia una sesión activa.', 'error');
+    showToast('Primero inicia una sesión para pedir productos.', 'error');
     return;
   }
   const controllerItem = state.accessoryQueue.find(item => item.id === 'controller');
   if (controllerItem && (session.resourceType !== 'console' || session.extraController)) {
-    showToast('El mando adicional solo se permite una vez durante una sesión de PlayStation.', 'error');
+    showToast(session.resourceType !== 'console'
+      ? 'El mando adicional solo se puede pedir durante una sesión de PlayStation.'
+      : 'Esta sesión ya tiene un mando adicional.', 'error');
     return;
   }
-
-  const originalLabel = button?.textContent || 'Enviar pedido';
-  const requestKey = levelupRequestKey('pendingOrderRequestId');
-  const payload = {
-    p_session_id: session.id,
-    p_items: state.accessoryQueue.map(item => ({ product_id: item.id, quantity: item.quantity })),
-    p_request_key: requestKey
+  const items = state.accessoryQueue.map(item => {
+    const product = ACCESSORY_ITEMS[item.id];
+    return { id: item.id, name: product.name, quantity: item.quantity, price: product.price, lineTotal: product.price * item.quantity };
+  });
+  const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
+  if (Number(state.activeUser.balance || 0) < total) {
+    showToast(`Saldo insuficiente. Tu pedido cuesta ${money(total)}.`, 'error');
+    return;
+  }
+  const createdAt = new Date();
+  const order = {
+    id: `order-${createdAt.getTime()}-${Math.random().toString(36).slice(2, 7)}`,
+    date: createdAt.toISOString(), items, total, status: 'Registrado'
   };
-  if (button) {
-    button.disabled = true;
-    button.textContent = 'Procesando pedido…';
-  }
-  setQuickOrderStatus('Confirmando pedido y descontando el saldo…');
-
-  try {
-    const client = await levelupRequireClient();
-    const { data, error } = await client.rpc('levelup_create_order', payload);
-    if (error) throw error;
-
-    const orderRow = data?.order;
-    const balance = Number(data?.balance);
-    const charged = Number(orderRow?.total_amount);
-    if (!orderRow?.id || !Number.isFinite(balance) || !Number.isFinite(charged)) {
-      const uncertain = new Error('El servidor no devolvió todos los datos de confirmación del pedido.');
-      uncertain.code = 'LEVELUP_ORDER_CONFIRMATION_UNCERTAIN';
-      throw uncertain;
-    }
-
-    if (!Array.isArray(session.orders)) session.orders = [];
-    const alreadyListed = session.orders.some(order => order.id === orderRow.id);
-    if (!alreadyListed) {
-      const orderItems = Array.isArray(data.items) ? data.items.map(item => ({
-        id: item.product_id,
-        name: item.item_name,
-        quantity: Number(item.quantity),
-        price: Number(item.unit_price)
-      })) : [];
-      session.orders.push({
-        id: orderRow.id,
-        date: orderRow.created_at || new Date().toISOString(),
-        total: charged,
-        items: orderItems
-      });
-      session.snacksTotal = Number(session.snacksTotal || 0) + charged;
-    }
-
-    state.activeUser.balance = balance;
-    renderAccount();
-    state.pendingOrderRequestId = null;
-    state.accessoryQueue = [];
-    saveAccessoryQueue();
-    renderAccessoryQueue();
-    setQuickOrderStatus('Pedido confirmado y cobrado: ' + money(charged) + '. Saldo disponible: ' + money(balance) + '.');
-    showToast('Pedido cobrado: ' + money(charged) + '. Saldo restante: ' + money(balance) + '.');
-
-    // La confirmación del RPC ya es definitiva: una consulta secundaria fallida
-    // no debe mostrar el pedido como fallido ni volver a enviarlo.
-    try {
-      await levelupRefreshWalletAndSessions();
-    } catch (refreshError) {
-      console.warn('Pedido confirmado; no se pudo actualizar el historial secundario:', refreshError);
-      setQuickOrderStatus('Pedido cobrado (' + money(charged) + '). Saldo: ' + money(balance) + '. El historial se actualizará al volver a entrar a Mi cuenta.');
-    }
-  } catch (error) {
-    console.error('No se pudo confirmar el pedido de LevelUp:', error);
-    if (levelupIsTransportFailure(error) || error?.code === 'LEVELUP_ORDER_CONFIRMATION_UNCERTAIN') {
-      try {
-        await levelupEnqueueOffline('order_create', payload, requestKey);
-        state.pendingOrderRequestId = null;
-        state.accessoryQueue = [];
-        saveAccessoryQueue();
-        renderAccessoryQueue();
-        setQuickOrderStatus('No llegó la confirmación del servidor. El pedido quedó pendiente de sincronización; no lo vuelvas a enviar hasta comprobar su estado.');
-        showToast('Pedido pendiente de confirmación. No se volverá a cobrar dos veces.');
-      } catch (queueError) {
-        setQuickOrderStatus(queueError.message || 'No se pudo guardar el pedido pendiente.', true);
-        showToast(queueError.message || 'No se pudo guardar el pedido pendiente.', 'error');
-      }
-    } else {
-      const message = error?.hint || error?.message || 'No se guardó el pedido.';
-      setQuickOrderStatus(message, true);
-      showToast(message, 'error');
-    }
-  } finally {
-    if (button) {
-      button.textContent = originalLabel;
-      button.disabled = false;
-    }
-    renderAccessoryQueue();
-  }
+  session.orders = Array.isArray(session.orders) ? session.orders : [];
+  session.orders.push(order);
+  session.snacksTotal = Number(session.snacksTotal || 0) + total;
+  if (controllerItem) session.extraController = true;
+  state.activeUser.balance = Number(state.activeUser.balance) - total;
+  state.activeUser.history = Array.isArray(state.activeUser.history) ? state.activeUser.history : [];
+  state.activeUser.history.push({
+    type: 'Pedido de snacks y accesorios',
+    machine: session.machine,
+    resource: session.resourceType,
+    details: items.map(item => `${item.quantity} × ${item.name}`).join(', '),
+    amount: -total,
+    date: createdAt.toISOString()
+  });
+  state.accessoryQueue = [];
+  saveAccessoryQueue();
+  saveActiveSessions();
+  saveActiveUser();
+  renderAccessoryQueue();
+  showToast(`Pedido registrado para ${session.resourceLabel}. Se descontaron ${money(total)}.`);
 }
 function clearAccessoryQueue() {
   state.accessoryQueue = [];
@@ -2604,31 +2128,17 @@ function clearAccessoryQueue() {
 const LEVELUP_BLACKLIST=new Set(['puta','putas','puto','putos','mierda','mierdas','pendejo','pendeja','pendejos','pendejas','idiota','idiotas','imbecil','imbeciles','estupido','estupida','estupidos','estupidas','cabron','cabrona','cabrones','hijueputa','malparido','malparida','maricon','maricones','verga','vergas','coño','concha','boludo','boluda','fuck','fucking','shit','bitch','asshole']);
 function normalizeModerationText(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es-BO').replace(/[@4]/g,'a').replace(/[0]/g,'o').replace(/[1!]/g,'i').replace(/[3]/g,'e').replace(/[5$]/g,'s').replace(/[7]/g,'t').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim()}
 function containsBlacklistedTerms(v){return normalizeModerationText(v).split(' ').some(w=>LEVELUP_BLACKLIST.has(w))}
-const LEVELUP_THEME_KEY='levelup-pwa-theme-v1';
-function applyLevelUpTheme(t){const light=t==='light';document.documentElement.dataset.theme=light?'light':'dark';try{localStorage.setItem(LEVELUP_THEME_KEY,light?'light':'dark')}catch(_){}const m=document.getElementById('themeColorMeta');if(m)m.content=light?'#f5f7fb':'#0b0c16';const b=document.getElementById('themeToggle');if(b){b.querySelector('.theme-toggle__icon').textContent=light?'☾':'☀';b.querySelector('.theme-toggle__label').textContent=light?'Modo oscuro':'Modo claro';b.setAttribute('aria-label',light?'Activar modo oscuro':'Activar modo claro');b.setAttribute('aria-pressed',String(light))}}
-function setupLevelUpTheme(){
-  applyLevelUpTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
-  const themeButton = document.getElementById('themeToggle');
-  if (themeButton && themeButton.dataset.themeReady !== 'true') {
-    themeButton.addEventListener('click', () => {
-      applyLevelUpTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
-    });
-    themeButton.dataset.themeReady = 'true';
-  }
-  document.body.classList.remove('alto-contraste');
-}
+const LEVELUP_THEME_KEY='levelup-backup-ciber-theme-v1';
+const LEVELUP_CONTRAST_KEY='levelup-backup-ciber-contrast-v1';
+function applyLevelUpTheme(t){const light=t==='light';document.documentElement.dataset.theme=light?'light':'dark';try{localStorage.setItem(LEVELUP_THEME_KEY,light?'light':'dark')}catch(_){}const m=document.getElementById('themeColorMeta');if(m)m.content=light?'#f5f7fb':'#0b0c16';const b=document.getElementById('themeToggle');if(b){const icon=b.querySelector('.theme-toggle__icon');const label=b.querySelector('.theme-toggle__label');if(icon)icon.textContent=light?'☾':'☀';if(label)label.textContent=light?'Modo oscuro':'Modo claro';b.setAttribute('aria-label',light?'Activar modo oscuro':'Activar modo claro');b.setAttribute('aria-pressed',String(light))}}
+function applyLevelUpContrast(active){const enabled=Boolean(active);document.body.classList.toggle('alto-contraste',enabled);try{localStorage.setItem(LEVELUP_CONTRAST_KEY,enabled?'on':'off')}catch(_){}const b=document.getElementById('btnContraste');if(b){const icon=b.querySelector('.contrast-toggle__icon');const label=b.querySelector('.contrast-toggle__label');if(icon)icon.textContent=enabled?'◑':'◐';if(label)label.textContent=enabled?'Contraste normal':'Contraste alto';b.setAttribute('aria-pressed',String(enabled));b.setAttribute('aria-label',enabled?'Desactivar alto contraste':'Activar alto contraste');b.title=enabled?'Desactivar alto contraste':'Activar alto contraste'}}
+function setupLevelUpTheme(){applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'light':'dark');const b=document.getElementById('themeToggle');if(b&&b.dataset.themeReady!=='true'){b.addEventListener('click',()=>applyLevelUpTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));b.dataset.themeReady='true'}let highContrast=false;try{highContrast=localStorage.getItem(LEVELUP_CONTRAST_KEY)==='on'}catch(_){}applyLevelUpContrast(highContrast);const contrastButton=document.getElementById('btnContraste');if(contrastButton&&contrastButton.dataset.contrastReady!=='true'){contrastButton.addEventListener('click',()=>applyLevelUpContrast(!document.body.classList.contains('alto-contraste')));contrastButton.dataset.contrastReady='true'}}
 const SERVICE_DETAILS={basic:{title:'PC Básica · Bs 3 por hora',copy:'Selecciona una PC Básica libre. El precio se calcula según la duración.'},standard:{title:'PC Estándar · Bs 6 por hora',copy:'Selecciona una PC Estándar libre. El precio se calcula según la duración.'},premium:{title:'PC Premium · Bs 10 por hora',copy:'Selecciona una PC Premium libre. El precio se calcula según la duración.'},console:{title:'PlayStation 5 · Bs 15 por hora',copy:'Una PS5 libre con un mando incluido. Segundo mando opcional: Bs 6 por sesión.'}};
-function renderServiceSelectionSafe(type){const target=document.getElementById('serviceSelectionInfo'),d=SERVICE_DETAILS[type];if(!target||!d)return;const markup='<strong class="service-selection__title">'+d.title+'</strong><p class="service-selection__description">'+d.copy+'</p>';if(window.DOMPurify&&typeof window.DOMPurify.sanitize==='function')target.innerHTML=window.DOMPurify.sanitize(markup,{USE_PROFILES:{html:true}});else{const title=document.createElement('strong');title.className='service-selection__title';title.textContent=d.title;const p=document.createElement('p');p.className='service-selection__description';p.textContent=d.copy;target.replaceChildren(title,p)}}
+function renderServiceSelectionSafe(type) { const target = document.getElementById('serviceSelectionInfo'); const detail = SERVICE_DETAILS[type]; if (!target || !detail) return; const title = document.createElement('strong'); title.className = 'service-selection__title'; title.textContent = String(detail.title ?? ''); const description = document.createElement('p'); description.className = 'service-selection__description'; description.textContent = String(detail.copy ?? ''); target.replaceChildren(title, description); }
 function reserveServiceDirect(type){renderServiceSelectionSafe(type);if(type==='console'){const item=state.consoles.find(x=>isAvailable(x));if(!item){showToast('No hay una PlayStation disponible en este momento.','error');return}openConsoleBooking(item.id);return}if(!['basic','standard','premium'].includes(type))return;const item=state.machines.find(x=>x.type===type&&isAvailable(x));if(!item){showToast('No hay equipos disponibles de esa categoría.','error');return}openBooking(item.id)}
 function bindLevelUpEvents() {
-  /* Limpieza previa: evita duplicar escuchadores si se ejecuta una segunda hidratación. */
-  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupValidation .levelupReservation .levelupAccessories .levelupAdmin .levelupQueue .levelupA11y');
+  $document.off('.levelupNavigation .levelupCatalog .levelupFilters .levelupAccount .levelupBooking .levelupModal .levelupViewer .levelupContact .levelupConsoles .levelupValidation .levelupReservation .levelupAccessories .levelupSmokeTest');
   $(window).off('.levelupRuntime .levelupCarousel');
-  $(window).on('online.levelupRuntime',function(){
-    refreshNetworkStatus(true);
-    levelupProcessPendingTransactions().catch(error=>console.warn('No se pudo sincronizar la cola local:',error));
-  });
-
 
   $document.on('click.levelupNavigation', '[data-view-target]', function (event) {
     event.preventDefault();
@@ -2645,7 +2155,25 @@ function bindLevelUpEvents() {
   $document.on('click.levelupNavigation', '#brandHome', function (event) { event.preventDefault(); showView('inicio'); });
   $document.on('click.levelupServices', '[data-service-reserve]', function () { reserveServiceDirect(this.dataset.serviceReserve); });
 
-  /* Filtros y navegación del carrusel. */
+  $document.off('click.levelupSmokeTest', '#btnSmokeTest')
+    .on('click.levelupSmokeTest', '#btnSmokeTest', function () {
+      const imgsSinAlt = document.querySelectorAll('img:not([alt]), img[alt=""]').length;
+      const enlacesVacios = document.querySelectorAll('a[href=""], a:not([href])').length;
+      const botones = document.querySelectorAll('button').length;
+      const resultado = `Smoke Test completado · Botones: ${botones} | Imágenes sin alt: ${imgsSinAlt} | Enlaces vacíos: ${enlacesVacios}`;
+      $('#salidaAudit').text(resultado);
+      $('#salidaAudit').toggleClass('is-warning', imgsSinAlt > 0 || enlacesVacios > 0);
+    });
+
+  $document.off('click.levelupA11YAudit', '#btnAuditarA11Y')
+    .on('click.levelupA11YAudit', '#btnAuditarA11Y', function () {
+      const zonas = document.querySelectorAll('header, nav, main, article, footer').length;
+      const sinAlt = document.querySelectorAll('img:not([alt]), img[alt=""]').length;
+      const resultado = `Auditoría en vivo: ${zonas} etiquetas semánticas HTML5 detectadas | Imágenes sin alt: ${sinAlt}.`;
+      $('#reporteA11Y').text(resultado);
+      $('#reporteA11Y').toggleClass('is-warning', sinAlt > 0 || zonas === 0);
+    });
+
   $document.on('click.levelupFilters', '[data-filter]', function () {
     setQuickFilter(this.dataset.filter);
   });
@@ -2657,19 +2185,29 @@ function bindLevelUpEvents() {
   });
   $document.on('change.levelupFilters', '#filterCPU', updateGpuOptions);
   $document.on('change.levelupFilters', '#filterGPU', () => applyMachineFilters(true));
-  $document.on('click.levelupCatalog', '#btnSimularVista', function(){
-    const carousel=document.getElementById('pcCarousel');
-    const track=document.getElementById('pcGrid');
-    if(!carousel||!track)return;
-    const compact=carousel.classList.toggle('sim-movil');
-    track.classList.toggle('sim-movil',compact);
-    this.setAttribute('aria-pressed',String(compact));
-    this.textContent=compact?'Volver al carrusel':'Simular vista móvil';
-    if(compact)carousel.scrollTo({top:0,left:0,behavior:'smooth'});
-    else carousel.scrollTo({top:0,left:0,behavior:'smooth'});
-  });
   $document.on('click.levelupCatalog', '#pcScrollPrev', () => scrollCarousel(-1));
   $document.on('click.levelupCatalog', '#pcScrollNext', () => scrollCarousel(1));
+  $document.off('click.levelupLayoutSimulation', '#btnSimularVista')
+    .on('click.levelupLayoutSimulation', '#btnSimularVista', function () {
+      const grids = Array.from(document.querySelectorAll('.catalogo-grid'));
+      if (!grids.length) return;
+
+      const simulateMobile = !grids.every(grid => grid.classList.contains('sim-movil'));
+      grids.forEach(grid => grid.classList.toggle('sim-movil', simulateMobile));
+
+      this.setAttribute('aria-pressed', String(simulateMobile));
+      this.textContent = simulateMobile
+        ? 'Restaurar grilla automática'
+        : 'Simular vista móvil (1 columna)';
+
+      const status = document.getElementById('catalogSimulationStatus');
+      if (status) {
+        status.textContent = simulateMobile
+          ? 'Simulación activa: catálogo en una columna.'
+          : 'Vista automática según el ancho de pantalla.';
+      }
+      requestAnimationFrame(updateCarouselPosition);
+    });
   $document.on('click.levelupCatalog', '[data-select-machine]', function () { openBooking(Number(this.dataset.selectMachine)); });
   $document.on('click.levelupConsoles', '[data-select-console]', function () { openConsoleBooking(Number(this.dataset.selectConsole)); });
   $document.on('click.levelupCatalog', '#retryCatalogButton', initializeCatalog);
@@ -2678,130 +2216,42 @@ function bindLevelUpEvents() {
   if (carousel) $(carousel).off('scroll.levelupCarousel').on('scroll.levelupCarousel', updateCarouselPosition);
   $(window).off('resize.levelupCarousel').on('resize.levelupCarousel', updateCarouselPosition);
 
-  /* Cuenta, formularios y validación progresiva input/blur. */
   $document.on('click.levelupAccount', '#showRegister', () => switchAccountTab('register'));
   $document.on('click.levelupAccount', '#showLogin', () => switchAccountTab('login'));
-  $document.on('click.levelupAdmin', '#adminRefreshButton', async function(){
-    this.disabled=true;
-    try{await levelupLoadAdminDashboard();await levelupRefreshResourceAvailability();showToast('Panel actualizado desde Supabase.');}
-    catch(error){console.error(error);showToast(error.message||'No se pudo actualizar el panel.','error');}
-    finally{this.disabled=false;}
-  });
-  $document.on('click.levelupQueue', '#offlinePendingList [data-retry-offline]', async function(){
-    const button=this;button.disabled=true;
-    try{await levelupRetryOfflineOperation(button.dataset.retryOffline);}
-    catch(error){console.error(error);showToast(error.message||'No se pudo reintentar.','error');}
-    finally{button.disabled=false;}
-  });
-  $document.on('click.levelupQueue', '#offlinePendingList [data-remove-offline]', async function(){
-    const button=this;button.disabled=true;
-    try{await levelupQueueDelete(button.dataset.removeOffline);await levelupRenderOfflineQueue();}
-    catch(error){console.error(error);showToast(error.message||'No se pudo quitar la operación.','error');}
-    finally{button.disabled=false;}
-  });
-  $document.on('click.levelupAdmin', '#adminToolsPanel [data-role-change]', async function(){
-    const button=this;button.disabled=true;
-    try{await levelupSetProfileRole(button.dataset.profileId,button.dataset.newRole);}
-    catch(error){console.error(error);showToast(error.message||'No se pudo cambiar el rol.','error');}
-    finally{button.disabled=false;}
-  });
-  $document.on('click.levelupAdmin', '#adminToolsPanel [data-admin-finish-session]', async function(){
-    const button=this;button.disabled=true;
-    try{await levelupAdminFinishSession(button.dataset.adminFinishSession);}
-    catch(error){console.error(error);showToast(error.message||'No se pudo finalizar la sesión.','error');}
-    finally{button.disabled=false;}
-  });
-  $document.on('click.levelupAdmin', '#adminToolsPanel [data-admin-deliver-order]', async function(){
-    const button=this;button.disabled=true;
-    try{await levelupAdminMarkOrderDelivered(button.dataset.adminDeliverOrder);}
-    catch(error){console.error(error);showToast(error.message||'No se pudo actualizar el pedido.','error');}
-    finally{button.disabled=false;}
-  });
-  $document.on('click.levelupAdmin', '#adminToolsPanel [data-recharge-review]', async function(){
-    const button=this;button.disabled=true;
-    try{await levelupResolveRechargeRequest(button.dataset.requestId,button.dataset.decision);}
-    catch(error){console.error(error);showToast(error.message||'No se pudo resolver la recarga.','error');}
-    finally{button.disabled=false;}
-  });
-  $document.on('submit.levelupAccount', '#registerForm', async function (event) {
+  $document.on('submit.levelupAccount', '#registerForm', function (event) {
     event.preventDefault();
     const validName = validateAccountName();
     const validPhone = validateAccountPhone();
-    const validPassword = validateAccountPassword();
-    if (!validName || !validPhone || !validPassword) {
-      document.getElementById(!validName ? 'accountName' : !validPhone ? 'accountPhone' : 'accountPassword').focus();
+    if (!validName || !validPhone) { document.getElementById(!validName ? 'accountName' : 'accountPhone').focus(); return; }
+    const name = $('#accountName').val().trim();
+    const phone = $('#accountPhone').val();
+    if (state.accounts.some(account => account.phone === phone)) {
+      $('#accountPhoneError').text('');
+      switchAccountTab('login');
+      $('#loginPhone').val(phone);
+      $('#loginPhoneError').text('Este número ya tiene una cuenta. Inicia sesión.');
       return;
     }
-    const client = window.levelupSupabase;
-    if (!client) { setAccountAuthNote('No se pudo conectar con Supabase. Revisa tu conexión e inténtalo de nuevo.', true); return; }
-    const name = String($('#accountName').val() || '').trim();
-    const phone = String($('#accountPhone').val() || '');
-    const password = String($('#accountPassword').val() || '');
-    const submit = this.querySelector('button[type="submit"]');
-    if (submit) submit.disabled = true;
-    setAccountAuthNote('Creando tu cuenta segura…');
-    try {
-      const { data, error } = await client.auth.signUp({
-        phone: levelUpAuthPhone(phone),
-        password,
-        options: { data: { full_name: name } }
-      });
-      if (error) throw error;
-      if (!data.user) throw new Error('Supabase no devolvió el usuario creado.');
-      if (!data.session) {
-        switchAccountTab('login');
-        $('#loginPhone').val(phone);
-        setAccountAuthNote('La cuenta fue registrada, pero no se inició sesión. Revisa que la confirmación telefónica esté desactivada y Phone Provider habilitado.', true);
-        return;
-      }
-      await activateLevelUpAuthUser(data.user);
-      $('#accountPassword').val('');
-      $('#registerForm')[0].reset();
-      showToast(`Bienvenido, ${name.split(' ')[0]}. Tu cuenta LevelUp está creada.`);
-      continuePendingBooking();
-    } catch (error) {
-      console.error('Error al registrar cuenta LevelUp en Supabase:', error);
-      setAccountAuthNote(error.message || 'No se pudo crear la cuenta. Revisa el celular y vuelve a intentarlo.', true);
-    } finally {
-      if (submit) submit.disabled = false;
-    }
+    state.activeUser = { name, phone, balance: 0, history: [], createdAt: new Date().toISOString() };
+    state.accounts.push(state.activeUser);
+    saveAccounts();
+    renderAccount();
+    showToast(`Bienvenido, ${name.split(' ')[0]}. Tu cuenta LevelUp está lista.`);
+    continuePendingBooking();
   });
-  $document.on('submit.levelupAccount', '#loginForm', async function (event) {
+  $document.on('submit.levelupAccount', '#loginForm', function (event) {
     event.preventDefault();
-    const validPhone = validateLoginPhone();
-    const validPassword = validateLoginPassword();
-    if (!validPhone || !validPassword) {
-      document.getElementById(!validPhone ? 'loginPhone' : 'loginPassword').focus();
-      return;
-    }
-    const client = window.levelupSupabase;
-    if (!client) { setAccountAuthNote('No se pudo conectar con Supabase. Revisa tu conexión e inténtalo de nuevo.', true); return; }
-    const phone = String($('#loginPhone').val() || '');
-    const password = String($('#loginPassword').val() || '');
-    const submit = this.querySelector('button[type="submit"]');
-    if (submit) submit.disabled = true;
-    setAccountAuthNote('Verificando tus datos…');
-    try {
-      const { data, error } = await client.auth.signInWithPassword({
-        phone: levelUpAuthPhone(phone),
-        password
-      });
-      if (error) throw error;
-      await activateLevelUpAuthUser(data.user);
-      $('#loginPassword').val('');
-      showToast(`Bienvenido nuevamente, ${state.activeUser.name.split(' ')[0]}.`);
-      continuePendingBooking();
-    } catch (error) {
-      console.error('Error al iniciar sesión en LevelUp:', error);
-      setAccountAuthNote('No pudimos iniciar sesión. Comprueba tu celular y contraseña.', true);
-    } finally {
-      if (submit) submit.disabled = false;
-    }
+    if (!validateLoginPhone()) { document.getElementById('loginPhone').focus(); return; }
+    const found = state.accounts.find(account => account.phone === $('#loginPhone').val());
+    if (!found) { $('#loginPhoneError').text('No hay una cuenta con ese número. Regístrate primero.'); return; }
+    state.activeUser = found;
+    saveAccounts();
+    renderAccount();
+    showToast(`Bienvenido nuevamente, ${found.name.split(' ')[0]}.`);
+    continuePendingBooking();
   });
   $document.on('input.levelupValidation', '#accountName', validateAccountName);
   $document.on('blur.levelupValidation', '#accountName', validateAccountName);
-  $document.on('input.levelupValidation blur.levelupValidation', '#accountPassword', validateAccountPassword);
-  $document.on('blur.levelupValidation', '#loginPassword', validateLoginPassword);
   $document.on('input.levelupValidation', '#accountPhone, #loginPhone, #customerPhone, #contactPhone', function () {
     normalizePhone(this);
     if (this.id === 'accountPhone') validateAccountPhone();
@@ -2813,25 +2263,14 @@ function bindLevelUpEvents() {
   $document.on('blur.levelupValidation', '#loginPhone', validateLoginPhone);
   $document.on('input.levelupValidation blur.levelupValidation', '#customerName', validateBookingName);
   $document.on('blur.levelupValidation', '#customerPhone', validateBookingPhone);
-  $document.on('click.levelupAccount', '#logoutButton', async function () {
-    try {
-      if (window.levelupSupabase) {
-        const { error } = await window.levelupSupabase.auth.signOut();
-        if (error) throw error;
-      }
-      state.activeUser = null;
-      localStorage.removeItem(STORAGE.activePhone);
-      renderAccount();
-      setAccountAuthNote('Sesión cerrada correctamente.');
-      showToast('Sesión cerrada.');
-    } catch (error) {
-      console.error('Error al cerrar sesión en Supabase:', error);
-      showToast('No se pudo cerrar la sesión. Inténtalo de nuevo.', 'error');
-    }
+  $document.on('click.levelupAccount', '#logoutButton', function () {
+    state.activeUser = null;
+    saveAccounts();
+    renderAccount();
+    showToast('Sesión cerrada.');
   });
   $document.on('click.levelupAccount', '#openRechargeButton', openRecharge);
 
-  /* Recarga local: registra el método elegido sin procesar cobros bancarios. */
   $document.on('click.levelupAccount', '[data-recharge-amount]', function () {
     state.rechargeAmount = Number(this.dataset.rechargeAmount);
     $('[data-recharge-amount]').removeClass('active').attr('aria-pressed', 'false');
@@ -2846,7 +2285,6 @@ function bindLevelUpEvents() {
   $document.on('click.levelupAccount', '#confirmRecharge', confirmRecharge);
   $document.on('click.levelupAccount', '#cancelRecharge, #closeRecharge', () => closeModal('#rechargeModal'));
 
-  /* Reserva, pago y cancelación. */
   $document.on('submit.levelupBooking', '#bookingForm', function (event) { event.preventDefault(); startPaymentStep(); });
   $document.on('change.levelupBooking', '#sessionHours, #sessionMode', function () { updateBookingTotal(); $('#scheduledBookingConflict').text('').prop('hidden', true); });
   $document.on('change.levelupBooking', '#extraController', updateBookingTotal);
@@ -2871,7 +2309,6 @@ function bindLevelUpEvents() {
     if (event.target === this) closeModal('#rechargeModal');
   });
 
-  /* Lista de accesorios y bebidas: controles dinámicos mediante delegación de eventos. */
   $document.on('click.levelupAccessories', '[data-accessory-add]', function () {
     addAccessoryToQueue(this.dataset.accessoryAdd);
   });
@@ -2887,7 +2324,6 @@ function bindLevelUpEvents() {
   $document.on('click.levelupAccessories', '#clearAccessoryQueue', clearAccessoryQueue);
   $document.on('click.levelupAccessories', '#sendAccessoryOrder', sendAccessoryOrder);
 
-  /* Galería: evento delegado para fotos de la portada y para las tarjetas JSON que se generan después. */
   $document.on('click.levelupViewer', '[data-photo-open]', function () { handlePhotoOpen(this); });
   $document.on('click.levelupViewer', '#closePhotoViewer', closePhotoViewer);
   $document.on('click.levelupViewer', '#photoViewer', function (event) { if (event.target === this) closePhotoViewer(); });
@@ -2915,52 +2351,6 @@ function bindLevelUpEvents() {
     else closeMobileMenu();
   });
 
-  /* Smoke Test y auditoría semántica: pruebas de demostración en vivo. */
-  $document.on('click.levelupA11y', '#btnSmokeTest', async function(){
-    const output=document.getElementById('salidaAudit');
-    if(!output)return;
-    const images=document.querySelectorAll('img');
-    const missingAlt=document.querySelectorAll('img:not([alt]), img[alt=""]').length;
-    const emptyLinks=document.querySelectorAll('a[href=""], a:not([href])').length;
-    const buttonCount=document.querySelectorAll('button').length;
-    const manifest=Boolean(document.querySelector('link[rel="manifest"]'));
-    let swRegistered=false;
-    try{
-      if('serviceWorker' in navigator){
-        const registration=await navigator.serviceWorker.getRegistration();
-        swRegistered=Boolean(registration);
-      }
-    }catch(error){console.warn('No se pudo consultar el Service Worker:',error);}
-    const passed=missingAlt===0&&emptyLinks===0&&manifest&&swRegistered;
-    output.textContent=(passed?'Smoke Test OK':'Smoke Test: revisar')+
-      ' · Botones: '+buttonCount+
-      ' · Imágenes sin alt: '+missingAlt+
-      ' · Enlaces vacíos: '+emptyLinks+
-      ' · Manifest: '+(manifest?'sí':'no')+
-      ' · Service Worker: '+(swRegistered?'registrado':'no registrado')+
-      ' · Imágenes totales: '+images.length;
-  });
-  $document.on('click.levelupA11y', '#btnAuditarA11Y', function(){
-    const output=document.getElementById('reporteA11Y');
-    if(!output)return;
-    const semanticZones=document.querySelectorAll('header, nav, main, article, footer').length;
-    const missingAlt=document.querySelectorAll('img:not([alt]), img[alt=""]').length;
-    const labelsWithoutControl=[...document.querySelectorAll('label')].filter(label=>{
-      if(label.htmlFor)return !document.getElementById(label.htmlFor);
-      return !label.querySelector('input,select,textarea');
-    }).length;
-    const iconButtonsWithoutName=[...document.querySelectorAll('button')].filter(button=>
-      !button.disabled&&!button.hidden&&
-      !String(button.innerText||'').trim()&&
-      !button.getAttribute('aria-label')&&!button.getAttribute('title')
-    ).length;
-    output.textContent='Auditoría HTML5: '+semanticZones+
-      ' zonas semánticas · Imágenes sin alt: '+missingAlt+
-      ' · Labels sin control: '+labelsWithoutControl+
-      ' · Botones sin nombre accesible: '+iconButtonsWithoutName+'.';
-  });
-
-  /* Contacto: validación y preparación del mensaje para WhatsApp. */
   $document.on('input.levelupValidation blur.levelupValidation', '#contactName', validateContactName);
   $document.on('input.levelupValidation blur.levelupValidation', '#contactMessage', function () {
     validateContactMessage();
@@ -2999,7 +2389,6 @@ function updateQuickFilterButtons(filter) {
 function setQuickFilter(filter) {
   state.currentFilter = filter;
   updateQuickFilterButtons(filter);
-  // Los chips rápidos y los selectores dependientes no deben contradecirse.
   if (['basic', 'standard', 'premium'].includes(filter)) {
     $('#filterCategory').val(filter);
     updateCpuOptions();
@@ -3049,12 +2438,6 @@ function hydrateLevelUp() {
   renderScheduledReservations();
   loadAccessoryQueue();
   renderAccount();
-  restoreLevelUpAuthSession().catch(error => {
-    console.error('No se pudo restaurar la sesión de Supabase:', error);
-    state.activeUser = null;
-    renderAccount();
-    setAccountAuthNote('No se pudo recuperar tu sesión de Supabase. Inicia sesión nuevamente.', true);
-  });
   const initialView = location.hash.slice(1);
   showView(LEVELUP_VIEWS.includes(initialView) ? initialView : 'inicio', false);
   setupPWA();
@@ -3064,7 +2447,6 @@ function hydrateLevelUp() {
   initializeCatalog();
 }
 
-/* Historial de vistas y ciclo de vida: no se acumulan temporizadores. */
 function syncViewFromLocation() {
   const name = location.hash.slice(1);
   if (LEVELUP_VIEWS.includes(name)) showView(name, false);
@@ -3151,12 +2533,10 @@ window.addEventListener('pageshow', event => {
   }
 });
 
-/* El DOM aparece estático primero. Después de la hidratación los controles se conectan y se habilitan. */
 $(function () {
   window.setTimeout(hydrateLevelUp, 420);
 });
 
-/* Evita que la navegación inferior tape formularios cuando aparece el teclado móvil. */
 if (window.visualViewport) {
   const updateKeyboardViewport = () => {
     const keyboardLikelyOpen = window.innerHeight - window.visualViewport.height > 140;
@@ -3165,3 +2545,47 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', updateKeyboardViewport);
   window.visualViewport.addEventListener('scroll', updateKeyboardViewport);
 }
+
+(()=>{
+  const selector='a[href],button:not(:disabled),input:not(:disabled):not([type="hidden"]),select:not(:disabled),textarea:not(:disabled),summary,[role="button"],[tabindex]:not([tabindex="-1"])';
+  const editingSelector='input,textarea,select,[contenteditable="true"],[role="textbox"]';
+  const vectors={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};
+  const visible=element=>{
+    if(!(element instanceof HTMLElement)||element.matches(':disabled,[hidden]'))return false;
+    if(element.closest('[hidden],[aria-hidden="true"],[inert]'))return false;
+    const style=window.getComputedStyle(element);
+    return style.display!=='none'&&style.visibility!=='hidden'&&element.getClientRects().length>0;
+  };
+  document.addEventListener('keydown',event=>{
+    const vector=vectors[event.key];
+    if(!vector||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey)return;
+    const active=document.activeElement;
+    if(active instanceof HTMLElement&&(active.isContentEditable||active.matches(editingSelector)))return;
+    if(!(active instanceof HTMLElement)||!active.matches(selector)||!visible(active))return;
+    const modal=[...document.querySelectorAll('.modal-backdrop.open,.photo-viewer.open')].at(-1);
+    const scope=modal||document;
+    const items=[...scope.querySelectorAll(selector)].filter(element=>element!==active&&visible(element));
+    const rect=active.getBoundingClientRect();
+    const x=rect.left+rect.width/2;
+    const y=rect.top+rect.height/2;
+    const [dx,dy]=vector;
+    let best=null;
+    let bestScore=Infinity;
+    for(const candidate of items){
+      const box=candidate.getBoundingClientRect();
+      const cx=box.left+box.width/2;
+      const cy=box.top+box.height/2;
+      const deltaX=cx-x;
+      const deltaY=cy-y;
+      const primary=dx?deltaX*dx:deltaY*dy;
+      if(primary<=3)continue;
+      const cross=dx?Math.abs(deltaY):Math.abs(deltaX);
+      const score=primary+cross*1.75;
+      if(score<bestScore){best=candidate;bestScore=score}
+    }
+    if(!best)return;
+    event.preventDefault();
+    best.focus({preventScroll:true});
+    best.scrollIntoView({block:'nearest',inline:'nearest'});
+  },true);
+})();
